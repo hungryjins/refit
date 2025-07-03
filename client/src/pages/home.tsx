@@ -4,10 +4,11 @@ import NavigationHeader from "@/components/navigation-header";
 import ChatInterface from "@/components/chat-interface";
 import ExpressionManager from "@/components/expression-manager";
 import ProgressRepository from "@/components/progress-repository";
-import AISettings from "@/components/ai-settings";
-import FloatingActionButton from "@/components/floating-action-button";
 
-type Tab = "chat" | "expressions" | "repository" | "ai-settings";
+import FloatingActionButton from "@/components/floating-action-button";
+import AdSenseContainer from "@/components/adsense-container";
+
+type Tab = "chat" | "expressions" | "repository";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
@@ -16,7 +17,6 @@ export default function Home() {
     { id: "chat", label: "Practice Chat", icon: "💬" },
     { id: "expressions", label: "My Expressions", icon: "📚" },
     { id: "repository", label: "Progress", icon: "📊" },
-    { id: "ai-settings", label: "AI Settings", icon: "🤖" },
   ] as const;
 
   return (
@@ -54,18 +54,52 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {activeTab === "chat" && <ChatInterface />}
-          {activeTab === "expressions" && <ExpressionManager />}
-          {activeTab === "repository" && <ProgressRepository />}
-          {activeTab === "ai-settings" && <AISettings />}
-        </motion.div>
+        {/* Main Content Area with Ads */}
+        <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {activeTab === "chat" && <ChatInterface />}
+              {activeTab === "expressions" && <ExpressionManager />}
+              {activeTab === "repository" && <ProgressRepository />}
+            </motion.div>
+          </div>
+
+          {/* Sidebar with Ads */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Top Ad */}
+            <AdSenseContainer 
+              slot="1234567890"
+              format="auto"
+              style="minimal"
+              className="sticky top-20"
+            />
+            
+            {/* Middle Ad (only on larger screens) */}
+            <div className="hidden lg:block">
+              <AdSenseContainer 
+                slot="1234567891" 
+                format="vertical"
+                style="gradient"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Banner Ad (mobile friendly) */}
+        <div className="sticky bottom-0 bg-white border-t lg:hidden">
+          <AdSenseContainer 
+            slot="1234567892"
+            format="horizontal"
+            style="outlined"
+            className="mx-4 my-2"
+          />
+        </div>
       </div>
 
       <FloatingActionButton onAdd={() => setActiveTab("expressions")} />

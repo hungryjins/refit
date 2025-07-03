@@ -1,4 +1,4 @@
-# English Chat Practice App
+# Refit - English Conversation Practice App
 
 ## Overview
 
@@ -97,11 +97,35 @@ Changelog:
 - July 03, 2025. Initial setup with English conversation practice app
 - July 03, 2025. Firebase integration prepared with AI service architecture
 - July 03, 2025. Added LLM/RAG/Vector DB integration framework
-- July 03, 2025. Created AI settings interface for external service configuration
+- July 03, 2025. Rebranded to "Refit" and integrated Google AdSense ads
+- July 03, 2025. Optimized layout with responsive ad placement for deployment
 ```
 
 ## User Preferences
 
 ```
 Preferred communication style: Simple, everyday language.
+App branding: "Refit" for English conversation practice
+Deployment goal: Google AdSense integration for monetization
+Design priority: Clean, creative design that attracts users
 ```
+
+## AdSense Integration
+
+### Ad Placement Strategy
+- **Desktop**: Right sidebar with sticky positioning
+- **Mobile**: Bottom banner for better mobile experience  
+- **Responsive**: Adapts to screen size automatically
+- **Design**: Three styles (minimal, gradient, outlined) to match app aesthetics
+
+### Ad Configuration
+- Top sidebar ad: Auto format, minimal style
+- Middle sidebar ad: Vertical format, gradient style (desktop only)
+- Bottom banner: Horizontal format, outlined style (mobile only)
+- All ads use placeholder slots (1234567890, 1234567891, 1234567892)
+
+### Implementation Notes
+- AdSense script loaded in HTML head
+- TypeScript declarations for window.adsbygoogle
+- Development placeholders show ad locations
+- Production ready for actual AdSense account setup
