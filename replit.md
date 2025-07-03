@@ -1,0 +1,104 @@
+# English Chat Practice App
+
+## Overview
+
+This is a full-stack English conversation practice application built with React, Express, and TypeScript. The app helps users practice English expressions through interactive chat scenarios, track their progress, and build their vocabulary through a categorized expression management system.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React with TypeScript
+- **Build Tool**: Vite for fast development and building
+- **State Management**: TanStack Query for server state management
+- **Routing**: Wouter for lightweight client-side routing
+- **UI Framework**: Shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS with custom CSS variables for theming
+- **Animations**: Framer Motion for smooth UI transitions
+- **Form Handling**: React Hook Form with Zod validation
+
+### Backend Architecture
+- **Framework**: Express.js with TypeScript
+- **Database ORM**: Drizzle ORM with PostgreSQL dialect
+- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Session Management**: Express sessions with PostgreSQL store
+- **API Design**: RESTful API with JSON responses
+- **Development**: Hot module replacement with Vite integration
+
+### Project Structure
+- `client/` - Frontend React application
+- `server/` - Backend Express API
+- `shared/` - Shared TypeScript schemas and types
+- `migrations/` - Database migration files
+
+## Key Components
+
+### Data Models (shared/schema.ts)
+- **Expressions**: User's English expressions with usage statistics
+- **Chat Sessions**: Practice conversation sessions with scenarios
+- **Chat Messages**: Individual messages within chat sessions
+- **User Stats**: Overall user progress and statistics
+- **Achievements**: Gamification elements for user engagement
+
+### Frontend Components
+- **Chat Interface**: Real-time conversation practice with AI-like responses
+- **Expression Manager**: CRUD operations for English expressions with categorization
+- **Progress Repository**: User statistics and achievement tracking
+- **Navigation Header**: App navigation with user stats display
+
+### Backend Services
+- **Storage Layer**: Abstract interface with in-memory implementation for data persistence
+- **API Routes**: RESTful endpoints for expressions, chat sessions, messages, and user stats
+- **Middleware**: Request logging, error handling, and static file serving
+
+## Data Flow
+
+1. **Expression Management**: Users add expressions with categories, which are stored and tracked for usage statistics
+2. **Chat Practice**: Users engage in scenario-based conversations, with the system tracking expression usage and correctness
+3. **Progress Tracking**: User actions update statistics, streaks, and unlock achievements
+4. **Real-time Updates**: TanStack Query provides optimistic updates and cache invalidation for responsive UI
+
+## External Dependencies
+
+### Core Technologies
+- **Database**: Neon Database (serverless PostgreSQL)
+- **UI Components**: Radix UI primitives via Shadcn/ui
+- **Animation**: Framer Motion for smooth transitions
+- **Form Validation**: Zod for runtime type checking
+- **Date Handling**: date-fns for date manipulation
+
+### Development Tools
+- **Build**: Vite with React plugin
+- **Database**: Drizzle Kit for migrations and schema management
+- **TypeScript**: Full-stack type safety
+- **ESBuild**: Production bundling for server code
+
+## Deployment Strategy
+
+### Development Environment
+- Vite dev server with HMR for frontend
+- TSX for server development with auto-reload
+- Replit integration with development banner and cartographer
+
+### Production Build
+- Frontend: Vite builds to `dist/public/`
+- Backend: ESBuild bundles server to `dist/index.js`
+- Database: Drizzle migrations applied via `db:push` command
+- Static files served by Express in production
+
+### Environment Configuration
+- Database connection via `DATABASE_URL` environment variable
+- Development/production mode detection via `NODE_ENV`
+- Replit-specific features conditionally loaded
+
+## Changelog
+
+```
+Changelog:
+- July 03, 2025. Initial setup
+```
+
+## User Preferences
+
+```
+Preferred communication style: Simple, everyday language.
+```
