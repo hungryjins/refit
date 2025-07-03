@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertExpressionSchema, insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
+import { aiService } from "./ai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Expression routes
@@ -115,55 +116,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate conversation response
+  // Generate conversation response with AI service
   app.post("/api/chat/respond", async (req, res) => {
     try {
       const { message, sessionId } = req.body;
       
-      // Get user's expressions to create context-aware responses
+      // Get conversation context
       const expressions = await storage.getExpressions();
       const messages = await storage.getChatMessages(sessionId);
+      const session = await storage.getChatSessions();
+      const currentSession = session.find(s => s.id === sessionId);
       
-      // Check if user used any expression
-      let usedExpression = null;
-      let isCorrect = false;
-      
-      for (const expr of expressions) {
-        const messageText = message.toLowerCase();
-        const exprText = expr.text.toLowerCase();
-        
-        // Simple matching - could be improved with NLP
-        if (messageText.includes(exprText) || calculateSimilarity(messageText, exprText) > 0.6) {
-          usedExpression = expr;
-          isCorrect = true;
-          
-          // Update expression stats
-          await storage.updateExpressionStats(expr.id, isCorrect);
-          break;
-        }
+      // Build conversation history
+      const conversationHistory = messages.map(msg => ({
+        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        content: msg.content,
+      }));
+
+      // Prepare context for AI service
+      const context = {
+        userExpressions: expressions,
+        conversationHistory,
+        scenario: currentSession?.scenario || "General conversation",
+        messageCount: messages.filter(m => m.isUser).length,
+      };
+
+      // Generate AI response
+      const aiResponse = await aiService.generateResponseWithLLM(message, context);
+
+      // Update expression stats if expression was detected
+      if (aiResponse.detectedExpression) {
+        await storage.updateExpressionStats(
+          aiResponse.detectedExpression.id,
+          aiResponse.detectedExpression.isCorrect
+        );
       }
       
-      // Generate context-aware responses
-      const scenarios = getScenarioResponses(expressions, messages.length);
-      const response = scenarios[Math.floor(Math.random() * scenarios.length)];
-      
-      // Create suggestion for unused expressions
-      const unusedExpressions = expressions.filter(expr => 
-        !messages.some(msg => msg.expressionUsed === expr.id)
-      );
-      
-      const suggestionPrompt = unusedExpressions.length > 0 
-        ? `Try using: "${unusedExpressions[0].text}"`
-        : "Great conversation! Keep practicing with your expressions.";
-      
       res.json({ 
-        response, 
-        suggestionPrompt,
-        usedExpression: usedExpression?.id || null,
-        isCorrect 
+        response: aiResponse.response,
+        suggestionPrompt: aiResponse.suggestionPrompt,
+        usedExpression: aiResponse.detectedExpression?.id || null,
+        isCorrect: aiResponse.detectedExpression?.isCorrect || false,
+        contextualSuggestions: aiResponse.contextualSuggestions,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate response" });
+    }
+  });
+
+  // New endpoint for configuring AI service
+  app.post("/api/ai/config", async (req, res) => {
+    try {
+      const { openaiApiKey, anthropicApiKey, cohereApiKey, pineconeApiKey, customEndpoint } = req.body;
+      
+      aiService.updateConfig({
+        openaiApiKey,
+        anthropicApiKey,
+        cohereApiKey,
+        pineconeApiKey,
+        customEndpoint,
+      });
+      
+      res.json({ message: "AI configuration updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update AI configuration" });
+    }
+  });
+
+  // Endpoint for testing custom LLM integration
+  app.post("/api/ai/test", async (req, res) => {
+    try {
+      const { message, customEndpoint } = req.body;
+      
+      if (customEndpoint) {
+        // Test the custom endpoint
+        const testResponse = await fetch(customEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ test: true, message }),
+        });
+        
+        if (testResponse.ok) {
+          const data = await testResponse.json();
+          res.json({ success: true, response: data });
+        } else {
+          res.status(400).json({ success: false, error: 'Endpoint not reachable' });
+        }
+      } else {
+        res.status(400).json({ success: false, error: 'No endpoint provided' });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Failed to test endpoint' });
     }
   });
 

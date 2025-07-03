@@ -224,6 +224,9 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Keep using MemStorage for now due to Firebase setup complexity
-// Will switch to Firebase once properly configured
+// Firebase는 권한 설정이 필요합니다. 
+// Firestore 보안 규칙을 설정한 후 다시 활성화할 수 있습니다.
+// import { FirebaseStorage } from "./firebase-storage";
+// export const storage = new FirebaseStorage();
+
 export const storage = new MemStorage();

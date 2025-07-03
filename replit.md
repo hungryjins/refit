@@ -94,7 +94,10 @@ This is a full-stack English conversation practice application built with React,
 
 ```
 Changelog:
-- July 03, 2025. Initial setup
+- July 03, 2025. Initial setup with English conversation practice app
+- July 03, 2025. Firebase integration prepared with AI service architecture
+- July 03, 2025. Added LLM/RAG/Vector DB integration framework
+- July 03, 2025. Created AI settings interface for external service configuration
 ```
 
 ## User Preferences

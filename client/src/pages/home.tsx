@@ -4,9 +4,10 @@ import NavigationHeader from "@/components/navigation-header";
 import ChatInterface from "@/components/chat-interface";
 import ExpressionManager from "@/components/expression-manager";
 import ProgressRepository from "@/components/progress-repository";
+import AISettings from "@/components/ai-settings";
 import FloatingActionButton from "@/components/floating-action-button";
 
-type Tab = "chat" | "expressions" | "repository";
+type Tab = "chat" | "expressions" | "repository" | "ai-settings";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
@@ -15,6 +16,7 @@ export default function Home() {
     { id: "chat", label: "Practice Chat", icon: "💬" },
     { id: "expressions", label: "My Expressions", icon: "📚" },
     { id: "repository", label: "Progress", icon: "📊" },
+    { id: "ai-settings", label: "AI Settings", icon: "🤖" },
   ] as const;
 
   return (
@@ -62,6 +64,7 @@ export default function Home() {
           {activeTab === "chat" && <ChatInterface />}
           {activeTab === "expressions" && <ExpressionManager />}
           {activeTab === "repository" && <ProgressRepository />}
+          {activeTab === "ai-settings" && <AISettings />}
         </motion.div>
       </div>
 
