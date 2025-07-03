@@ -139,7 +139,20 @@ export default function ChatInterface() {
           message,
           sessionId,
         });
-        const { response: botResponse } = await response.json();
+        const responseData = await response.json();
+        const { response: botResponse, usedExpression, isCorrect } = responseData;
+        
+        // Store expression usage in the user message
+        if (usedExpression) {
+          // Update the last user message with expression data
+          await apiRequest("POST", "/api/chat/messages", {
+            sessionId,
+            content: message,
+            isUser: true,
+            expressionUsed: usedExpression,
+            isCorrect,
+          });
+        }
         
         setTimeout(async () => {
           await apiRequest("POST", "/api/chat/messages", {
@@ -152,6 +165,7 @@ export default function ChatInterface() {
           
           setIsTyping(false);
           queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
         }, 2000);
       } catch (error) {
         setIsTyping(false);

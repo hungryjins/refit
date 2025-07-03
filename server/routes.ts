@@ -118,24 +118,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate conversation response
   app.post("/api/chat/respond", async (req, res) => {
     try {
-      const { message, sessionId, expressionUsed } = req.body;
+      const { message, sessionId } = req.body;
       
-      // Generate AI response based on conversation context
-      const scenarios = [
-        "That's great! How would you describe your experience here?",
-        "Perfect! Now, what would you say if you wanted to ask about pricing?",
-        "Excellent! Can you tell me about your preferences?",
-        "Wonderful! How would you express gratitude in this situation?",
-        "Nice! What would you say if you needed to make a request?",
-      ];
+      // Get user's expressions to create context-aware responses
+      const expressions = await storage.getExpressions();
+      const messages = await storage.getChatMessages(sessionId);
       
+      // Check if user used any expression
+      let usedExpression = null;
+      let isCorrect = false;
+      
+      for (const expr of expressions) {
+        const messageText = message.toLowerCase();
+        const exprText = expr.text.toLowerCase();
+        
+        // Simple matching - could be improved with NLP
+        if (messageText.includes(exprText) || calculateSimilarity(messageText, exprText) > 0.6) {
+          usedExpression = expr;
+          isCorrect = true;
+          
+          // Update expression stats
+          await storage.updateExpressionStats(expr.id, isCorrect);
+          break;
+        }
+      }
+      
+      // Generate context-aware responses
+      const scenarios = getScenarioResponses(expressions, messages.length);
       const response = scenarios[Math.floor(Math.random() * scenarios.length)];
       
-      res.json({ response, suggestionPrompt: "Try using another expression from your collection!" });
+      // Create suggestion for unused expressions
+      const unusedExpressions = expressions.filter(expr => 
+        !messages.some(msg => msg.expressionUsed === expr.id)
+      );
+      
+      const suggestionPrompt = unusedExpressions.length > 0 
+        ? `Try using: "${unusedExpressions[0].text}"`
+        : "Great conversation! Keep practicing with your expressions.";
+      
+      res.json({ 
+        response, 
+        suggestionPrompt,
+        usedExpression: usedExpression?.id || null,
+        isCorrect 
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate response" });
     }
   });
+
+  function calculateSimilarity(str1: string, str2: string): number {
+    const words1 = str1.split(' ');
+    const words2 = str2.split(' ');
+    const commonWords = words1.filter(word => words2.includes(word));
+    return commonWords.length / Math.max(words1.length, words2.length);
+  }
+
+  function getScenarioResponses(expressions: any[], messageCount: number): string[] {
+    if (messageCount < 3) {
+      return [
+        "That's a great start! Tell me more about what you're thinking.",
+        "Perfect! I can see you're comfortable with conversation. What would you like to discuss next?",
+        "Excellent! Now, let's continue this conversation. How would you respond in this situation?",
+      ];
+    } else if (messageCount < 6) {
+      return [
+        "Wonderful! You're really getting into the flow. What's your opinion on this topic?",
+        "Great! Now let's try a different angle. How would you express agreement or disagreement?",
+        "Nice work! Let's practice asking questions. What would you like to know more about?",
+      ];
+    } else {
+      return [
+        "Amazing progress! You're having a natural conversation. Let's wrap up - how would you say goodbye?",
+        "Fantastic! You've used several expressions well. How would you summarize our conversation?",
+        "Excellent practice session! What did you learn from our conversation today?",
+      ];
+    }
+  }
 
   const httpServer = createServer(app);
   return httpServer;

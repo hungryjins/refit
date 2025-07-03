@@ -64,6 +64,34 @@ export class MemStorage implements IStorage {
       lastPracticeDate: new Date(),
       overallAccuracy: 84,
     };
+
+    // Add some sample expressions for demonstration
+    this.addSampleExpressions();
+  }
+
+  private addSampleExpressions() {
+    const sampleExpressions = [
+      { text: "Could you please help me with this?", category: "asking" },
+      { text: "Thank you so much for your assistance", category: "compliment" },
+      { text: "I'd like to order a coffee, please", category: "ordering" },
+      { text: "Excuse me, where is the nearest station?", category: "asking" },
+      { text: "Nice to meet you", category: "greeting" },
+      { text: "Have a wonderful day", category: "greeting" },
+    ];
+
+    sampleExpressions.forEach(expr => {
+      const id = this.currentId++;
+      const expression: Expression = {
+        id,
+        text: expr.text,
+        category: expr.category,
+        correctCount: Math.floor(Math.random() * 5),
+        totalCount: Math.floor(Math.random() * 8) + 2,
+        lastUsed: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null,
+        createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+      };
+      this.expressions.set(id, expression);
+    });
   }
 
   async getExpressions(): Promise<Expression[]> {
@@ -79,8 +107,9 @@ export class MemStorage implements IStorage {
   async createExpression(insertExpression: InsertExpression): Promise<Expression> {
     const id = this.currentId++;
     const expression: Expression = {
-      ...insertExpression,
       id,
+      text: insertExpression.text,
+      category: insertExpression.category || null,
       correctCount: 0,
       totalCount: 0,
       lastUsed: null,
@@ -119,11 +148,11 @@ export class MemStorage implements IStorage {
 
   async createChatSession(insertSession: InsertChatSession): Promise<ChatSession> {
     // End any existing active sessions
-    for (const session of this.chatSessions.values()) {
+    Array.from(this.chatSessions.values()).forEach(session => {
       if (session.isActive) {
         session.isActive = false;
       }
-    }
+    });
 
     const id = this.currentId++;
     const session: ChatSession = {
@@ -156,8 +185,12 @@ export class MemStorage implements IStorage {
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
     const id = this.currentId++;
     const message: ChatMessage = {
-      ...insertMessage,
       id,
+      sessionId: insertMessage.sessionId,
+      content: insertMessage.content,
+      isUser: insertMessage.isUser,
+      expressionUsed: insertMessage.expressionUsed || null,
+      isCorrect: insertMessage.isCorrect || null,
       createdAt: new Date(),
     };
     this.chatMessages.set(id, message);
@@ -191,4 +224,6 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Keep using MemStorage for now due to Firebase setup complexity
+// Will switch to Firebase once properly configured
 export const storage = new MemStorage();
