@@ -103,11 +103,19 @@ const translations = {
     'expressions.update': 'Update',
     'expressions.confirm.delete': 'Are you sure you want to delete this expression?',
     'expressions.delete.warning': 'This action cannot be undone.',
+    'expressions.no.expressions.yet': 'No expressions yet',
+    'expressions.start.adding': 'Start by adding your first English expression above!',
+    'expressions.edit.title': 'Edit Expression',
+    'expressions.edit.description': 'You can change the text or category of the expression.',
+    'expressions.text': 'Expression Text',
+    'expressions.enter.english': 'Enter English expression...',
     
     // Categories
     'categories.add': 'Add Category',
     'categories.name': 'Category Name',
     'categories.enter.name': 'Enter category name...',
+    'categories.edit.title': 'Edit Category',
+    'categories.edit.description': 'You can change the name, icon, and color of the category.',
     
     // Progress
     'progress.title': 'Progress Repository',
@@ -222,11 +230,19 @@ const translations = {
     'expressions.update': 'Update',
     'expressions.confirm.delete': 'Are you sure you want to delete this expression?',
     'expressions.delete.warning': 'This action cannot be undone.',
+    'expressions.no.expressions.yet': 'No expressions yet',
+    'expressions.start.adding': 'Start by adding your first English expression above!',
+    'expressions.edit.title': '표현 수정',
+    'expressions.edit.description': '표현의 텍스트나 카테고리를 변경할 수 있습니다.',
+    'expressions.text': '표현 텍스트',
+    'expressions.enter.english': '영어 표현을 입력하세요',
     
     // Categories
     'categories.add': '카테고리 추가',
     'categories.name': '카테고리 이름',
     'categories.enter.name': '카테고리 이름 입력...',
+    'categories.edit.title': '카테고리 수정',
+    'categories.edit.description': '카테고리의 이름, 아이콘, 색상을 변경할 수 있습니다.',
     
     // Progress
     'progress.title': '진행 상황',
@@ -267,7 +283,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: string): string => {
-    return translations[language][key] || key;
+    const translation = translations[language]?.[key];
+    if (translation) {
+      return translation;
+    }
+    // Fallback to English if key not found in current language
+    if (language !== 'en') {
+      return translations.en[key] || key;
+    }
+    // Debug logging for missing keys
+    if (process.env.NODE_ENV === 'development' && !translations.en[key]) {
+      console.warn(`Missing translation key: ${key}`);
+    }
+    return key;
   };
 
   return (

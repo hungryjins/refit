@@ -530,10 +530,10 @@ export default function ExpressionManager() {
         >
           <div className="text-6xl mb-4">📚</div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            No expressions yet
+            {t('expressions.no.expressions.yet')}
           </h3>
           <p className="text-gray-600 mb-6">
-            Start by adding your first English expression above!
+            {t('expressions.start.adding')}
           </p>
         </motion.div>
       )}
@@ -542,28 +542,28 @@ export default function ExpressionManager() {
       <Dialog open={!!editingExpression} onOpenChange={() => setEditingExpression(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>표현 수정</DialogTitle>
+            <DialogTitle>{t('expressions.edit.title')}</DialogTitle>
             <DialogDescription>
-              표현의 텍스트나 카테고리를 변경할 수 있습니다.
+              {t('expressions.edit.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">표현 텍스트</label>
+              <label className="block text-sm font-medium mb-2">{t('expressions.text')}</label>
               <Input
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                placeholder="영어 표현을 입력하세요"
+                placeholder={t('expressions.enter.english')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">카테고리</label>
+              <label className="block text-sm font-medium mb-2">{t('expressions.category')}</label>
               <Select value={editCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setEditCategoryId(value === "uncategorized" ? null : parseInt(value))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="카테고리 선택" />
+                  <SelectValue placeholder={t('expressions.select.category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="uncategorized">미분류</SelectItem>
+                  <SelectItem value="uncategorized">{t('expressions.uncategorized')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -574,10 +574,10 @@ export default function ExpressionManager() {
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleUpdateExpression} className="flex-1">
-                수정
+                {t('expressions.update')}
               </Button>
               <Button variant="outline" onClick={() => setEditingExpression(null)} className="flex-1">
-                취소
+                {t('expressions.cancel')}
               </Button>
             </div>
           </div>
@@ -588,22 +588,22 @@ export default function ExpressionManager() {
       <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>카테고리 수정</DialogTitle>
+            <DialogTitle>{t('categories.edit.title')}</DialogTitle>
             <DialogDescription>
-              카테고리의 이름, 아이콘, 색상을 변경할 수 있습니다.
+              {t('categories.edit.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">카테고리 이름</label>
+              <label className="block text-sm font-medium mb-2">{t('expressions.category.name')}</label>
               <Input
                 value={editCategoryName}
                 onChange={(e) => setEditCategoryName(e.target.value)}
-                placeholder="카테고리 이름"
+                placeholder={t('expressions.category.placeholder')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">아이콘</label>
+              <label className="block text-sm font-medium mb-2">{t('expressions.icon')}</label>
               <Input
                 value={editCategoryIcon}
                 onChange={(e) => setEditCategoryIcon(e.target.value)}
@@ -612,7 +612,7 @@ export default function ExpressionManager() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">색상 테마</label>
+              <label className="block text-sm font-medium mb-2">{t('expressions.color.theme')}</label>
               <div className="grid grid-cols-4 gap-2">
                 {colorOptions.map((color) => (
                   <button
@@ -627,10 +627,10 @@ export default function ExpressionManager() {
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleUpdateCategory} className="flex-1">
-                수정
+                {t('expressions.update')}
               </Button>
               <Button variant="outline" onClick={() => setEditingCategory(null)} className="flex-1">
-                취소
+                {t('expressions.cancel')}
               </Button>
             </div>
           </div>
