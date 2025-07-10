@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, Target, Award } from "lucide-react";
+import { CheckCircle, Clock, Target, Award, X } from "lucide-react";
 import type { Expression } from "@shared/schema";
 
 interface SessionCompleteModalProps {
@@ -107,7 +107,11 @@ export default function SessionCompleteModal({
                   className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    {result.correctUsage ? (
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <X className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    )}
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                       "{result.text}"
                     </span>
@@ -116,11 +120,12 @@ export default function SessionCompleteModal({
                     <Badge variant={result.correctUsage ? "default" : "secondary"}>
                       {result.attempts}회 시도
                     </Badge>
-                    {result.correctUsage && (
-                      <Badge variant="default" className="bg-green-600">
-                        완료
-                      </Badge>
-                    )}
+                    <Badge 
+                      variant={result.correctUsage ? "default" : "destructive"} 
+                      className={result.correctUsage ? "bg-green-600" : "bg-red-600"}
+                    >
+                      {result.correctUsage ? "성공" : "실패"}
+                    </Badge>
                   </div>
                 </div>
               ))}
