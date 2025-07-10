@@ -252,22 +252,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (selectedExpressions && selectedExpressions.length > 0) {
         // Check if user message contains any of the selected expressions
-        console.log("Checking message:", message);
-        console.log("Selected expressions:", selectedExpressions);
-        console.log("Target expressions:", targetExpressions.map(e => ({ id: e.id, text: e.text })));
+        // Remove debug logs for cleaner output
+        // console.log("Checking message:", message);
+        // console.log("Selected expressions:", selectedExpressions);
+        // console.log("Target expressions:", targetExpressions.map(e => ({ id: e.id, text: e.text })));
         
         for (const exprId of selectedExpressions) {
           const expr = targetExpressions.find(e => e.id === exprId);
           if (expr) {
-            console.log(`Checking expression: "${expr.text}" against message: "${message}"`);
             const similarity = calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase());
-            console.log(`Similarity: ${similarity}`);
             
             if (similarity > 0.8) { // Increased threshold to prevent false positives
               detectedExpression = expr;
               isCorrect = similarity >= 1.0; // Only exact matches are correct
-              
-              console.log(`Expression detected: ${expr.text}, isCorrect: ${isCorrect}`);
               
               if (isCorrect) {
                 feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
@@ -429,11 +426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const clean1 = str1.replace(/[^\w\s]/g, '').toLowerCase().trim();
     const clean2 = str2.replace(/[^\w\s]/g, '').toLowerCase().trim();
     
-    console.log(`Comparing: "${clean1}" vs "${clean2}"`);
-    
     // Check for exact phrase match first (target expression must be contained in user message)
     if (clean1.includes(clean2)) {
-      console.log("Exact phrase match found!");
       return 1.0;
     }
     
@@ -441,17 +435,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const words1 = clean1.split(/\s+/).filter(w => w.length > 2); // Filter out very short words
     const words2 = clean2.split(/\s+/).filter(w => w.length > 2);
     
-    console.log(`Words1: [${words1.join(', ')}]`);
-    console.log(`Words2: [${words2.join(', ')}]`);
-    
     if (words1.length === 0 || words2.length === 0) return 0;
     
     // Count exact word matches
     const exactMatches = words2.filter(word => words1.includes(word));
-    console.log(`Exact matches: [${exactMatches.join(', ')}]`);
-    
     const similarity = words2.length > 0 ? exactMatches.length / words2.length : 0;
-    console.log(`Calculated similarity: ${similarity}`);
     
     // Return similarity only if at least 80% of important words match
     return similarity >= 0.8 ? similarity : 0;

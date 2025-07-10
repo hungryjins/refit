@@ -143,7 +143,7 @@ export default function ChatInterface() {
       // Generate bot response
       try {
         const response = await apiRequest("POST", "/api/chat/respond", {
-          message,
+          message: content, // Use the actual message content instead of the state variable
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
