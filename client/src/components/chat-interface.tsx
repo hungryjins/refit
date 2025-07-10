@@ -148,6 +148,8 @@ export default function ChatInterface() {
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
         
+        console.log("User message content:", userMessage.content);
+        
         const response = await apiRequest("POST", "/api/chat/respond", {
           message: userMessage.content, // Use the actual message content from the created message
           sessionId,

@@ -201,6 +201,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { message, sessionId, selectedExpressions } = req.body;
       
+      console.log("Extracted message:", message);
+      console.log("Message type:", typeof message);
+      
+      if (!message) {
+        return res.status(400).json({ 
+          message: "Message is required",
+          error: "No message provided in request body"
+        });
+      }
+      
       // Get conversation context
       const expressions = await storage.getExpressions();
       const messages = await storage.getChatMessages(sessionId);
@@ -262,7 +272,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const exprId of selectedExpressions) {
           const expr = targetExpressions.find(e => e.id === exprId);
           if (expr) {
-            const similarity = calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase());
+            const similarity = calculateSimilarity(
+              (message || "").toLowerCase(), 
+              (expr.text || "").toLowerCase()
+            );
             
             if (similarity > 0.8) { // Increased threshold to prevent false positives
               detectedExpression = expr;
