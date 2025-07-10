@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -229,11 +229,12 @@ export default function ExpressionManager() {
               Category (Optional)
             </label>
             <div className="flex gap-2">
-              <Select value={selectedCategoryId?.toString() || ""} onValueChange={(value) => setSelectedCategoryId(value ? parseInt(value) : null)}>
+              <Select value={selectedCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setSelectedCategoryId(value === "uncategorized" ? null : parseInt(value))}>
                 <SelectTrigger className="flex-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl py-3 px-4 text-white border-white border-opacity-30">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="uncategorized">미분류</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -251,6 +252,9 @@ export default function ExpressionManager() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Create New Category</DialogTitle>
+                    <DialogDescription>
+                      새로운 카테고리를 만들어 표현들을 분류해보세요.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -537,6 +541,9 @@ export default function ExpressionManager() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>표현 수정</DialogTitle>
+            <DialogDescription>
+              표현의 텍스트나 카테고리를 변경할 수 있습니다.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -549,12 +556,12 @@ export default function ExpressionManager() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">카테고리</label>
-              <Select value={editCategoryId?.toString() || ""} onValueChange={(value) => setEditCategoryId(value ? parseInt(value) : null)}>
+              <Select value={editCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setEditCategoryId(value === "uncategorized" ? null : parseInt(value))}>
                 <SelectTrigger>
                   <SelectValue placeholder="카테고리 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">미분류</SelectItem>
+                  <SelectItem value="uncategorized">미분류</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -580,6 +587,9 @@ export default function ExpressionManager() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>카테고리 수정</DialogTitle>
+            <DialogDescription>
+              카테고리의 이름, 아이콘, 색상을 변경할 수 있습니다.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
