@@ -158,6 +158,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/chat/messages/:id", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      const { expressionUsed, isCorrect } = req.body;
+      
+      const updatedMessage = await storage.updateChatMessage(messageId, {
+        expressionUsed,
+        isCorrect,
+      });
+      
+      res.json(updatedMessage);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update message" });
+    }
+  });
+
   // User stats routes
   app.get("/api/stats", async (req, res) => {
     try {
@@ -208,32 +224,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messageCount: messages.filter(m => m.isUser).length,
       };
 
-      // Generate AI response
-      const aiResponse = await aiService.generateResponseWithLLM(message, context);
+      // Manual expression detection for selected expressions
+      let detectedExpression = null;
+      let isCorrect = false;
+      
+      if (selectedExpressions && selectedExpressions.length > 0) {
+        // Check if user message contains any of the selected expressions
+        for (const exprId of selectedExpressions) {
+          const expr = targetExpressions.find(e => e.id === exprId);
+          if (expr) {
+            const similarity = calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase());
+            if (similarity > 0.6) {
+              detectedExpression = expr;
+              isCorrect = similarity > 0.8;
+              
+              // Update expression stats
+              await storage.updateExpressionStats(expr.id, isCorrect);
+              break;
+            }
+          }
+        }
+      }
 
-      // Update expression stats if expression was detected
-      if (aiResponse.detectedExpression) {
+      // Generate AI response using Gemini or fallback
+      let aiResponse;
+      try {
+        aiResponse = await aiService.generateResponseWithLLM(message, context);
+      } catch (error) {
+        console.log("AI service failed, using fallback response");
+        // Fallback response system
+        const scenarioResponses = selectedExpressions && selectedExpressions.length > 0
+          ? getScenarioResponsesForSelectedExpressions(targetExpressions, messages.filter(m => m.isUser).length)
+          : getScenarioResponses(targetExpressions, messages.filter(m => m.isUser).length);
+        
+        aiResponse = {
+          response: scenarioResponses[Math.floor(Math.random() * scenarioResponses.length)],
+          suggestionPrompt: "",
+          detectedExpression: detectedExpression ? {
+            id: detectedExpression.id,
+            confidence: 0.8,
+            isCorrect
+          } : undefined,
+          contextualSuggestions: []
+        };
+      }
+
+      // Update expression stats if expression was detected by AI service
+      if (aiResponse.detectedExpression && !detectedExpression) {
+        detectedExpression = targetExpressions.find(e => e.id === aiResponse.detectedExpression.id);
+        isCorrect = aiResponse.detectedExpression.isCorrect;
         await storage.updateExpressionStats(
           aiResponse.detectedExpression.id,
           aiResponse.detectedExpression.isCorrect
         );
       }
 
+      // Check session completion if using selected expressions
+      let sessionComplete = false;
+      if (selectedExpressions && selectedExpressions.length > 0) {
+        const usedExpressions = messages
+          .filter(m => m.isUser && m.expressionUsed)
+          .map(m => m.expressionUsed);
+        
+        if (detectedExpression) {
+          usedExpressions.push(detectedExpression.id);
+        }
+        
+        const uniqueUsedExpressions = [...new Set(usedExpressions)];
+        sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
+      }
+
       // Save the AI response as a chat message
       await storage.createChatMessage({
         sessionId: sessionId,
-        content: aiResponse.response,
+        content: sessionComplete 
+          ? `${aiResponse.response}\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`
+          : aiResponse.response,
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
       });
+
+      // End session if complete
+      if (sessionComplete) {
+        await storage.endChatSession(sessionId);
+      }
       
       res.json({ 
         response: aiResponse.response,
-        suggestionPrompt: aiResponse.suggestionPrompt,
-        usedExpression: aiResponse.detectedExpression?.id || null,
-        isCorrect: aiResponse.detectedExpression?.isCorrect || false,
-        contextualSuggestions: aiResponse.contextualSuggestions,
+        suggestionPrompt: aiResponse.suggestionPrompt || "",
+        usedExpression: detectedExpression?.id || null,
+        isCorrect: isCorrect,
+        contextualSuggestions: aiResponse.contextualSuggestions || [],
+        sessionComplete,
+        detectedExpression: detectedExpression ? {
+          id: detectedExpression.id,
+          text: detectedExpression.text,
+          isCorrect
+        } : null
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate response" });
@@ -287,10 +375,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   function calculateSimilarity(str1: string, str2: string): number {
-    const words1 = str1.split(' ');
-    const words2 = str2.split(' ');
+    // Remove punctuation and convert to lowercase
+    const clean1 = str1.replace(/[^\w\s]/g, '').toLowerCase();
+    const clean2 = str2.replace(/[^\w\s]/g, '').toLowerCase();
+    
+    // Check for exact match first
+    if (clean1.includes(clean2) || clean2.includes(clean1)) {
+      return 1.0;
+    }
+    
+    // Word-based similarity
+    const words1 = clean1.split(/\s+/).filter(w => w.length > 1);
+    const words2 = clean2.split(/\s+/).filter(w => w.length > 1);
+    
+    if (words1.length === 0 || words2.length === 0) return 0;
+    
     const commonWords = words1.filter(word => words2.includes(word));
-    return commonWords.length / Math.max(words1.length, words2.length);
+    const similarity = commonWords.length / Math.max(words1.length, words2.length);
+    
+    // Lower threshold for shorter expressions
+    return similarity;
   }
 
   function getScenarioResponsesForSelectedExpressions(expressions: any[], messageCount: number): string[] {

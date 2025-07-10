@@ -44,6 +44,7 @@ export interface IStorage {
   // Chat Messages
   getChatMessages(sessionId: number): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  updateChatMessage(id: number, updates: Partial<InsertChatMessage>): Promise<ChatMessage>;
   
   // User Stats
   getUserStats(): Promise<UserStats>;
@@ -304,6 +305,20 @@ export class MemStorage implements IStorage {
     };
     this.chatMessages.set(id, message);
     return message;
+  }
+
+  async updateChatMessage(id: number, updates: Partial<InsertChatMessage>): Promise<ChatMessage> {
+    const existingMessage = this.chatMessages.get(id);
+    if (!existingMessage) {
+      throw new Error("Message not found");
+    }
+
+    const updated: ChatMessage = {
+      ...existingMessage,
+      ...updates,
+    };
+    this.chatMessages.set(id, updated);
+    return updated;
   }
 
   async getUserStats(): Promise<UserStats> {

@@ -116,7 +116,7 @@ export default function ChatInterface() {
         const sessionId = newSession.id;
         
         // Send user message
-        await apiRequest("POST", "/api/chat/messages", {
+        const userMessage = await apiRequest("POST", "/api/chat/messages", {
           sessionId,
           content,
           isUser: true,
@@ -124,9 +124,9 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
-        return sessionId;
+        return { sessionId, userMessage };
       } else {
-        await apiRequest("POST", "/api/chat/messages", {
+        const userMessage = await apiRequest("POST", "/api/chat/messages", {
           sessionId: activeSession.id,
           content,
           isUser: true,
@@ -134,10 +134,10 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
-        return activeSession.id;
+        return { sessionId: activeSession.id, userMessage };
       }
     },
-    onSuccess: async (sessionId) => {
+    onSuccess: async ({ sessionId, userMessage }) => {
       setIsTyping(true);
       
       // Generate bot response
@@ -149,9 +149,34 @@ export default function ChatInterface() {
         });
         const responseData = await response.json();
         
+        // Update user message with detected expression
+        if (responseData.detectedExpression) {
+          const userMessageData = await userMessage.json();
+          await apiRequest("PATCH", `/api/chat/messages/${userMessageData.id}`, {
+            expressionUsed: responseData.detectedExpression.id,
+            isCorrect: responseData.detectedExpression.isCorrect,
+          });
+        }
+        
+        // Check if session is complete
+        if (responseData.sessionComplete) {
+          toast({
+            title: "🎉 연습 완료!",
+            description: "모든 표현을 성공적으로 사용했습니다!",
+          });
+          
+          // Reset to setup mode after a delay
+          setTimeout(() => {
+            setIsSetupMode(true);
+            setSelectedCategory(null);
+            setSelectedExpressions(new Set());
+          }, 3000);
+        }
+        
         // AI response is already saved by the backend, so refresh immediately
         queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${sessionId}/messages`] });
         queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         
         // Add a small delay before stopping typing indicator for better UX
         setTimeout(() => {
@@ -271,7 +296,7 @@ export default function ChatInterface() {
     setSelectedExpressions(new Set());
   };
 
-  const expressionsUsed = messages.filter(m => m.expressionUsed).length;
+  const expressionsUsed = messages.filter(m => m.isUser && m.expressionUsed).length;
   const totalExpressions = Array.from(selectedExpressions).length;
 
   if (isSetupMode) {
