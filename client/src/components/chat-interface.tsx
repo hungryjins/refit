@@ -161,11 +161,13 @@ export default function ChatInterface() {
         console.log("User message content:", userMessage.content);
         console.log("Original content:", originalContent);
         
-        const response = await apiRequest("POST", "/api/chat/respond", {
+        const responseObj = await apiRequest("POST", "/api/chat/respond", {
           message: messageContent, // Use either the saved content or original content
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
+        
+        const response = await responseObj.json();
         
         console.log("Received response:", response);
         console.log("Response keys:", Object.keys(response));
