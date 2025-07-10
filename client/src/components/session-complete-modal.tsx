@@ -51,12 +51,26 @@ export default function SessionCompleteModal({
 
         <div className="space-y-6">
           {/* 축하 메시지 */}
-          <div className="text-center bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-            <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
-              🎉 축하합니다!
+          <div className={`text-center p-4 rounded-lg border ${
+            accuracy === 100 
+              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+              : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+          }`}>
+            <h3 className={`text-lg font-semibold mb-2 ${
+              accuracy === 100 
+                ? "text-green-800 dark:text-green-200"
+                : "text-blue-800 dark:text-blue-200"
+            }`}>
+              {accuracy === 100 ? "🎉 축하합니다!" : "📚 연습 완료!"}
             </h3>
-            <p className="text-green-700 dark:text-green-300">
-              모든 표현을 성공적으로 연습했습니다!
+            <p className={accuracy === 100 
+              ? "text-green-700 dark:text-green-300"
+              : "text-blue-700 dark:text-blue-300"
+            }>
+              {accuracy === 100 
+                ? "모든 표현을 성공적으로 연습했습니다!"
+                : "모든 표현을 연습했습니다. 계속 연습하면 더 좋아질 거예요!"
+              }
             </p>
           </div>
 
@@ -133,12 +147,23 @@ export default function SessionCompleteModal({
           </div>
 
           {/* 성취 메시지 */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className={`p-4 rounded-lg border ${
+            accuracy === 100 
+              ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800"
+              : accuracy >= 70
+              ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800"
+              : "bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 border-orange-200 dark:border-orange-800"
+          }`}>
             <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              🌟 훌륭한 성과입니다!
+              {accuracy === 100 
+                ? "🌟 훌륭한 성과입니다!"
+                : accuracy >= 70
+                ? "👍 좋은 성과입니다!"
+                : "💪 연습이 도움이 됐습니다!"
+              }
             </h4>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              {accuracy >= 90 
+              {accuracy === 100 
                 ? "완벽한 정확도로 모든 표현을 마스터했습니다!"
                 : accuracy >= 70
                 ? "좋은 정확도로 표현들을 잘 연습했습니다!"
