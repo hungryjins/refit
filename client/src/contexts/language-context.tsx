@@ -12,8 +12,9 @@ const translations = {
   en: {
     // Navigation
     'nav.expressions': 'Expressions',
-    'nav.practice': 'Practice',
+    'nav.practice': 'Practice', 
     'nav.progress': 'Progress',
+    'nav.streak': 'Streak',
     
     // Session Complete Modal
     'session.complete': 'Practice Complete!',
@@ -95,7 +96,7 @@ const translations = {
     'expressions.creating': 'Creating...',
     'expressions.create': 'Create Category',
     'expressions.saving': 'Saving...',
-    'expressions.save.expression': 'Save Expression',
+    'expressions.save.expression': '💾 Save Expression',
     'expressions.never.used': 'Never used',
     'expressions.last.used': 'Last used',
     'expressions.accuracy': 'Accuracy',
@@ -132,6 +133,7 @@ const translations = {
     'nav.expressions': '표현 관리',
     'nav.practice': '연습하기',
     'nav.progress': '진행상황',
+    'nav.streak': '연속 기록',
     
     // Session Complete Modal
     'session.complete': '연습 완료!',
@@ -213,7 +215,7 @@ const translations = {
     'expressions.creating': 'Creating...',
     'expressions.create': 'Create Category',
     'expressions.saving': 'Saving...',
-    'expressions.save.expression': '💾 Save Expression',
+    'expressions.save.expression': '💾 표현 저장',
     'expressions.never.used': 'Never used',
     'expressions.last.used': 'Last used',
     'expressions.accuracy': 'Accuracy',

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 import type { UserStats } from "@shared/schema";
 import LanguageSelector from "@/components/language-selector";
 
@@ -7,6 +8,7 @@ export default function NavigationHeader() {
   const { data: stats } = useQuery<UserStats>({
     queryKey: ["/api/stats"],
   });
+  const { t } = useLanguage();
 
   return (
     <header className="gradient-primary text-white sticky top-0 z-50 shadow-lg">
@@ -28,14 +30,14 @@ export default function NavigationHeader() {
           <div className="flex items-center space-x-3">
             <LanguageSelector />
             <div className="text-right">
-              <p className="text-xs opacity-90">Streak</p>
+              <p className="text-xs opacity-90">{t('nav.streak')}</p>
               <motion.p 
                 className="font-bold flex items-center gap-1"
                 initial={{ scale: 1 }}
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {stats?.currentStreak || 0} days 🔥
+                {stats?.currentStreak || 0} {t('progress.days')} 🔥
               </motion.p>
             </div>
             <motion.div 
