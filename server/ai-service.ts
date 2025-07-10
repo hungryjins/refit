@@ -1,4 +1,5 @@
 import type { Expression } from "@shared/schema";
+import { GoogleGenAI } from "@google/genai";
 
 export interface AIServiceConfig {
   openaiApiKey?: string;
@@ -28,9 +29,11 @@ export interface AIResponse {
 
 export class AIService {
   private config: AIServiceConfig;
+  private geminiAI: GoogleGenAI;
 
   constructor(config: AIServiceConfig = {}) {
     this.config = config;
+    this.geminiAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
   }
 
   async generateResponse(
@@ -56,10 +59,10 @@ export class AIService {
     userMessage: string,
     context: ConversationContext
   ): Promise<AIResponse> {
-    // This method will be implemented when you provide LLM integration
-    // It can use OpenAI, Anthropic, or custom endpoints
-    
-    if (this.config.openaiApiKey) {
+    // Use Gemini AI as primary LLM
+    if (process.env.GEMINI_API_KEY) {
+      return this.generateWithGemini(userMessage, context);
+    } else if (this.config.openaiApiKey) {
       return this.generateWithOpenAI(userMessage, context);
     } else if (this.config.anthropicApiKey) {
       return this.generateWithAnthropic(userMessage, context);
@@ -69,6 +72,39 @@ export class AIService {
     
     // Fallback to rule-based system
     return this.generateResponse(userMessage, context);
+  }
+
+  private async generateWithGemini(
+    userMessage: string,
+    context: ConversationContext
+  ): Promise<AIResponse> {
+    try {
+      const prompt = this.buildGeminiPrompt(userMessage, context);
+      
+      const response = await this.geminiAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      const aiResponse = response.text || "I didn't understand that. Could you try again?";
+      
+      // Detect expression usage in user message
+      const detectedExpression = this.detectExpressionUsage(userMessage, context.userExpressions);
+      
+      // Generate suggestion based on context
+      const suggestionPrompt = this.generateSuggestion(context);
+
+      return {
+        response: aiResponse,
+        suggestionPrompt,
+        detectedExpression,
+        contextualSuggestions: this.getContextualSuggestions(context),
+      };
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      // Fallback to rule-based system
+      return this.generateResponse(userMessage, context);
+    }
   }
 
   private async generateWithOpenAI(
@@ -129,6 +165,40 @@ export class AIService {
     
     // Fallback to rule-based system
     return this.generateResponse(userMessage, context);
+  }
+
+  private buildGeminiPrompt(userMessage: string, context: ConversationContext): string {
+    const expressionsList = context.userExpressions
+      .map(expr => `- "${expr.text}" (${expr.category || 'general'})`)
+      .join('\n');
+
+    const conversationHistory = context.conversationHistory
+      .slice(-4) // Last 4 messages for context
+      .map(msg => `${msg.role}: ${msg.content}`)
+      .join('\n');
+
+    return `You are Refit, an encouraging English conversation practice assistant. Help users improve their speaking skills naturally.
+
+User's expressions to practice:
+${expressionsList}
+
+Recent conversation:
+${conversationHistory}
+
+Scenario: ${context.scenario}
+Message count: ${context.messageCount}
+
+User said: "${userMessage}"
+
+Response guidelines:
+- Be encouraging and supportive
+- Keep responses natural and conversational
+- Gently encourage using their saved expressions when appropriate
+- Provide helpful feedback on their English usage
+- Keep responses to 1-2 sentences for natural flow
+- Match their energy level and topic interest
+
+Respond as Refit:`;
   }
 
   private buildLLMPrompt(userMessage: string, context: ConversationContext): string {
