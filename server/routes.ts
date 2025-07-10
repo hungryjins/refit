@@ -241,113 +241,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isCorrect = false;
       let feedbackMessage = "";
       
-      // Handle START_SESSION - generate initial scenario message for FIRST expression only
+      // Handle START_SESSION - generate initial general scenario message
       if (message === "START_SESSION") {
-        // Sort expressions in logical conversation order
-        const sortedExpressions = selectedExpressions ? selectedExpressions.sort((a, b) => {
-          const exprA = targetExpressions.find(e => e.id === a);
-          const exprB = targetExpressions.find(e => e.id === b);
-          
-          // Priority order: greetings first, farewells last
-          const getOrder = (text: string) => {
-            if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
-            if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
-            return 2; // everything else in middle
-          };
-          
-          return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
-        }) : [];
+        // Generate a general scenario for all expressions
+        const responses = getScenarioResponsesForSelectedExpressions(targetExpressions, 0);
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
         
-        // Get the FIRST expression to practice
-        const firstExpressionId = sortedExpressions[0];
-        const firstExpression = targetExpressions.find(e => e.id === firstExpressionId);
+        const newMessage = await storage.createChatMessage({
+          sessionId: sessionId,
+          content: randomResponse,
+          isUser: false,
+          expressionUsed: null,
+          isCorrect: null,
+        });
         
-        if (firstExpression) {
-          const promptForFirst = getPromptForExpression(firstExpression);
-          
-          const newMessage = await storage.createChatMessage({
-            sessionId: sessionId,
-            content: promptForFirst,
-            isUser: false,
-            expressionUsed: null,
-            isCorrect: null,
-          });
-          
-          return res.json({ 
-            response: promptForFirst, 
-            messageId: newMessage.id,
-            detectedExpression: null,
-            currentTargetExpression: {
-              id: firstExpression.id,
-              text: firstExpression.text
-            }
-          });
-        }
+        return res.json({ 
+          response: randomResponse, 
+          messageId: newMessage.id,
+          detectedExpression: null
+        });
       }
 
       if (selectedExpressions && selectedExpressions.length > 0) {
-        // Get current target expression (the next one in logical order)
+        // Get used expressions from database
         const usedExpressions = messages
           .filter(m => m.isUser && m.expressionUsed && m.isCorrect)
           .map(m => m.expressionUsed);
         
-        const sortedExpressions = selectedExpressions.sort((a, b) => {
-          const exprA = targetExpressions.find(e => e.id === a);
-          const exprB = targetExpressions.find(e => e.id === b);
-          
-          const getOrder = (text: string) => {
-            if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
-            if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
-            return 2;
-          };
-          
-          return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
-        });
+        // Find remaining expressions (순서 상관없음)
+        const remainingExpressions = selectedExpressions.filter(id => !usedExpressions.includes(id));
         
-        // Find the CURRENT target expression (first unused one)
-        const currentTargetId = sortedExpressions.find(id => !usedExpressions.includes(id));
-        const currentTarget = targetExpressions.find(e => e.id === currentTargetId);
-        
-        console.log("Current target expression:", currentTarget?.text);
         console.log("Used expressions:", usedExpressions);
+        console.log("Remaining expressions:", remainingExpressions);
         
-        // Only check the CURRENT target expression, not all expressions
-        if (currentTarget) {
-          const similarity = calculateSimilarity(
-            (message || "").toLowerCase(), 
-            (currentTarget.text || "").toLowerCase()
-          );
-          
-          console.log(`Current target "${currentTarget.text}" similarity: ${similarity}`);
-          
-          if (similarity >= 0.9) {
-            detectedExpression = currentTarget;
-            isCorrect = true;
-            console.log(`✅ Expression detected and marked correct: ${currentTarget.text}`);
+        // Check if user used ANY of the remaining expressions
+        for (const exprId of remainingExpressions) {
+          const expr = targetExpressions.find(e => e.id === exprId);
+          if (expr) {
+            const similarity = calculateSimilarity(
+              (message || "").toLowerCase(), 
+              (expr.text || "").toLowerCase()
+            );
             
-            feedbackMessage = `✅ 완벽합니다! "${currentTarget.text}" 표현을 정확하게 사용했습니다!`;
+            console.log(`Expression "${expr.text}" similarity: ${similarity}`);
             
-            // Update expression stats
-            await storage.updateExpressionStats(currentTarget.id, isCorrect);
-          } else {
-            // Check if they used a different expression from the selected list (WRONG ORDER)
-            let wrongExpressionUsed = false;
-            for (const exprId of selectedExpressions) {
-              if (exprId !== currentTarget.id) {
-                const expr = targetExpressions.find(e => e.id === exprId);
-                if (expr && calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase()) >= 0.9) {
-                  wrongExpressionUsed = true;
-                  feedbackMessage = `"${expr.text}"는 맞는 표현이지만, 지금은 다른 표현을 연습할 차례입니다. 현재 상황에 맞는 표현을 사용해보세요.`;
-                  // DO NOT set detectedExpression or isCorrect = true here!
-                  // This prevents wrong order expressions from being recorded
-                  break;
-                }
-              }
+            if (similarity >= 0.9) {
+              detectedExpression = expr;
+              isCorrect = true;
+              console.log(`✅ Expression detected and marked correct: ${expr.text}`);
+              
+              feedbackMessage = `✅ 완벽합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
+              
+              // Update expression stats
+              await storage.updateExpressionStats(expr.id, isCorrect);
+              break; // Found a match, stop checking other expressions
             }
-            
-            if (!wrongExpressionUsed) {
-              feedbackMessage = `좋은 시도입니다! 조금 다른 표현을 사용해보세요.`;
+          }
+        }
+        
+        // If no expression was detected from the remaining list
+        if (!detectedExpression) {
+          // Check if they used an already-used expression
+          for (const exprId of usedExpressions) {
+            const expr = targetExpressions.find(e => e.id === exprId);
+            if (expr && calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase()) >= 0.9) {
+              feedbackMessage = `"${expr.text}" 표현은 이미 연습을 완료했습니다! 아직 연습하지 않은 다른 표현을 사용해보세요.`;
+              break;
             }
+          }
+          
+          if (!feedbackMessage) {
+            feedbackMessage = `좋은 시도입니다! 연습중인 표현들 중 하나를 사용해보세요.`;
           }
         }
       }
@@ -430,27 +394,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sessionComplete
         });
         
-        // Find next expression to practice in logical order
+        // Find next expression to practice (순서 상관없이 아무 남은 표현)
         if (!sessionComplete && detectedExpression && isCorrect) {
           const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
           
           if (remainingExpressions.length > 0) {
-            // Sort expressions in logical conversation order
-            const sortedRemaining = remainingExpressions.sort((a, b) => {
-              const exprA = targetExpressions.find(e => e.id === a);
-              const exprB = targetExpressions.find(e => e.id === b);
-              
-              // Priority order: greetings first, farewells last
-              const getOrder = (text: string) => {
-                if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
-                if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
-                return 2; // everything else in middle
-              };
-              
-              return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
-            });
-            
-            nextTargetExpression = targetExpressions.find(e => e.id === sortedRemaining[0]);
+            // Just pick the first remaining expression (no sorting needed)
+            nextTargetExpression = targetExpressions.find(e => e.id === remainingExpressions[0]);
             console.log("Next target expression:", nextTargetExpression?.text);
           }
         }
