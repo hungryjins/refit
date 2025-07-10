@@ -142,31 +142,12 @@ export default function ChatInterface() {
         const responseData = await response.json();
         const { response: botResponse, usedExpression, isCorrect } = responseData;
         
-        // Store expression usage in the user message
-        if (usedExpression) {
-          // Update the last user message with expression data
-          await apiRequest("POST", "/api/chat/messages", {
-            sessionId,
-            content: message,
-            isUser: true,
-            expressionUsed: usedExpression,
-            isCorrect,
-          });
-        }
-        
-        setTimeout(async () => {
-          await apiRequest("POST", "/api/chat/messages", {
-            sessionId,
-            content: botResponse,
-            isUser: false,
-            expressionUsed: null,
-            isCorrect: null,
-          });
-          
+        // AI response is already saved by the backend
+        setTimeout(() => {
           setIsTyping(false);
           queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
           queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
-        }, 2000);
+        }, 1500);
       } catch (error) {
         setIsTyping(false);
         toast({

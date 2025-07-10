@@ -151,6 +151,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aiResponse.detectedExpression.isCorrect
         );
       }
+
+      // Save the AI response as a chat message
+      await storage.createChatMessage({
+        sessionId: sessionId,
+        content: aiResponse.response,
+        isUser: false,
+        expressionUsed: null,
+        isCorrect: null,
+      });
       
       res.json({ 
         response: aiResponse.response,
