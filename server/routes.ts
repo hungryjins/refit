@@ -392,6 +392,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      // Store user message with expression detection info
+      const userMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: message,
+        isUser: true,
+        expressionUsed: detectedExpression?.id || null,
+        isCorrect: isCorrect,
+      });
+
       // Check session completion if using selected expressions
       let sessionComplete = false;
       let nextTargetExpression = null;
