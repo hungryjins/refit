@@ -98,7 +98,7 @@ export default function ChatInterface() {
   const { expressions } = useExpressions();
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat/sessions", activeSession?.id, "messages"],
+    queryKey: [`/api/chat/sessions/${activeSession?.id}/messages`],
     enabled: !!activeSession?.id,
   });
 
@@ -142,7 +142,7 @@ export default function ChatInterface() {
         const responseData = await response.json();
         
         // AI response is already saved by the backend, so refresh immediately
-        queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${sessionId}/messages`] });
         queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
         
         // Add a small delay before stopping typing indicator for better UX
@@ -159,7 +159,7 @@ export default function ChatInterface() {
       }
       
       // Refresh messages and session data after user message is sent
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${sessionId}/messages`] });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
     },
     onError: () => {
@@ -201,7 +201,7 @@ export default function ChatInterface() {
           expressionUsed: null,
           isCorrect: null,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", newSession.id, "messages"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
       });
     }
   }, [activeSession, expressions.length, createSession, queryClient]);
