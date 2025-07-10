@@ -1,9 +1,12 @@
 import { 
+  categories,
   expressions, 
   chatSessions, 
   chatMessages, 
   userStats, 
   achievements,
+  type Category,
+  type InsertCategory,
   type Expression, 
   type InsertExpression,
   type ChatSession,
@@ -17,6 +20,13 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
+  // Categories
+  getCategories(): Promise<Category[]>;
+  getCategoryById(id: number): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
+  deleteCategory(id: number): Promise<void>;
+  
   // Expressions
   getExpressions(): Promise<Expression[]>;
   getExpressionById(id: number): Promise<Expression | undefined>;
@@ -43,6 +53,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private categories: Map<number, Category>;
   private expressions: Map<number, Expression>;
   private chatSessions: Map<number, ChatSession>;
   private chatMessages: Map<number, ChatMessage>;
@@ -51,6 +62,7 @@ export class MemStorage implements IStorage {
   private currentId: number;
 
   constructor() {
+    this.categories = new Map();
     this.expressions = new Map();
     this.chatSessions = new Map();
     this.chatMessages = new Map();
@@ -65,26 +77,52 @@ export class MemStorage implements IStorage {
       overallAccuracy: 84,
     };
 
-    // Add some sample expressions for demonstration
+    // Add default categories and sample expressions
+    this.addDefaultCategories();
     this.addSampleExpressions();
   }
 
+  private addDefaultCategories() {
+    const defaultCategories = [
+      { name: "Greetings & Introductions", icon: "👋", color: "from-blue-500 to-purple-500" },
+      { name: "Restaurant & Food", icon: "🍽️", color: "from-green-500 to-teal-500" },
+      { name: "Questions & Requests", icon: "❓", color: "from-purple-500 to-pink-500" },
+      { name: "Compliments & Praise", icon: "🌟", color: "from-yellow-500 to-orange-500" },
+      { name: "Business & Work", icon: "💼", color: "from-gray-500 to-slate-500" },
+      { name: "Travel & Directions", icon: "🗺️", color: "from-indigo-500 to-blue-500" },
+    ];
+
+    defaultCategories.forEach(cat => {
+      const id = this.currentId++;
+      const category: Category = {
+        id,
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+        createdAt: new Date(),
+      };
+      this.categories.set(id, category);
+    });
+  }
+
   private addSampleExpressions() {
+    const categoryMap = Array.from(this.categories.values());
     const sampleExpressions = [
-      { text: "Could you please help me with this?", category: "asking" },
-      { text: "Thank you so much for your assistance", category: "compliment" },
-      { text: "I'd like to order a coffee, please", category: "ordering" },
-      { text: "Excuse me, where is the nearest station?", category: "asking" },
-      { text: "Nice to meet you", category: "greeting" },
-      { text: "Have a wonderful day", category: "greeting" },
+      { text: "Could you please help me with this?", categoryName: "Questions & Requests" },
+      { text: "Thank you so much for your assistance", categoryName: "Compliments & Praise" },
+      { text: "I'd like to order a coffee, please", categoryName: "Restaurant & Food" },
+      { text: "Excuse me, where is the nearest station?", categoryName: "Travel & Directions" },
+      { text: "Nice to meet you", categoryName: "Greetings & Introductions" },
+      { text: "Have a wonderful day", categoryName: "Greetings & Introductions" },
     ];
 
     sampleExpressions.forEach(expr => {
+      const category = categoryMap.find(cat => cat.name === expr.categoryName);
       const id = this.currentId++;
       const expression: Expression = {
         id,
         text: expr.text,
-        category: expr.category,
+        categoryId: category?.id || null,
         correctCount: Math.floor(Math.random() * 5),
         totalCount: Math.floor(Math.random() * 8) + 2,
         lastUsed: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null,
@@ -104,12 +142,62 @@ export class MemStorage implements IStorage {
     return this.expressions.get(id);
   }
 
+  // Category methods
+  async getCategories(): Promise<Category[]> {
+    return Array.from(this.categories.values()).sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  }
+
+  async getCategoryById(id: number): Promise<Category | undefined> {
+    return this.categories.get(id);
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const id = this.currentId++;
+    const category: Category = {
+      id,
+      name: insertCategory.name,
+      icon: insertCategory.icon || "📝",
+      color: insertCategory.color || "from-blue-500 to-purple-500",
+      createdAt: new Date(),
+    };
+    this.categories.set(id, category);
+    return category;
+  }
+
+  async updateCategory(id: number, updateData: Partial<InsertCategory>): Promise<Category> {
+    const category = this.categories.get(id);
+    if (!category) {
+      throw new Error(`Category with id ${id} not found`);
+    }
+
+    const updated: Category = {
+      ...category,
+      ...updateData,
+    };
+    
+    this.categories.set(id, updated);
+    return updated;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    // Update expressions to remove category reference
+    Array.from(this.expressions.values()).forEach(expr => {
+      if (expr.categoryId === id) {
+        expr.categoryId = null;
+      }
+    });
+    
+    this.categories.delete(id);
+  }
+
   async createExpression(insertExpression: InsertExpression): Promise<Expression> {
     const id = this.currentId++;
     const expression: Expression = {
       id,
       text: insertExpression.text,
-      category: insertExpression.category || null,
+      categoryId: insertExpression.categoryId || null,
       correctCount: 0,
       totalCount: 0,
       lastUsed: null,

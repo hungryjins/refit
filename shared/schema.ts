@@ -2,10 +2,18 @@ import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  icon: text("icon").default("📝").notNull(),
+  color: text("color").default("from-blue-500 to-purple-500").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const expressions = pgTable("expressions", {
   id: serial("id").primaryKey(),
   text: text("text").notNull(),
-  category: text("category"),
+  categoryId: integer("category_id").references(() => categories.id),
   correctCount: integer("correct_count").default(0).notNull(),
   totalCount: integer("total_count").default(0).notNull(),
   lastUsed: timestamp("last_used"),
@@ -45,6 +53,11 @@ export const achievements = pgTable("achievements", {
   unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
 });
 
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertExpressionSchema = createInsertSchema(expressions).omit({
   id: true,
   correctCount: true,
@@ -73,6 +86,8 @@ export const insertAchievementSchema = createInsertSchema(achievements).omit({
   unlockedAt: true,
 });
 
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Expression = typeof expressions.$inferSelect;
 export type InsertExpression = z.infer<typeof insertExpressionSchema>;
 export type ChatSession = typeof chatSessions.$inferSelect;
