@@ -1,4 +1,4 @@
-# Convo - English Conversation Practice App
+# Daily Convo - English Conversation Practice App
 
 ## Overview
 
@@ -97,7 +97,7 @@ Changelog:
 - July 03, 2025. Initial setup with English conversation practice app
 - July 03, 2025. Firebase integration prepared with AI service architecture
 - July 03, 2025. Added LLM/RAG/Vector DB integration framework
-- July 03, 2025. Rebranded to "Convo" and integrated Google AdSense ads
+- July 03, 2025. Rebranded to "Daily Convo" and integrated Google AdSense ads
 - July 03, 2025. Optimized layout with responsive ad placement for deployment
 ```
 
@@ -105,7 +105,7 @@ Changelog:
 
 ```
 Preferred communication style: Simple, everyday language.
-App branding: "Convo" for English conversation practice
+App branding: "Daily Convo" for English conversation practice
 Deployment goal: Google AdSense integration for monetization
 Design priority: Clean, creative design that attracts users
 ```
