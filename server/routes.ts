@@ -252,9 +252,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // If no expression was detected
+        // If no expression was detected, provide specific guidance
         if (!detectedExpression) {
-          feedbackMessage = "💡 연습중인 표현을 사용해보세요!";
+          const unusedExpressions = targetExpressions.filter(expr => 
+            !messages.some(m => m.isUser && m.expressionUsed === expr.id)
+          );
+          
+          if (unusedExpressions.length > 0) {
+            const randomUnused = unusedExpressions[Math.floor(Math.random() * unusedExpressions.length)];
+            feedbackMessage = `💡 아직 "${randomUnused.text}" 표현을 사용해보지 않았어요. 자연스럽게 대화에 포함해보세요!`;
+          } else {
+            feedbackMessage = "💡 연습중인 표현을 사용해보세요!";
+          }
         }
       }
 
@@ -423,25 +432,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return true; // For now, assume all are remaining
     });
     
-    if (messageCount === 0) {
-      // Initial scenario setup based on category
-      if (expressions.some(e => e.text.includes("coffee") || e.text.includes("order"))) {
+    if (messageCount === 0 || message === "START_SESSION") {
+      // Initial scenario setup based on selected expressions
+      const firstExpression = expressions[0];
+      
+      if (expressions.some(e => e.text.toLowerCase().includes("coffee") || e.text.toLowerCase().includes("order"))) {
         return [
-          "Welcome to our coffee shop! I'm your barista today. You look like you might want to place an order. What can I get started for you?",
-          "Good morning! Welcome to Daily Brew. I see you checking out our menu. Are you ready to order something delicious?",
-          "Hi there! I'm here to help you with your order today. What's catching your eye on our menu?"
+          `☕ Welcome to Daily Brew Coffee Shop! I'm your friendly barista. It's a busy morning and you're looking at our menu board. I notice you're ready to order something delicious. How would you like to start your order today?`,
+          `☕ Good morning! You've just walked into our cozy coffee shop. The aroma of fresh coffee fills the air, and I'm here behind the counter ready to help. What would you like to try from our menu?`,
+          `☕ Hi there! You're standing at the counter of our popular coffee shop. I can see you're deciding what to get. The morning rush is starting and I'm ready to take your order. What sounds good to you today?`
         ];
-      } else if (expressions.some(e => e.text.includes("nice to meet") || e.text.includes("hello"))) {
+      } else if (expressions.some(e => e.text.toLowerCase().includes("nice to meet") || e.text.toLowerCase().includes("hello") || e.text.toLowerCase().includes("good"))) {
         return [
-          "Hello! I'm new here and looking to make some friends. I heard this is a great place to meet people. Are you from around here?",
-          "Hi there! I just moved to this neighborhood. You seem friendly - mind if I introduce myself?",
-          "Good morning! I'm waiting for my friend who's running late. Would you like to chat while I wait?"
+          `👋 You're at a community center where people come to meet new friends. I'm sitting alone at a table reading a book when I notice you walking in. You seem friendly and I'm hoping to make a new friend today. I look up from my book with a welcoming smile.`,
+          `👋 It's your first day at a new workplace and you're in the break room. I'm a colleague who's been working here for a while. I see you getting coffee and want to introduce myself to make you feel welcome.`,
+          `👋 You're at a local park and I'm walking my dog. We keep crossing paths on the walking trail and I finally decide to strike up a conversation. I approach you with a friendly demeanor.`
+        ];
+      } else if (expressions.some(e => e.text.toLowerCase().includes("thank") || e.text.toLowerCase().includes("help"))) {
+        return [
+          `🤝 You're at a busy shopping mall and you look lost. I'm a helpful store employee who notices you seem confused while looking at the directory map. I approach you with a genuine desire to help.`,
+          `🤝 You're at a library and struggling to find a specific book. I'm a librarian who sees you looking around the shelves with a confused expression. I walk over to offer assistance.`,
+          `🤝 You're at a new city's train station with luggage, clearly looking for directions. I'm a local resident who notices you checking your phone and the station signs repeatedly. I decide to offer help.`
         ];
       } else {
+        // Generic scenario that can work with any expression
+        const targetExpression = firstExpression?.text || "a friendly greeting";
         return [
-          "Hi! I'm excited to practice English conversation with you today. Let's start with a friendly chat - how are you doing?",
-          "Hello! Welcome to our conversation practice. I'd love to get to know you better. What brings you here today?",
-          "Good to see you! I'm here to help you practice. Let's begin with some natural conversation."
+          `🌟 Let's practice! Imagine we're meeting at a friendly neighborhood cafe. I'm sitting at a nearby table and we make eye contact. This is the perfect moment to use "${targetExpression}" naturally in our conversation. How would you start?`,
+          `🌟 Picture this: We're both waiting at a bus stop on a pleasant morning. I'm reading a book but look up when you arrive. This is a great opportunity to practice "${targetExpression}" in a natural way. What would you say?`,
+          `🌟 Scenario: We're at a local community event where people are mingling and getting to know each other. I'm standing near the refreshment table when I see you. This is the perfect setting to use "${targetExpression}" naturally. How do you begin?`
         ];
       }
     } else if (messageCount === 1) {
@@ -476,18 +495,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function getPromptForExpression(expression: any): string {
     const text = expression.text.toLowerCase();
     
-    if (text.includes("coffee") || text.includes("order")) {
-      return "What would you like to order from our menu today?";
-    } else if (text.includes("nice to meet")) {
-      return "I'd love to get to know you better!";
-    } else if (text.includes("excuse me")) {
-      return "Oh, I think you might need to ask me something?";
-    } else if (text.includes("help")) {
-      return "It looks like you might need some assistance with something?";
-    } else if (text.includes("thank you")) {
-      return "I just helped you with something - how do you feel about it?";
+    if (text.includes("coffee") || text.includes("order") || text.includes("like")) {
+      return `Perfect! Our barista special today is an iced caramel latte. The menu has so many options - what catches your eye?`;
+    } else if (text.includes("nice to meet") || text.includes("good") || text.includes("hello")) {
+      return `That's wonderful! I'm really glad we had the chance to meet. What brings you to this area today?`;
+    } else if (text.includes("excuse me") || text.includes("sorry")) {
+      return `No problem at all! I was actually hoping someone would ask. I love helping people around here. What do you need to know?`;
+    } else if (text.includes("help") || text.includes("could") || text.includes("would")) {
+      return `Of course! I'd be happy to help you with that. I know this area really well and can give you great directions.`;
+    } else if (text.includes("thank") || text.includes("appreciate")) {
+      return `You're so welcome! It was my pleasure to help. I hope you have a wonderful rest of your day!`;
     } else {
-      return "How would you express this naturally in English?";
+      return `That's interesting! Tell me more about that. I'm curious to hear your thoughts on this.`;
     }
   }
 
