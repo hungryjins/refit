@@ -309,6 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: null,
       });
 
+      console.log("Sending response with sessionComplete:", updateResult.sessionComplete);
+      console.log("Sending response with sessionStats:", updateResult.sessionComplete ? summary : null);
+      
       res.json({ 
         response: finalResponse,
         suggestionPrompt: "",
