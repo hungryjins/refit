@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useChatSession } from "@/hooks/use-chat";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
+import SessionCompleteModal from "./session-complete-modal";
 import type { ChatMessage, Expression, Category } from "@shared/schema";
 
 interface ChatBubbleProps {
@@ -96,6 +97,8 @@ export default function ChatInterface() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedExpressions, setSelectedExpressions] = useState<Set<number>>(new Set());
   const [isSetupMode, setIsSetupMode] = useState(true);
+  const [showSessionCompleteModal, setShowSessionCompleteModal] = useState(false);
+  const [sessionResults, setSessionResults] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -186,17 +189,26 @@ export default function ChatInterface() {
         
         // Check if session is complete
         if (response.sessionComplete) {
-          toast({
-            title: "🎉 연습 완료!",
-            description: "모든 표현을 성공적으로 사용했습니다!",
-          });
+          // Get session results from the response
+          const sessionStats = response.sessionStats || {
+            totalExpressions: Array.from(selectedExpressions).length,
+            completedExpressions: Array.from(selectedExpressions).length,
+            correctUsages: Array.from(selectedExpressions).length,
+            totalAttempts: Array.from(selectedExpressions).length,
+            sessionDuration: 0,
+            expressionResults: Array.from(selectedExpressions).map(id => {
+              const expr = expressions.find(e => e.id === id);
+              return {
+                text: expr?.text || "",
+                isCompleted: true,
+                correctUsage: true,
+                attempts: 1
+              };
+            })
+          };
           
-          // Reset to setup mode after a delay
-          setTimeout(() => {
-            setIsSetupMode(true);
-            setSelectedCategory(null);
-            setSelectedExpressions(new Set());
-          }, 3000);
+          setSessionResults(sessionStats);
+          setShowSessionCompleteModal(true);
         }
         
         // AI response is already saved by the backend, so refresh immediately
@@ -248,6 +260,14 @@ export default function ChatInterface() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleSessionCompleteClose = () => {
+    setShowSessionCompleteModal(false);
+    setSessionResults(null);
+    setIsSetupMode(true);
+    setSelectedCategory(null);
+    setSelectedExpressions(new Set());
   };
 
   // No automatic session creation - user must explicitly start sessions
@@ -632,6 +652,16 @@ export default function ChatInterface() {
             })}
           </div>
         </motion.div>
+      )}
+      
+      {/* Session Complete Modal */}
+      {showSessionCompleteModal && sessionResults && (
+        <SessionCompleteModal
+          isOpen={showSessionCompleteModal}
+          onClose={handleSessionCompleteClose}
+          completedExpressions={Array.from(selectedExpressions).map(id => expressions.find(e => e.id === id)!).filter(Boolean)}
+          sessionStats={sessionResults}
+        />
       )}
     </div>
   );

@@ -315,6 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: updateResult.isCorrect,
         contextualSuggestions: [],
         sessionComplete: updateResult.sessionComplete,
+        sessionStats: updateResult.sessionComplete ? tutoringEngine.summarizeResults(sessionId) : null,
         detectedExpression: updateResult.detectedExpressionId ? {
           id: updateResult.detectedExpressionId,
           text: updateResult.detectedExpressionText,
