@@ -4,19 +4,20 @@ import NavigationHeader from "@/components/navigation-header";
 import ChatInterface from "@/components/chat-interface";
 import ExpressionManager from "@/components/expression-manager";
 import ProgressRepository from "@/components/progress-repository";
-
 import FloatingActionButton from "@/components/floating-action-button";
 import AdSenseContainer from "@/components/adsense-container";
+import { useLanguage } from "@/contexts/language-context";
 
 type Tab = "chat" | "expressions" | "repository";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
+  const { t } = useLanguage();
 
   const tabs = [
-    { id: "chat", label: "Practice Chat", icon: "💬" },
-    { id: "expressions", label: "My Expressions", icon: "📚" },
-    { id: "repository", label: "Progress", icon: "📊" },
+    { id: "chat", label: t('nav.practice'), icon: "💬" },
+    { id: "expressions", label: t('nav.expressions'), icon: "📚" },
+    { id: "repository", label: t('nav.progress'), icon: "📊" },
   ] as const;
 
   return (

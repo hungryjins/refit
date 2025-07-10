@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import type { UserStats } from "@shared/schema";
+import LanguageSelector from "@/components/language-selector";
 
 export default function NavigationHeader() {
   const { data: stats } = useQuery<UserStats>({
@@ -24,7 +25,8 @@ export default function NavigationHeader() {
               <p className="text-xs opacity-90">Master conversations daily</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <LanguageSelector />
             <div className="text-right">
               <p className="text-xs opacity-90">Streak</p>
               <motion.p 

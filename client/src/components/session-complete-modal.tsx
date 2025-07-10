@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Target, Award, X } from "lucide-react";
 import type { Expression } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
 interface SessionCompleteModalProps {
   isOpen: boolean;
@@ -29,10 +30,12 @@ export default function SessionCompleteModal({
   completedExpressions,
   sessionStats
 }: SessionCompleteModalProps) {
+  const { t } = useLanguage();
+
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return minutes > 0 ? `${minutes}분 ${remainingSeconds}초` : `${remainingSeconds}초`;
+    return minutes > 0 ? `${minutes}${t('time.minutes')} ${remainingSeconds}${t('time.seconds')}` : `${remainingSeconds}${t('time.seconds')}`;
   };
 
   const accuracy = sessionStats.totalAttempts > 0 
@@ -45,7 +48,7 @@ export default function SessionCompleteModal({
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold text-green-600 flex items-center justify-center gap-2">
             <Award className="h-8 w-8" />
-            연습 완료!
+            {t('session.complete')}
           </DialogTitle>
         </DialogHeader>
 
@@ -66,10 +69,10 @@ export default function SessionCompleteModal({
                 : "text-orange-800 dark:text-orange-200"
             }`}>
               {accuracy === 100 
-                ? "🎉 축하합니다!" 
+                ? t('session.congratulations')
                 : accuracy >= 70
-                ? "📚 연습 완료!"
-                : "💪 연습 완료!"
+                ? t('session.practice.complete')
+                : t('session.practice.done')
               }
             </h3>
             <p className={
@@ -80,10 +83,8 @@ export default function SessionCompleteModal({
                 : "text-orange-700 dark:text-orange-300"
             }>
               {accuracy === 100 
-                ? "모든 표현을 성공적으로 연습했습니다!"
-                : accuracy >= 70
-                ? "모든 표현을 연습했습니다. 계속 연습하면 더 좋아질 거예요!"
-                : "모든 표현을 연습했습니다. 계속 연습하면 더 좋아질 거예요!"
+                ? t('session.all.expressions.success')
+                : t('session.all.expressions.done')
               }
             </p>
           </div>
@@ -95,7 +96,7 @@ export default function SessionCompleteModal({
               <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">
                 {sessionStats.completedExpressions}
               </div>
-              <div className="text-sm text-blue-600 dark:text-blue-400">완료된 표현</div>
+              <div className="text-sm text-blue-600 dark:text-blue-400">{t('session.completed.expressions')}</div>
             </div>
 
             <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center border border-purple-200 dark:border-purple-800">
@@ -103,7 +104,7 @@ export default function SessionCompleteModal({
               <div className="text-2xl font-bold text-purple-800 dark:text-purple-200">
                 {accuracy}%
               </div>
-              <div className="text-sm text-purple-600 dark:text-purple-400">정확도</div>
+              <div className="text-sm text-purple-600 dark:text-purple-400">{t('session.accuracy')}</div>
             </div>
 
             <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center border border-orange-200 dark:border-orange-800">
@@ -111,14 +112,14 @@ export default function SessionCompleteModal({
               <div className="text-2xl font-bold text-orange-800 dark:text-orange-200">
                 {formatDuration(sessionStats.sessionDuration)}
               </div>
-              <div className="text-sm text-orange-600 dark:text-orange-400">소요 시간</div>
+              <div className="text-sm text-orange-600 dark:text-orange-400">{t('session.duration')}</div>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-lg text-center border border-gray-200 dark:border-gray-800">
               <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                 {sessionStats.totalAttempts}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">총 시도</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('session.total.attempts')}</div>
             </div>
           </div>
 
@@ -126,7 +127,7 @@ export default function SessionCompleteModal({
           <div>
             <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              연습 완료된 표현들
+              {t('session.practiced.expressions')}
             </h4>
             <div className="space-y-3">
               {sessionStats.expressionResults.map((result, index) => (
@@ -146,13 +147,13 @@ export default function SessionCompleteModal({
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={result.correctUsage ? "default" : "secondary"}>
-                      {result.attempts}회 시도
+                      {result.attempts} {t('session.attempts.suffix')}
                     </Badge>
                     <Badge 
                       variant={result.correctUsage ? "default" : "destructive"} 
                       className={result.correctUsage ? "bg-green-600" : "bg-red-600"}
                     >
-                      {result.correctUsage ? "성공" : "실패"}
+                      {result.correctUsage ? t('session.success') : t('session.failed')}
                     </Badge>
                   </div>
                 </div>
@@ -170,18 +171,18 @@ export default function SessionCompleteModal({
           }`}>
             <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {accuracy === 100 
-                ? "🌟 훌륭한 성과입니다!"
+                ? t('session.achievement.excellent')
                 : accuracy >= 70
-                ? "👍 좋은 성과입니다!"
-                : "💪 연습이 도움이 됐습니다!"
+                ? t('session.achievement.good')
+                : t('session.achievement.helpful')
               }
             </h4>
             <p className="text-sm text-gray-700 dark:text-gray-300">
               {accuracy === 100 
-                ? "완벽한 정확도로 모든 표현을 마스터했습니다!"
+                ? t('session.achievement.perfect')
                 : accuracy >= 70
-                ? "좋은 정확도로 표현들을 잘 연습했습니다!"
-                : "모든 표현을 완료했습니다. 계속 연습하면 더 좋아질 거예요!"
+                ? t('session.achievement.good.accuracy')
+                : t('session.achievement.keep.practicing')
               }
             </p>
           </div>
@@ -192,7 +193,7 @@ export default function SessionCompleteModal({
               onClick={onClose}
               className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
-              처음으로 돌아가기
+              {t('session.back.home')}
             </Button>
           </div>
         </div>
