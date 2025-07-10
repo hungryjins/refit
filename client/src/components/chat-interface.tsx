@@ -147,19 +147,30 @@ export default function ChatInterface() {
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
-        const responseData = await response.json();
         
-        // Update user message with detected expression
-        if (responseData.detectedExpression) {
-          const userMessageData = await userMessage.json();
-          await apiRequest("PATCH", `/api/chat/messages/${userMessageData.id}`, {
-            expressionUsed: responseData.detectedExpression.id,
-            isCorrect: responseData.detectedExpression.isCorrect,
+        // Handle expression detection and update UI
+        if (response.detectedExpression) {
+          const expressionId = response.detectedExpression.id;
+          const isCorrect = response.detectedExpression.isCorrect;
+          
+          // Update the message with expression info
+          await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
+            expressionUsed: expressionId,
+            isCorrect: isCorrect,
+          });
+          
+          // Show feedback toast
+          toast({
+            title: isCorrect ? "훌륭합니다!" : "좋은 시도입니다!",
+            description: isCorrect 
+              ? `"${response.detectedExpression.text}" 표현을 정확하게 사용했습니다!`
+              : `"${response.detectedExpression.text}" 표현과 비슷하지만 조금 더 정확하게 사용해보세요.`,
+            variant: isCorrect ? "default" : "destructive",
           });
         }
         
         // Check if session is complete
-        if (responseData.sessionComplete) {
+        if (response.sessionComplete) {
           toast({
             title: "🎉 연습 완료!",
             description: "모든 표현을 성공적으로 사용했습니다!",

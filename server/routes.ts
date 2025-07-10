@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        response: aiResponse.response,
+        response: finalResponse,
         suggestionPrompt: aiResponse.suggestionPrompt || "",
         usedExpression: detectedExpression?.id || null,
         isCorrect: isCorrect,
