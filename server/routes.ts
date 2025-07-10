@@ -196,6 +196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate conversation response with AI service
   app.post("/api/chat/respond", async (req, res) => {
+    console.log("Received request to /api/chat/respond");
+    console.log("Request body:", req.body);
     try {
       const { message, sessionId, selectedExpressions } = req.body;
       

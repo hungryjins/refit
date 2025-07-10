@@ -142,11 +142,19 @@ export default function ChatInterface() {
       
       // Generate bot response
       try {
+        console.log("Sending request to /api/chat/respond with:", {
+          message: content,
+          sessionId,
+          selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
+        });
+        
         const response = await apiRequest("POST", "/api/chat/respond", {
           message: content, // Use the actual message content instead of the state variable
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
+        
+        console.log("Received response:", response);
         
         // Handle expression detection and update UI
         if (response.detectedExpression) {
@@ -194,10 +202,11 @@ export default function ChatInterface() {
           setIsTyping(false);
         }, 800);
       } catch (error) {
+        console.error("Error in chat response:", error);
         setIsTyping(false);
         toast({
           title: "Error",
-          description: "Failed to get bot response",
+          description: `Failed to get bot response: ${error instanceof Error ? error.message : String(error)}`,
           variant: "destructive",
         });
       }
