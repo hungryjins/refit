@@ -308,6 +308,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
 
+      // Ensure aiResponse has required properties
+      if (!aiResponse || !aiResponse.response) {
+        aiResponse = {
+          response: "That's interesting! Tell me more about that.",
+          suggestionPrompt: "",
+          contextualSuggestions: []
+        };
+      }
+
       // Update expression stats if expression was detected by AI service
       if (aiResponse.detectedExpression && !detectedExpression) {
         detectedExpression = targetExpressions.find(e => e.id === aiResponse.detectedExpression.id);
@@ -371,7 +380,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } : null
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to generate response" });
+      console.error("Error in /api/chat/respond:", error);
+      res.status(500).json({ 
+        message: "Failed to generate response",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -451,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return true; // For now, assume all are remaining
     });
     
-    if (messageCount === 0 || message === "START_SESSION") {
+    if (messageCount === 0) {
       // Initial scenario setup based on selected expressions
       const firstExpression = expressions[0];
       
