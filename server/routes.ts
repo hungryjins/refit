@@ -256,9 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const expr = targetExpressions.find(e => e.id === exprId);
           if (expr) {
             const similarity = calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase());
-            if (similarity > 0.6) {
+            if (similarity > 0.8) { // Increased threshold to prevent false positives
               detectedExpression = expr;
-              isCorrect = similarity > 0.8;
+              isCorrect = similarity >= 1.0; // Only exact matches are correct
               
               if (isCorrect) {
                 feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
@@ -420,22 +420,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const clean1 = str1.replace(/[^\w\s]/g, '').toLowerCase();
     const clean2 = str2.replace(/[^\w\s]/g, '').toLowerCase();
     
-    // Check for exact match first
-    if (clean1.includes(clean2) || clean2.includes(clean1)) {
+    // Check for exact phrase match first (target expression must be contained in user message)
+    if (clean1.includes(clean2)) {
       return 1.0;
     }
     
-    // Word-based similarity
-    const words1 = clean1.split(/\s+/).filter(w => w.length > 1);
-    const words2 = clean2.split(/\s+/).filter(w => w.length > 1);
+    // Word-based similarity - requires stricter matching
+    const words1 = clean1.split(/\s+/).filter(w => w.length > 2); // Filter out very short words
+    const words2 = clean2.split(/\s+/).filter(w => w.length > 2);
     
     if (words1.length === 0 || words2.length === 0) return 0;
     
-    const commonWords = words1.filter(word => words2.includes(word));
-    const similarity = commonWords.length / Math.max(words1.length, words2.length);
+    // Count exact word matches
+    const exactMatches = words2.filter(word => words1.includes(word));
+    const similarity = words2.length > 0 ? exactMatches.length / words2.length : 0;
     
-    // Lower threshold for shorter expressions
-    return similarity;
+    // Return similarity only if at least 80% of important words match
+    return similarity >= 0.8 ? similarity : 0;
   }
 
   function getScenarioResponsesForSelectedExpressions(expressions: any[], messageCount: number): string[] {
