@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Update expression stats
             await storage.updateExpressionStats(currentTarget.id, isCorrect);
           } else {
-            // Check if they used a different expression from the selected list
+            // Check if they used a different expression from the selected list (WRONG ORDER)
             let wrongExpressionUsed = false;
             for (const exprId of selectedExpressions) {
               if (exprId !== currentTarget.id) {
@@ -338,6 +338,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (expr && calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase()) >= 0.9) {
                   wrongExpressionUsed = true;
                   feedbackMessage = `"${expr.text}"는 맞는 표현이지만, 지금은 다른 표현을 연습할 차례입니다. 현재 상황에 맞는 표현을 사용해보세요.`;
+                  // DO NOT set detectedExpression or isCorrect = true here!
+                  // This prevents wrong order expressions from being recorded
                   break;
                 }
               }
@@ -393,12 +395,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Store user message with expression detection info
+      // ONLY store expressionUsed if it's the CORRECT TARGET and CORRECT
       const userMessage = await storage.createChatMessage({
         sessionId: sessionId,
         content: message,
         isUser: true,
-        expressionUsed: detectedExpression?.id || null,
-        isCorrect: isCorrect,
+        expressionUsed: (detectedExpression && isCorrect) ? detectedExpression.id : null,
+        isCorrect: (detectedExpression && isCorrect) ? true : null,
+      });
+
+      console.log("Stored user message:", {
+        content: message,
+        expressionUsed: (detectedExpression && isCorrect) ? detectedExpression.id : null,
+        isCorrect: (detectedExpression && isCorrect) ? true : null
       });
 
       // Check session completion if using selected expressions
