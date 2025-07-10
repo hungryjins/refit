@@ -276,6 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let finalResponse = updateResult.feedback;
+      let summary = null;
       
       // If session is not complete, get next prompt
       if (!updateResult.sessionComplete) {
@@ -283,8 +284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const nextPrompt = tutoringEngine.getNextPrompt(sessionId);
         finalResponse = `${updateResult.feedback}\n\n${nextPrompt}`;
       } else {
-        // 4. shouldEndSession + 5. summarizeResults
-        const summary = tutoringEngine.summarizeResults(sessionId);
+        // 4. shouldEndSession + 5. summarizeResults - get summary before cleanup
+        summary = tutoringEngine.summarizeResults(sessionId);
         const summaryText = `🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다!\n\n` +
           `📊 결과: ${summary.completedExpressions}/${summary.totalExpressions} 표현 완료\n` +
           `⏱️ 소요 시간: ${summary.sessionDuration}초\n` +
@@ -315,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: updateResult.isCorrect,
         contextualSuggestions: [],
         sessionComplete: updateResult.sessionComplete,
-        sessionStats: updateResult.sessionComplete ? tutoringEngine.summarizeResults(sessionId) : null,
+        sessionStats: updateResult.sessionComplete ? summary : null,
         detectedExpression: updateResult.detectedExpressionId ? {
           id: updateResult.detectedExpressionId,
           text: updateResult.detectedExpressionText,
