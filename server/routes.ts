@@ -241,61 +241,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isCorrect = false;
       let feedbackMessage = "";
       
-      // Handle START_SESSION - generate initial scenario message
+      // Handle START_SESSION - generate initial scenario message for FIRST expression only
       if (message === "START_SESSION") {
-        const selectedExprs = targetExpressions;
-        const responses = getScenarioResponsesForSelectedExpressions(selectedExprs, 0);
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        // Sort expressions in logical conversation order
+        const sortedExpressions = selectedExpressions ? selectedExpressions.sort((a, b) => {
+          const exprA = targetExpressions.find(e => e.id === a);
+          const exprB = targetExpressions.find(e => e.id === b);
+          
+          // Priority order: greetings first, farewells last
+          const getOrder = (text: string) => {
+            if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
+            if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
+            return 2; // everything else in middle
+          };
+          
+          return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
+        }) : [];
         
-        const newMessage = await storage.createChatMessage({
-          sessionId: sessionId,
-          content: randomResponse,
-          isUser: false,
-          expressionUsed: null,
-          isCorrect: null,
-        });
+        // Get the FIRST expression to practice
+        const firstExpressionId = sortedExpressions[0];
+        const firstExpression = targetExpressions.find(e => e.id === firstExpressionId);
         
-        return res.json({ 
-          response: randomResponse, 
-          messageId: newMessage.id,
-          detectedExpression: null
-        });
+        if (firstExpression) {
+          const promptForFirst = getPromptForExpression(firstExpression);
+          
+          const newMessage = await storage.createChatMessage({
+            sessionId: sessionId,
+            content: promptForFirst,
+            isUser: false,
+            expressionUsed: null,
+            isCorrect: null,
+          });
+          
+          return res.json({ 
+            response: promptForFirst, 
+            messageId: newMessage.id,
+            detectedExpression: null,
+            currentTargetExpression: {
+              id: firstExpression.id,
+              text: firstExpression.text
+            }
+          });
+        }
       }
 
       if (selectedExpressions && selectedExpressions.length > 0) {
-        // Check if user message contains any of the selected expressions
-        // Remove debug logs for cleaner output
-        // console.log("Checking message:", message);
-        // console.log("Selected expressions:", selectedExpressions);
-        // console.log("Target expressions:", targetExpressions.map(e => ({ id: e.id, text: e.text })));
+        // Get current target expression (the next one in logical order)
+        const usedExpressions = messages
+          .filter(m => m.isUser && m.expressionUsed && m.isCorrect)
+          .map(m => m.expressionUsed);
         
-        for (const exprId of selectedExpressions) {
-          const expr = targetExpressions.find(e => e.id === exprId);
-          if (expr) {
-            const similarity = calculateSimilarity(
-              (message || "").toLowerCase(), 
-              (expr.text || "").toLowerCase()
-            );
+        const sortedExpressions = selectedExpressions.sort((a, b) => {
+          const exprA = targetExpressions.find(e => e.id === a);
+          const exprB = targetExpressions.find(e => e.id === b);
+          
+          const getOrder = (text: string) => {
+            if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
+            if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
+            return 2;
+          };
+          
+          return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
+        });
+        
+        // Find the CURRENT target expression (first unused one)
+        const currentTargetId = sortedExpressions.find(id => !usedExpressions.includes(id));
+        const currentTarget = targetExpressions.find(e => e.id === currentTargetId);
+        
+        console.log("Current target expression:", currentTarget?.text);
+        console.log("Used expressions:", usedExpressions);
+        
+        // Only check the CURRENT target expression, not all expressions
+        if (currentTarget) {
+          const similarity = calculateSimilarity(
+            (message || "").toLowerCase(), 
+            (currentTarget.text || "").toLowerCase()
+          );
+          
+          console.log(`Current target "${currentTarget.text}" similarity: ${similarity}`);
+          
+          if (similarity >= 0.9) {
+            detectedExpression = currentTarget;
+            isCorrect = true;
+            console.log(`✅ Expression detected and marked correct: ${currentTarget.text}`);
             
-            console.log(`Expression "${expr.text}" similarity: ${similarity}`);
+            feedbackMessage = `✅ 완벽합니다! "${currentTarget.text}" 표현을 정확하게 사용했습니다!`;
             
-            if (similarity >= 0.9) { // High threshold for accurate detection
-              detectedExpression = expr;
-              isCorrect = true; // If detected with high similarity, it's correct
-              console.log(`✅ Expression detected and marked correct: ${expr.text}`);
-              
-              feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
-              
-              // Update expression stats
-              await storage.updateExpressionStats(expr.id, isCorrect);
-              break;
-            }
+            // Update expression stats
+            await storage.updateExpressionStats(currentTarget.id, isCorrect);
+          } else {
+            // Gentle guidance without explicitly revealing the target
+            feedbackMessage = `좋은 시도입니다! 조금 다른 표현을 사용해보세요.`;
           }
-        }
-        
-        // If no expression was detected, don't give explicit feedback - let the conversation flow naturally
-        if (!detectedExpression) {
-          feedbackMessage = ""; // Remove explicit prompting
         }
       }
 
