@@ -330,8 +330,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Update expression stats
             await storage.updateExpressionStats(currentTarget.id, isCorrect);
           } else {
-            // Gentle guidance without explicitly revealing the target
-            feedbackMessage = `좋은 시도입니다! 조금 다른 표현을 사용해보세요.`;
+            // Check if they used a different expression from the selected list
+            let wrongExpressionUsed = false;
+            for (const exprId of selectedExpressions) {
+              if (exprId !== currentTarget.id) {
+                const expr = targetExpressions.find(e => e.id === exprId);
+                if (expr && calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase()) >= 0.9) {
+                  wrongExpressionUsed = true;
+                  feedbackMessage = `"${expr.text}"는 맞는 표현이지만, 지금은 다른 표현을 연습할 차례입니다. 현재 상황에 맞는 표현을 사용해보세요.`;
+                  break;
+                }
+              }
+            }
+            
+            if (!wrongExpressionUsed) {
+              feedbackMessage = `좋은 시도입니다! 조금 다른 표현을 사용해보세요.`;
+            }
           }
         }
       }
@@ -378,20 +392,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Store user message with expression detection info
-      const userMessage = await storage.createChatMessage({
-        sessionId: sessionId,
-        content: message,
-        isUser: true,
-        expressionUsed: detectedExpression?.id || null,
-        isCorrect: isCorrect,
-      });
-
       // Check session completion if using selected expressions
       let sessionComplete = false;
       let nextTargetExpression = null;
       
-      if (selectedExpressions && selectedExpressions.length > 0 && detectedExpression && isCorrect) {
+      if (selectedExpressions && selectedExpressions.length > 0) {
         // Get ALL messages for this session INCLUDING the just-created user message
         const allSessionMessages = await storage.getChatMessages(sessionId);
         const usedExpressions = allSessionMessages
@@ -408,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Find next expression to practice in logical order
-        if (!sessionComplete) {
+        if (!sessionComplete && detectedExpression && isCorrect) {
           const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
           
           if (remainingExpressions.length > 0) {
