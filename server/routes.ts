@@ -229,6 +229,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isCorrect = false;
       let feedbackMessage = "";
       
+      // Handle START_SESSION - generate initial scenario message
+      if (message === "START_SESSION") {
+        const selectedExprs = targetExpressions;
+        const responses = getScenarioResponsesForSelectedExpressions(selectedExprs, 0);
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        const newMessage = await storage.createChatMessage({
+          sessionId: sessionId,
+          content: randomResponse,
+          isUser: false,
+          expressionUsed: null,
+          isCorrect: null,
+        });
+        
+        return res.json({ 
+          response: randomResponse, 
+          messageId: newMessage.id,
+          detectedExpression: null
+        });
+      }
+
       if (selectedExpressions && selectedExpressions.length > 0) {
         // Check if user message contains any of the selected expressions
         for (const exprId of selectedExpressions) {
