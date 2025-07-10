@@ -250,9 +250,9 @@ export default function ChatInterface() {
     }
   };
 
-  // Initialize first session with welcome message
+  // Initialize first session with welcome message (only if in setup mode)
   useEffect(() => {
-    if (!activeSession && expressions.length > 0) {
+    if (!activeSession && expressions.length > 0 && isSetupMode) {
       createSession("Welcome conversation").then(async (newSession) => {
         await apiRequest("POST", "/api/chat/messages", {
           sessionId: newSession.id,
@@ -264,7 +264,7 @@ export default function ChatInterface() {
         queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
       });
     }
-  }, [activeSession, expressions.length, createSession, queryClient]);
+  }, [activeSession, expressions.length, createSession, queryClient, isSetupMode]);
 
   const filteredExpressions = selectedCategory 
     ? expressions.filter(expr => expr.categoryId === selectedCategory.id)
