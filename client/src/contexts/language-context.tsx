@@ -109,6 +109,10 @@ const translations = {
     'expressions.edit.description': 'You can change the text or category of the expression.',
     'expressions.text': 'Expression Text',
     'expressions.enter.english': 'Enter English expression...',
+    'expressions.count': 'expressions',
+    'expressions.used': 'Used',
+    'expressions.times': 'times',
+    'expressions.new': 'New',
     
     // Categories
     'categories.add': 'Add Category',
@@ -116,6 +120,8 @@ const translations = {
     'categories.enter.name': 'Enter category name...',
     'categories.edit.title': 'Edit Category',
     'categories.edit.description': 'You can change the name, icon, and color of the category.',
+    'categories.delete.title': 'Delete Category',
+    'categories.delete.description': 'Are you sure you want to delete "{name}" category? Expressions in this category will be moved to uncategorized.',
     
     // Progress
     'progress.title': 'Progress Repository',
@@ -236,6 +242,10 @@ const translations = {
     'expressions.edit.description': '표현의 텍스트나 카테고리를 변경할 수 있습니다.',
     'expressions.text': '표현 텍스트',
     'expressions.enter.english': '영어 표현을 입력하세요',
+    'expressions.count': '개 표현',
+    'expressions.used': '사용됨',
+    'expressions.times': '번',
+    'expressions.new': '새로움',
     
     // Categories
     'categories.add': '카테고리 추가',
@@ -243,6 +253,8 @@ const translations = {
     'categories.enter.name': '카테고리 이름 입력...',
     'categories.edit.title': '카테고리 수정',
     'categories.edit.description': '카테고리의 이름, 아이콘, 색상을 변경할 수 있습니다.',
+    'categories.delete.title': '카테고리 삭제',
+    'categories.delete.description': '"{name}" 카테고리를 삭제하시겠습니까? 이 카테고리에 속한 표현들은 미분류로 이동됩니다.',
     
     // Progress
     'progress.title': '진행 상황',
@@ -262,6 +274,16 @@ const translations = {
     // Time formats
     'time.minutes': '분',
     'time.seconds': '초',
+    
+    // Achievements
+    'achievements.streak.title': '7일 연속',
+    'achievements.streak.description': '계속 화이팅!',
+    'achievements.perfect.title': '첫 완벽',
+    'achievements.perfect.description': '100% 정확도',
+    'achievements.learner.title': '빠른 학습자',
+    'achievements.learner.description': '10개 이상 표현',
+    'achievements.conversationalist.title': '대화 전문가',
+    'achievements.conversationalist.description': '20개 이상 세션',
   }
 };
 

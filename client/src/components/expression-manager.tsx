@@ -343,7 +343,7 @@ export default function ExpressionManager() {
                         {category.name}
                       </CardTitle>
                       <p className="text-xs opacity-90">
-                        {categoryExpressions.length} expression{categoryExpressions.length !== 1 ? 's' : ''}
+                        {categoryExpressions.length} {t('expressions.count')}
                       </p>
                     </div>
                     <div className="flex gap-1">
@@ -367,15 +367,15 @@ export default function ExpressionManager() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>카테고리 삭제</AlertDialogTitle>
+                            <AlertDialogTitle>{t('categories.delete.title')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              "{category.name}" 카테고리를 삭제하시겠습니까? 이 카테고리에 속한 표현들은 미분류로 이동됩니다.
+                              {t('categories.delete.description', {name: category.name})}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogCancel>{t('expressions.cancel')}</AlertDialogCancel>
                             <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
-                              삭제
+                              {t('expressions.delete')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -400,7 +400,7 @@ export default function ExpressionManager() {
                             "{expr.text}"
                           </p>
                           <p className="text-xs text-gray-600">
-                            Used {expr.totalCount} time{expr.totalCount !== 1 ? 's' : ''}
+                            {t('expressions.used')} {expr.totalCount} {t('expressions.times')}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ export default function ExpressionManager() {
                               accuracy >= 80 ? "text-green-600" : 
                               accuracy >= 60 ? "text-yellow-600" : "text-red-600"
                             }`}>
-                              {expr.totalCount > 0 ? `${accuracy}%` : "New"}
+                              {expr.totalCount > 0 ? `${accuracy}%` : t('expressions.new')}
                             </div>
                             {expr.totalCount > 0 && (
                               <div className="text-xs text-gray-500">

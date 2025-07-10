@@ -73,10 +73,10 @@ export default function ProgressRepository() {
   const overallAccuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
 
   const achievementTypes = [
-    { type: "streak", title: "7-Day Streak", description: "Keep it up!", icon: "🔥", color: "from-yellow-50 to-orange-50", borderColor: "border-yellow-200", bgColor: "bg-yellow-500" },
-    { type: "perfect", title: "First Perfect", description: "100% accuracy", icon: "⭐", color: "from-green-50 to-emerald-50", borderColor: "border-green-200", bgColor: "bg-green-500" },
-    { type: "learner", title: "Quick Learner", description: "10+ expressions", icon: "🎓", color: "from-blue-50 to-indigo-50", borderColor: "border-blue-200", bgColor: "bg-blue-500" },
-    { type: "conversationalist", title: "Conversation Pro", description: "20+ sessions", icon: "💬", color: "from-purple-50 to-pink-50", borderColor: "border-purple-200", bgColor: "bg-purple-500" },
+    { type: "streak", title: t('achievements.streak.title'), description: t('achievements.streak.description'), icon: "🔥", color: "from-yellow-50 to-orange-50", borderColor: "border-yellow-200", bgColor: "bg-yellow-500" },
+    { type: "perfect", title: t('achievements.perfect.title'), description: t('achievements.perfect.description'), icon: "⭐", color: "from-green-50 to-emerald-50", borderColor: "border-green-200", bgColor: "bg-green-500" },
+    { type: "learner", title: t('achievements.learner.title'), description: t('achievements.learner.description'), icon: "🎓", color: "from-blue-50 to-indigo-50", borderColor: "border-blue-200", bgColor: "bg-blue-500" },
+    { type: "conversationalist", title: t('achievements.conversationalist.title'), description: t('achievements.conversationalist.description'), icon: "💬", color: "from-purple-50 to-pink-50", borderColor: "border-purple-200", bgColor: "bg-purple-500" },
   ];
 
   return (
@@ -175,7 +175,7 @@ export default function ProgressRepository() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <span className="text-yellow-500 text-xl">🏆</span>
-              Recent Achievements
+              {t('progress.achievements')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -210,14 +210,14 @@ export default function ProgressRepository() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <span className="text-primary text-xl">📊</span>
-              Expression Performance
+              {t('progress.expression.stats')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {expressions.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-4">📝</div>
-                <p className="text-gray-600">No expressions to track yet. Add some expressions to see your progress!</p>
+                <p className="text-gray-600">{t('progress.no.expressions')}</p>
               </div>
             ) : (
               <div className="space-y-4">
