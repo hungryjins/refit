@@ -175,26 +175,53 @@ export default function ChatInterface() {
         console.log("Session stats:", response.sessionStats);
         
         // Handle expression detection and update UI
-        if (response.detectedExpression && response.detectedExpression.isCorrect) {
+        if (response.detectedExpression) {
           const expressionId = response.detectedExpression.id;
+          const isCorrect = response.detectedExpression.isCorrect;
           
           // Update the message with expression info only if userMessage has valid id
           if (userMessage && userMessage.id) {
             try {
               await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
                 expressionUsed: expressionId,
-                isCorrect: true,
+                isCorrect: isCorrect,
               });
             } catch (error) {
               console.log("Failed to update message, but continuing...");
             }
           }
           
-          // Show success toast
+          // Show appropriate toast
+          if (isCorrect) {
+            toast({
+              title: "✅ 완벽합니다!",
+              description: `"${response.detectedExpression.text}" 표현을 정확하게 사용했습니다!`,
+              variant: "default",
+            });
+          }
+        }
+        
+        // Handle failed expression (when no expression was detected but one was marked as failed)
+        if (response.failedExpression) {
+          const expressionId = response.failedExpression.id;
+          
+          // Update the message with failed expression info
+          if (userMessage && userMessage.id) {
+            try {
+              await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
+                expressionUsed: expressionId,
+                isCorrect: false,
+              });
+            } catch (error) {
+              console.log("Failed to update message, but continuing...");
+            }
+          }
+          
+          // Show failure toast
           toast({
-            title: "✅ 완벽합니다!",
-            description: `"${response.detectedExpression.text}" 표현을 정확하게 사용했습니다!`,
-            variant: "default",
+            title: "❌ 오답 처리",
+            description: `"${response.failedExpression.text}" 표현을 사용하지 못했습니다.`,
+            variant: "destructive",
           });
         }
         

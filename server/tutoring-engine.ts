@@ -22,6 +22,8 @@ export interface UpdateResult {
   isCorrect: boolean;
   detectedExpressionId?: number;
   detectedExpressionText?: string;
+  failedExpressionId?: number;
+  failedExpressionText?: string;
   feedback: string;
   sessionComplete: boolean;
 }
@@ -155,10 +157,30 @@ export class TutoringEngine {
       session.endTime = new Date();
     }
 
+    // Check if we have a failed expression (only when no expression was detected)
+    let failedExpressionId: number | undefined;
+    let failedExpressionText: string | undefined;
+    
+    if (!detectedExpression && !isCorrect) {
+      // Find the expression that was just marked as failed
+      const incompleteExpressions = session.expressions.filter(expr => {
+        const state = session.expressionStates.get(expr.id);
+        return state && state.isCompleted && !state.correctUsage;
+      });
+      
+      if (incompleteExpressions.length > 0) {
+        const failedExpression = incompleteExpressions[incompleteExpressions.length - 1]; // Get the most recently failed one
+        failedExpressionId = failedExpression.id;
+        failedExpressionText = failedExpression.text;
+      }
+    }
+
     return {
       isCorrect,
       detectedExpressionId: detectedExpression?.id,
       detectedExpressionText: detectedExpression?.text,
+      failedExpressionId,
+      failedExpressionText,
       feedback,
       sessionComplete,
     };

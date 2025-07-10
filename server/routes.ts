@@ -323,6 +323,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: updateResult.detectedExpressionId,
           text: updateResult.detectedExpressionText,
           isCorrect: updateResult.isCorrect
+        } : null,
+        failedExpression: updateResult.failedExpressionId ? {
+          id: updateResult.failedExpressionId,
+          text: updateResult.failedExpressionText,
+          isCorrect: false
         } : null
       });
     } catch (error) {
