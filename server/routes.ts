@@ -378,25 +378,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      // Store user message with expression detection info
+      const userMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: message,
+        isUser: true,
+        expressionUsed: detectedExpression?.id || null,
+        isCorrect: isCorrect,
+      });
+
       // Check session completion if using selected expressions
       let sessionComplete = false;
       let nextTargetExpression = null;
       
-      if (selectedExpressions && selectedExpressions.length > 0) {
-        const usedExpressions = messages
-          .filter(m => m.isUser && m.expressionUsed)
+      if (selectedExpressions && selectedExpressions.length > 0 && detectedExpression && isCorrect) {
+        // Get ALL messages for this session INCLUDING the just-created user message
+        const allSessionMessages = await storage.getChatMessages(sessionId);
+        const usedExpressions = allSessionMessages
+          .filter(m => m.isUser && m.expressionUsed && m.isCorrect)
           .map(m => m.expressionUsed);
-        
-        if (detectedExpression && isCorrect) {
-          usedExpressions.push(detectedExpression.id);
-        }
         
         const uniqueUsedExpressions = [...new Set(usedExpressions)];
         sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
         
+        console.log("Session completion check:", {
+          usedExpressions: uniqueUsedExpressions,
+          selectedExpressions,
+          sessionComplete
+        });
+        
         // Find next expression to practice in logical order
         if (!sessionComplete) {
           const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
+          
           if (remainingExpressions.length > 0) {
             // Sort expressions in logical conversation order
             const sortedRemaining = remainingExpressions.sort((a, b) => {
@@ -414,6 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             nextTargetExpression = targetExpressions.find(e => e.id === sortedRemaining[0]);
+            console.log("Next target expression:", nextTargetExpression?.text);
           }
         }
       }
