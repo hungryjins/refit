@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { aiService } from "./ai-service";
+import { tutoringEngine } from "./tutoring-engine";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Category routes
@@ -194,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate conversation response with AI service
+  // Generate conversation response using new tutoring engine
   app.post("/api/chat/respond", async (req, res) => {
     console.log("Received request to /api/chat/respond");
     console.log("Request body:", req.body);
@@ -211,219 +212,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get conversation context
-      const expressions = await storage.getExpressions();
-      const messages = await storage.getChatMessages(sessionId);
-      const session = await storage.getChatSessions();
-      const currentSession = session.find(s => s.id === sessionId);
-      
-      // Build conversation history
-      const conversationHistory = messages.map(msg => ({
-        role: msg.isUser ? 'user' as const : 'assistant' as const,
-        content: msg.content,
-      }));
-
-      // Use only selected expressions if provided
-      const targetExpressions = selectedExpressions && selectedExpressions.length > 0
-        ? expressions.filter(expr => selectedExpressions.includes(expr.id))
-        : expressions;
-
-      // Prepare context for AI service
-      const context = {
-        userExpressions: targetExpressions,
-        conversationHistory,
-        scenario: currentSession?.scenario || "General conversation",
-        messageCount: messages.filter(m => m.isUser).length,
-      };
-
-      // Manual expression detection for selected expressions
-      let detectedExpression = null;
-      let isCorrect = false;
-      let feedbackMessage = "";
-      
-      // Handle START_SESSION - generate initial general scenario message
+      // Handle START_SESSION - initialize tutoring engine
       if (message === "START_SESSION") {
-        // Generate a general scenario for all expressions
-        const responses = getScenarioResponsesForSelectedExpressions(targetExpressions, 0);
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const expressions = await storage.getExpressions();
+        const targetExpressions = selectedExpressions && selectedExpressions.length > 0
+          ? expressions.filter(expr => selectedExpressions.includes(expr.id))
+          : expressions;
+        
+        // 1. initializeSession
+        const sessionState = tutoringEngine.initializeSession(sessionId, targetExpressions);
+        
+        // 3. getNextPrompt
+        const initialPrompt = tutoringEngine.getNextPrompt(sessionId);
         
         const newMessage = await storage.createChatMessage({
           sessionId: sessionId,
-          content: randomResponse,
+          content: initialPrompt,
           isUser: false,
           expressionUsed: null,
           isCorrect: null,
         });
         
         return res.json({ 
-          response: randomResponse, 
+          response: initialPrompt, 
           messageId: newMessage.id,
           detectedExpression: null
         });
       }
 
-      if (selectedExpressions && selectedExpressions.length > 0) {
-        // Get used expressions from database
-        const usedExpressions = messages
-          .filter(m => m.isUser && m.expressionUsed && m.isCorrect)
-          .map(m => m.expressionUsed);
+      // Check if tutoring engine has this session
+      const sessionState = tutoringEngine.getSessionState(sessionId);
+      if (!sessionState) {
+        // Initialize session if not exists
+        const expressions = await storage.getExpressions();
+        const targetExpressions = selectedExpressions && selectedExpressions.length > 0
+          ? expressions.filter(expr => selectedExpressions.includes(expr.id))
+          : expressions;
         
-        // Find remaining expressions (순서 상관없음)
-        const remainingExpressions = selectedExpressions.filter(id => !usedExpressions.includes(id));
-        
-        console.log("Used expressions:", usedExpressions);
-        console.log("Remaining expressions:", remainingExpressions);
-        
-        // Check if user used ANY of the remaining expressions
-        for (const exprId of remainingExpressions) {
-          const expr = targetExpressions.find(e => e.id === exprId);
-          if (expr) {
-            const similarity = calculateSimilarity(
-              (message || "").toLowerCase(), 
-              (expr.text || "").toLowerCase()
-            );
-            
-            console.log(`Expression "${expr.text}" similarity: ${similarity}`);
-            
-            if (similarity >= 0.9) {
-              detectedExpression = expr;
-              isCorrect = true;
-              console.log(`✅ Expression detected and marked correct: ${expr.text}`);
-              
-              feedbackMessage = `✅ 완벽합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
-              
-              // Update expression stats
-              await storage.updateExpressionStats(expr.id, isCorrect);
-              break; // Found a match, stop checking other expressions
-            }
-          }
-        }
-        
-        // If no expression was detected from the remaining list
-        if (!detectedExpression) {
-          // Check if they used an already-used expression
-          for (const exprId of usedExpressions) {
-            const expr = targetExpressions.find(e => e.id === exprId);
-            if (expr && calculateSimilarity(message.toLowerCase(), expr.text.toLowerCase()) >= 0.9) {
-              feedbackMessage = `"${expr.text}" 표현은 이미 연습을 완료했습니다! 아직 연습하지 않은 다른 표현을 사용해보세요.`;
-              break;
-            }
-          }
-          
-          if (!feedbackMessage) {
-            feedbackMessage = `좋은 시도입니다! 연습중인 표현들 중 하나를 사용해보세요.`;
-          }
-        }
+        tutoringEngine.initializeSession(sessionId, targetExpressions);
       }
 
-      // Generate AI response using Gemini or fallback
-      let aiResponse;
-      try {
-        aiResponse = await aiService.generateResponseWithLLM(message, context);
-      } catch (error) {
-        console.log("AI service failed, using fallback response");
-        // Fallback response system
-        const scenarioResponses = selectedExpressions && selectedExpressions.length > 0
-          ? getScenarioResponsesForSelectedExpressions(targetExpressions, messages.filter(m => m.isUser).length)
-          : getScenarioResponses(targetExpressions, messages.filter(m => m.isUser).length);
-        
-        aiResponse = {
-          response: scenarioResponses[Math.floor(Math.random() * scenarioResponses.length)],
-          suggestionPrompt: "",
-          detectedExpression: detectedExpression ? {
-            id: detectedExpression.id,
-            confidence: 0.8,
-            isCorrect
-          } : undefined,
-          contextualSuggestions: []
-        };
-      }
-
-      // Ensure aiResponse has required properties
-      if (!aiResponse || !aiResponse.response) {
-        aiResponse = {
-          response: "That's interesting! Tell me more about that.",
-          suggestionPrompt: "",
-          contextualSuggestions: []
-        };
-      }
-
-      // Update expression stats if expression was detected by AI service
-      if (aiResponse.detectedExpression && !detectedExpression) {
-        detectedExpression = targetExpressions.find(e => e.id === aiResponse.detectedExpression.id);
-        isCorrect = aiResponse.detectedExpression.isCorrect;
-        await storage.updateExpressionStats(
-          aiResponse.detectedExpression.id,
-          aiResponse.detectedExpression.isCorrect
-        );
-      }
-
-      // Store user message with expression detection info
-      // ONLY store expressionUsed if it's the CORRECT TARGET and CORRECT
+      // 2. processUserAnswer
+      const updateResult = tutoringEngine.processUserAnswer(sessionId, message);
+      
+      // Save user message with expression info
       const userMessage = await storage.createChatMessage({
         sessionId: sessionId,
         content: message,
         isUser: true,
-        expressionUsed: (detectedExpression && isCorrect) ? detectedExpression.id : null,
-        isCorrect: (detectedExpression && isCorrect) ? true : null,
+        expressionUsed: updateResult.detectedExpressionId || null,
+        isCorrect: updateResult.isCorrect,
       });
-
+      
       console.log("Stored user message:", {
         content: message,
-        expressionUsed: (detectedExpression && isCorrect) ? detectedExpression.id : null,
-        isCorrect: (detectedExpression && isCorrect) ? true : null
+        expressionUsed: updateResult.detectedExpressionId,
+        isCorrect: updateResult.isCorrect,
       });
 
-      // Check session completion if using selected expressions
-      let sessionComplete = false;
-      let nextTargetExpression = null;
-      
-      if (selectedExpressions && selectedExpressions.length > 0) {
-        // Get ALL messages for this session INCLUDING the just-created user message
-        const allSessionMessages = await storage.getChatMessages(sessionId);
-        const usedExpressions = allSessionMessages
-          .filter(m => m.isUser && m.expressionUsed && m.isCorrect)
-          .map(m => m.expressionUsed);
-        
-        const uniqueUsedExpressions = [...new Set(usedExpressions)];
-        sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
-        
-        console.log("Session completion check:", {
-          usedExpressions: uniqueUsedExpressions,
-          selectedExpressions,
-          sessionComplete
-        });
-        
-        // Find next expression to practice (순서 상관없이 아무 남은 표현)
-        if (!sessionComplete && detectedExpression && isCorrect) {
-          const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
-          
-          if (remainingExpressions.length > 0) {
-            // Just pick the first remaining expression (no sorting needed)
-            nextTargetExpression = targetExpressions.find(e => e.id === remainingExpressions[0]);
-            console.log("Next target expression:", nextTargetExpression?.text);
-          }
-        }
+      // Update expression stats if detected
+      if (updateResult.detectedExpressionId) {
+        await storage.updateExpressionStats(updateResult.detectedExpressionId, updateResult.isCorrect);
       }
 
-      // Combine AI response with feedback and next expression prompt
-      let finalResponse = aiResponse.response;
+      let finalResponse = updateResult.feedback;
       
-      if (detectedExpression && isCorrect) {
-        // Give positive feedback and handle next steps
-        if (sessionComplete) {
-          finalResponse = `${feedbackMessage}\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`;
-        } else if (nextTargetExpression) {
-          finalResponse = `${feedbackMessage}\n\n${getPromptForExpression(nextTargetExpression)}`;
-        } else {
-          // No more expressions, but session not complete yet - shouldn't happen
-          finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
-        }
-      } else if (feedbackMessage) {
-        finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
+      // If session is not complete, get next prompt
+      if (!updateResult.sessionComplete) {
+        // 3. getNextPrompt
+        const nextPrompt = tutoringEngine.getNextPrompt(sessionId);
+        finalResponse = `${updateResult.feedback}\n\n${nextPrompt}`;
+      } else {
+        // 4. shouldEndSession + 5. summarizeResults
+        const summary = tutoringEngine.summarizeResults(sessionId);
+        const summaryText = `🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다!\n\n` +
+          `📊 결과: ${summary.completedExpressions}/${summary.totalExpressions} 표현 완료\n` +
+          `⏱️ 소요 시간: ${summary.sessionDuration}초\n` +
+          `🎯 정확도: ${summary.correctUsages}/${summary.totalAttempts} 시도`;
+        
+        finalResponse = `${updateResult.feedback}\n\n${summaryText}`;
+        
+        // End session in storage
+        await storage.endChatSession(sessionId);
+        
+        // Clean up tutoring engine session
+        tutoringEngine.deleteSession(sessionId);
       }
-
-      // Save the AI response as a chat message
+      
+      // Save AI response message to storage
       await storage.createChatMessage({
         sessionId: sessionId,
         content: finalResponse,
@@ -432,26 +308,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: null,
       });
 
-      // End session if complete
-      if (sessionComplete) {
-        await storage.endChatSession(sessionId);
-      }
-      
       res.json({ 
         response: finalResponse,
-        suggestionPrompt: aiResponse.suggestionPrompt || "",
-        usedExpression: detectedExpression?.id || null,
-        isCorrect: isCorrect,
-        contextualSuggestions: aiResponse.contextualSuggestions || [],
-        sessionComplete,
-        nextTargetExpression: nextTargetExpression ? {
-          id: nextTargetExpression.id,
-          text: nextTargetExpression.text
-        } : null,
-        detectedExpression: detectedExpression ? {
-          id: detectedExpression.id,
-          text: detectedExpression.text,
-          isCorrect
+        suggestionPrompt: "",
+        usedExpression: updateResult.detectedExpressionId || null,
+        isCorrect: updateResult.isCorrect,
+        contextualSuggestions: [],
+        sessionComplete: updateResult.sessionComplete,
+        detectedExpression: updateResult.detectedExpressionId ? {
+          id: updateResult.detectedExpressionId,
+          text: updateResult.detectedExpressionText,
+          isCorrect: updateResult.isCorrect
         } : null
       });
     } catch (error) {
