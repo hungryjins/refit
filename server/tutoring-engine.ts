@@ -85,12 +85,30 @@ export class TutoringEngine {
     let maxSimilarity = 0;
     
     for (const expr of session.expressions) {
-      const similarity = this.calculateSimilarity(answer.toLowerCase(), expr.text.toLowerCase());
+      // 부분 일치 확인 (표현이 사용자 입력에 포함되어 있는지)
+      const userInput = answer.toLowerCase().trim();
+      const expression = expr.text.toLowerCase().trim();
+      
+      console.log(`[Expression Detection] Testing "${userInput}" against "${expression}"`);
+      
+      // 1. 정확한 부분 일치 확인
+      if (userInput.includes(expression)) {
+        console.log(`[Expression Detection] Found exact match: "${expression}"`);
+        detectedExpression = expr;
+        maxSimilarity = 1.0;
+        break;
+      }
+      
+      // 2. 유사도 계산 (부분 문자열로)
+      const similarity = this.calculateSimilarity(userInput, expression);
+      console.log(`[Expression Detection] Similarity score: ${similarity}`);
       if (similarity > maxSimilarity && similarity >= 0.8) {
         maxSimilarity = similarity;
         detectedExpression = expr;
       }
     }
+    
+    console.log(`[Expression Detection] Final result: ${detectedExpression ? detectedExpression.text : 'none'} (similarity: ${maxSimilarity})`);
 
     let isCorrect = false;
     let feedback = "";
