@@ -560,21 +560,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function getPromptForExpression(expression: any): string {
-    const text = expression.text.toLowerCase();
+    const prompts = {
+      "Nice to meet you": [
+        "👋 *A new colleague approaches you in the office break room.* Hi there! I'm Sarah from the marketing team. I just started last week.",
+        "🤝 *You're at a company networking event and someone introduces themselves.* Hello! I'm David from the IT department. I've heard great things about your work.",
+        "☕ *You bump into someone at a coffee shop and they seem friendly.* Hi! I'm Maria. I think we work in the same building - I've seen you around."
+      ],
+      "Have a wonderful day": [
+        "🚪 *You've just finished a great conversation with a store clerk who helped you find everything you needed. You're about to leave.*",
+        "🏃‍♀️ *You've been chatting with a neighbor about weekend plans and the conversation is naturally winding down.*",
+        "✋ *You're finishing up a pleasant phone call with a customer service representative who was very helpful.*"
+      ],
+      "Excuse me, where is the nearest subway station?": [
+        "🗺️ *You're standing on a busy street corner looking confused with your phone in hand, and a friendly local notices you seem lost.*",
+        "🚇 *You just got off a bus in an unfamiliar neighborhood and need to get to the subway. You see someone who looks like they live in the area.*",
+        "📍 *You're running late for a meeting and need directions. You spot someone walking confidently down the street.*"
+      ]
+    };
     
-    if (text.includes("coffee") || text.includes("order") || text.includes("like")) {
-      return `Perfect! Our barista special today is an iced caramel latte. The menu has so many options - what catches your eye?`;
-    } else if (text.includes("nice to meet") || text.includes("good") || text.includes("hello")) {
-      return `That's wonderful! I'm really glad we had the chance to meet. What brings you to this area today?`;
-    } else if (text.includes("excuse me") || text.includes("sorry")) {
-      return `No problem at all! I was actually hoping someone would ask. I love helping people around here. What do you need to know?`;
-    } else if (text.includes("help") || text.includes("could") || text.includes("would")) {
-      return `Of course! I'd be happy to help you with that. I know this area really well and can give you great directions.`;
-    } else if (text.includes("thank") || text.includes("appreciate")) {
-      return `You're so welcome! It was my pleasure to help. I hope you have a wonderful rest of your day!`;
-    } else {
-      return `That's interesting! Tell me more about that. I'm curious to hear your thoughts on this.`;
+    const expressionPrompts = prompts[expression.text as keyof typeof prompts];
+    if (expressionPrompts) {
+      return expressionPrompts[Math.floor(Math.random() * expressionPrompts.length)];
     }
+    
+    // Generic fallback
+    return `🎯 *Here's a situation where you might use: "${expression.text}"*`;
   }
 
   function getScenarioResponses(expressions: any[], messageCount: number): string[] {
