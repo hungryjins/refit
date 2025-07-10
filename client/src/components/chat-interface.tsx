@@ -140,14 +140,15 @@ export default function ChatInterface() {
           sessionId,
         });
         const responseData = await response.json();
-        const { response: botResponse, usedExpression, isCorrect } = responseData;
         
-        // AI response is already saved by the backend
+        // AI response is already saved by the backend, so refresh immediately
+        queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
+        
+        // Add a small delay before stopping typing indicator for better UX
         setTimeout(() => {
           setIsTyping(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
-        }, 1500);
+        }, 800);
       } catch (error) {
         setIsTyping(false);
         toast({
@@ -157,6 +158,7 @@ export default function ChatInterface() {
         });
       }
       
+      // Refresh messages and session data after user message is sent
       queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions", sessionId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
     },
