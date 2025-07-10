@@ -357,11 +357,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const uniqueUsedExpressions = [...new Set(usedExpressions)];
         sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
         
-        // Find next expression to practice
+        // Find next expression to practice in logical order
         if (!sessionComplete) {
           const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
           if (remainingExpressions.length > 0) {
-            nextTargetExpression = targetExpressions.find(e => e.id === remainingExpressions[0]);
+            // Sort expressions in logical conversation order
+            const sortedRemaining = remainingExpressions.sort((a, b) => {
+              const exprA = targetExpressions.find(e => e.id === a);
+              const exprB = targetExpressions.find(e => e.id === b);
+              
+              // Priority order: greetings first, farewells last
+              const getOrder = (text: string) => {
+                if (text.toLowerCase().includes("nice to meet") || text.toLowerCase().includes("hello")) return 1;
+                if (text.toLowerCase().includes("wonderful day") || text.toLowerCase().includes("goodbye")) return 3;
+                return 2; // everything else in middle
+              };
+              
+              return getOrder(exprA?.text || "") - getOrder(exprB?.text || "");
+            });
+            
+            nextTargetExpression = targetExpressions.find(e => e.id === sortedRemaining[0]);
           }
         }
       }
@@ -370,12 +385,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let finalResponse = aiResponse.response;
       
       if (detectedExpression && isCorrect) {
-        // Give positive feedback and move to next expression
-        if (nextTargetExpression) {
-          finalResponse = `${feedbackMessage}\n\n${getPromptForExpression(nextTargetExpression)}`;
-        } else if (sessionComplete) {
+        // Give positive feedback and handle next steps
+        if (sessionComplete) {
           finalResponse = `${feedbackMessage}\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`;
+        } else if (nextTargetExpression) {
+          finalResponse = `${feedbackMessage}\n\n${getPromptForExpression(nextTargetExpression)}`;
         } else {
+          // No more expressions, but session not complete yet - shouldn't happen
           finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
         }
       } else if (feedbackMessage) {
@@ -509,6 +525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `☕ *You enter the cozy neighborhood coffee shop. I'm behind the counter organizing cups when I notice you studying the menu.* Hey there! *I approach with a welcoming smile.* Take your time with the menu - I know it can be overwhelming with all the options. *I pause.* But between you and me, if you're looking for something really special, our house blend with a splash of vanilla is incredible. *I wait for your response.*`
         ];
       } else if (expressions.some(e => e.text.toLowerCase().includes("nice to meet") || e.text.toLowerCase().includes("hello") || e.text.toLowerCase().includes("good"))) {
+        // Start with greetings/introductions
+        const greetingExpressions = expressions.filter(e => 
+          e.text.toLowerCase().includes("nice to meet") || 
+          e.text.toLowerCase().includes("hello") || 
+          e.text.toLowerCase().includes("good")
+        );
+        
         return [
           `👋 *I'm sitting alone at a cafe reading when you walk in. I look up with a friendly smile and wave.* Oh, hello there! *I close my book and gesture to the empty chair across from me.* You look familiar - I think we might have seen each other around the neighborhood before, but we've never actually been introduced. *I extend my hand with a warm smile.* I'm Sarah, by the way.`,
           `👋 *It's your first day at a new job. I'm in the break room making coffee when you walk in looking a bit nervous.* Hey! *I turn around with a welcoming smile.* You must be the new person everyone's been talking about! *I walk over and extend my hand.* I'm Mike from the marketing department. I've been working here for about three years now.`,
