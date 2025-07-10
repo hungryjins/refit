@@ -80,16 +80,12 @@ export class TutoringEngine {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    console.log(`[TutoringEngine] Processing answer for session ${sessionId}:`, answer);
-    console.log(`[TutoringEngine] Session has ${session.expressions.length} expressions`);
-
     // 표현 감지 및 유사도 계산
     let detectedExpression: Expression | null = null;
     let maxSimilarity = 0;
     
     for (const expr of session.expressions) {
       const similarity = this.calculateSimilarity(answer.toLowerCase(), expr.text.toLowerCase());
-      console.log(`[TutoringEngine] Similarity for "${expr.text}": ${similarity}`);
       if (similarity > maxSimilarity && similarity >= 0.8) {
         maxSimilarity = similarity;
         detectedExpression = expr;
@@ -101,7 +97,6 @@ export class TutoringEngine {
 
     if (detectedExpression) {
       const state = session.expressionStates.get(detectedExpression.id);
-      console.log(`[TutoringEngine] Found expression state:`, state);
       if (state) {
         state.attempts++;
         
@@ -112,27 +107,21 @@ export class TutoringEngine {
           state.usedAt = new Date();
           isCorrect = true;
           feedback = `✅ 완벽합니다! "${detectedExpression.text}" 표현을 정확하게 사용했습니다!`;
-          console.log(`[TutoringEngine] Marked expression as completed: ${detectedExpression.text}`);
         } else {
           // 이미 완료된 표현을 다시 사용한 경우
           feedback = `✅ "${detectedExpression.text}" 표현을 또 사용하셨네요! 이미 완료된 표현입니다.`;
-          console.log(`[TutoringEngine] Expression already completed: ${detectedExpression.text}`);
         }
       }
     } else {
       // 표현을 감지하지 못한 경우
       feedback = "좋은 답변입니다! 연습 중인 표현을 사용해보세요.";
-      console.log(`[TutoringEngine] No expression detected in: ${answer}`);
     }
 
     // 세션 완료 확인
     const sessionComplete = this.shouldEndSession(sessionId);
-    console.log(`[TutoringEngine] Session complete check: ${sessionComplete}`);
-    
     if (sessionComplete) {
       session.isComplete = true;
       session.endTime = new Date();
-      console.log(`[TutoringEngine] Session ${sessionId} marked as complete`);
     }
 
     return {
@@ -176,29 +165,15 @@ export class TutoringEngine {
   shouldEndSession(sessionId: number): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      console.log(`[TutoringEngine] Session ${sessionId} not found for shouldEndSession`);
-      return false;
+        return false;
     }
 
-    console.log(`[TutoringEngine] Checking session completion for ${sessionId}`);
-    
     // 모든 표현이 완료되었는지 확인
-    const states = Array.from(session.expressionStates.values());
-    console.log(`[TutoringEngine] Expression states:`, states.map(s => ({
-      id: s.expressionId,
-      text: s.text,
-      isCompleted: s.isCompleted,
-      attempts: s.attempts
-    })));
-    
     for (const state of session.expressionStates.values()) {
       if (!state.isCompleted) {
-        console.log(`[TutoringEngine] Expression not completed: ${state.text}`);
         return false;
       }
     }
-
-    console.log(`[TutoringEngine] All expressions completed for session ${sessionId}`);
     return true;
   }
 

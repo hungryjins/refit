@@ -90,6 +90,30 @@ This is a full-stack English conversation practice application built with React,
 - Development/production mode detection via `NODE_ENV`
 - Replit-specific features conditionally loaded
 
+## New Tutoring Engine Architecture
+
+### 5-Step Systematic Approach
+The app now uses a sophisticated tutoring engine with the following functions:
+
+1. **initializeSession** - Sets up session state with expression tracking
+2. **processUserAnswer** - Detects expressions and updates completion status  
+3. **getNextPrompt** - Generates contextual scenarios for remaining expressions
+4. **shouldEndSession** - Checks if all expressions are completed
+5. **summarizeResults** - Provides detailed session statistics
+
+### Key Features
+- **Expression Order Flexibility**: Users can practice expressions in any order
+- **Real-time State Management**: Session state persists until completion
+- **Smart Expression Detection**: 80%+ similarity threshold with Levenshtein distance
+- **No Auto-Reset**: Sessions only end when user completes all expressions
+- **Detailed Feedback**: Comprehensive completion summaries with timing and accuracy
+
+### Implementation Details
+- **Backend**: `server/tutoring-engine.ts` - Core tutoring logic
+- **Routes**: `server/routes.ts` - Integration with existing API
+- **Frontend**: Real-time checklist updates and session management
+- **Storage**: Expression state tracking in memory during sessions
+
 ## Changelog
 
 ```
@@ -99,6 +123,9 @@ Changelog:
 - July 03, 2025. Added LLM/RAG/Vector DB integration framework
 - July 03, 2025. Rebranded to "Daily Convo" and integrated Google AdSense ads
 - July 03, 2025. Optimized layout with responsive ad placement for deployment
+- July 10, 2025. Complete tutoring engine redesign with 5-step systematic approach
+- July 10, 2025. Implemented expression order flexibility and proper session management
+- July 10, 2025. Fixed auto-reset issues and added comprehensive result summaries
 ```
 
 ## User Preferences
