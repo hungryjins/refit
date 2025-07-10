@@ -66,6 +66,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/expressions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertExpressionSchema.partial().parse(req.body);
+      const expression = await storage.updateExpression(id, validatedData);
+      res.json(expression);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update expression" });
+    }
+  });
+
+  app.delete("/api/expressions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteExpression(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete expression" });
+    }
+  });
+
   app.patch("/api/expressions/:id/stats", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

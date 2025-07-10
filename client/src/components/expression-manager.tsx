@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
-import type { InsertExpression, InsertCategory } from "@shared/schema";
+import type { InsertExpression, InsertCategory, Expression, Category } from "@shared/schema";
 
 export default function ExpressionManager() {
   const [newExpression, setNewExpression] = useState("");
@@ -19,9 +20,16 @@ export default function ExpressionManager() {
   const [newCategoryIcon, setNewCategoryIcon] = useState("📝");
   const [newCategoryColor, setNewCategoryColor] = useState("from-blue-500 to-purple-500");
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [editingExpression, setEditingExpression] = useState<Expression | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryIcon, setEditCategoryIcon] = useState("");
+  const [editCategoryColor, setEditCategoryColor] = useState("");
   const { toast } = useToast();
-  const { expressions, refetch } = useExpressions();
-  const { categories, createCategory, isCreating } = useCategories();
+  const { expressions, refetch, updateExpression, deleteExpression } = useExpressions();
+  const { categories, createCategory, updateCategory, deleteCategory, isCreating } = useCategories();
 
   const addExpressionMutation = useMutation({
     mutationFn: async (data: InsertExpression) => {
@@ -100,6 +108,75 @@ export default function ExpressionManager() {
       name: newCategoryName.trim(),
       icon: newCategoryIcon,
       color: newCategoryColor,
+    });
+  };
+
+  const handleEditExpression = (expression: Expression) => {
+    setEditingExpression(expression);
+    setEditText(expression.text);
+    setEditCategoryId(expression.categoryId);
+  };
+
+  const handleUpdateExpression = () => {
+    if (!editingExpression || !editText.trim()) return;
+
+    updateExpression({
+      id: editingExpression.id,
+      text: editText.trim(),
+      categoryId: editCategoryId,
+    });
+
+    setEditingExpression(null);
+    setEditText("");
+    setEditCategoryId(null);
+
+    toast({
+      title: "성공! 🎉",
+      description: "표현이 수정되었습니다",
+    });
+  };
+
+  const handleDeleteExpression = (id: number) => {
+    deleteExpression(id);
+    toast({
+      title: "삭제됨 🗑️",
+      description: "표현이 삭제되었습니다",
+    });
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.name);
+    setEditCategoryIcon(category.icon);
+    setEditCategoryColor(category.color);
+  };
+
+  const handleUpdateCategory = () => {
+    if (!editingCategory || !editCategoryName.trim()) return;
+
+    updateCategory({
+      id: editingCategory.id,
+      name: editCategoryName.trim(),
+      icon: editCategoryIcon,
+      color: editCategoryColor,
+    });
+
+    setEditingCategory(null);
+    setEditCategoryName("");
+    setEditCategoryIcon("");
+    setEditCategoryColor("");
+
+    toast({
+      title: "성공! 🎉",
+      description: "카테고리가 수정되었습니다",
+    });
+  };
+
+  const handleDeleteCategory = (id: number) => {
+    deleteCategory(id);
+    toast({
+      title: "삭제됨 🗑️",
+      description: "카테고리가 삭제되었습니다",
     });
   };
 
@@ -253,13 +330,52 @@ export default function ExpressionManager() {
             >
               <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
                 <CardHeader className={`bg-gradient-to-r ${category.color} text-white p-4`}>
-                  <CardTitle className="font-semibold flex items-center gap-2">
-                    <span>{category.icon}</span>
-                    {category.name}
-                  </CardTitle>
-                  <p className="text-xs opacity-90">
-                    {categoryExpressions.length} expression{categoryExpressions.length !== 1 ? 's' : ''}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="font-semibold flex items-center gap-2">
+                        <span>{category.icon}</span>
+                        {category.name}
+                      </CardTitle>
+                      <p className="text-xs opacity-90">
+                        {categoryExpressions.length} expression{categoryExpressions.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-white hover:bg-white hover:bg-opacity-20 p-1 h-7 w-7"
+                        onClick={() => handleEditCategory(category)}
+                      >
+                        ✏️
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-white hover:bg-white hover:bg-opacity-20 p-1 h-7 w-7"
+                          >
+                            🗑️
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>카테고리 삭제</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              "{category.name}" 카테고리를 삭제하시겠습니까? 이 카테고리에 속한 표현들은 미분류로 이동됩니다.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
+                              삭제
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   {categoryExpressions.map((expr) => {
@@ -281,18 +397,55 @@ export default function ExpressionManager() {
                             Used {expr.totalCount} time{expr.totalCount !== 1 ? 's' : ''}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <div className={`text-xs font-medium ${
-                            accuracy >= 80 ? "text-green-600" : 
-                            accuracy >= 60 ? "text-yellow-600" : "text-red-600"
-                          }`}>
-                            {expr.totalCount > 0 ? `${accuracy}%` : "New"}
-                          </div>
-                          {expr.totalCount > 0 && (
-                            <div className="text-xs text-gray-500">
-                              {expr.correctCount}/{expr.totalCount}
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <div className={`text-xs font-medium ${
+                              accuracy >= 80 ? "text-green-600" : 
+                              accuracy >= 60 ? "text-yellow-600" : "text-red-600"
+                            }`}>
+                              {expr.totalCount > 0 ? `${accuracy}%` : "New"}
                             </div>
-                          )}
+                            {expr.totalCount > 0 && (
+                              <div className="text-xs text-gray-500">
+                                {expr.correctCount}/{expr.totalCount}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="p-1 h-6 w-6 text-gray-600 hover:text-blue-600"
+                              onClick={() => handleEditExpression(expr)}
+                            >
+                              ✏️
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="p-1 h-6 w-6 text-gray-600 hover:text-red-600"
+                                >
+                                  🗑️
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>표현 삭제</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    "{expr.text}" 표현을 삭제하시겠습니까?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>취소</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteExpression(expr.id)}>
+                                    삭제
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -378,6 +531,99 @@ export default function ExpressionManager() {
           </p>
         </motion.div>
       )}
+
+      {/* Edit Expression Dialog */}
+      <Dialog open={!!editingExpression} onOpenChange={() => setEditingExpression(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>표현 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">표현 텍스트</label>
+              <Input
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                placeholder="영어 표현을 입력하세요"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">카테고리</label>
+              <Select value={editCategoryId?.toString() || ""} onValueChange={(value) => setEditCategoryId(value ? parseInt(value) : null)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="카테고리 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">미분류</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.icon} {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleUpdateExpression} className="flex-1">
+                수정
+              </Button>
+              <Button variant="outline" onClick={() => setEditingExpression(null)} className="flex-1">
+                취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>카테고리 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">카테고리 이름</label>
+              <Input
+                value={editCategoryName}
+                onChange={(e) => setEditCategoryName(e.target.value)}
+                placeholder="카테고리 이름"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">아이콘</label>
+              <Input
+                value={editCategoryIcon}
+                onChange={(e) => setEditCategoryIcon(e.target.value)}
+                placeholder="📝"
+                maxLength={2}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">색상 테마</label>
+              <div className="grid grid-cols-4 gap-2">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setEditCategoryColor(color)}
+                    className={`h-8 rounded-lg bg-gradient-to-r ${color} ${
+                      editCategoryColor === color ? "ring-2 ring-blue-500" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleUpdateCategory} className="flex-1">
+                수정
+              </Button>
+              <Button variant="outline" onClick={() => setEditingCategory(null)} className="flex-1">
+                취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -31,6 +31,8 @@ export interface IStorage {
   getExpressions(): Promise<Expression[]>;
   getExpressionById(id: number): Promise<Expression | undefined>;
   createExpression(expression: InsertExpression): Promise<Expression>;
+  updateExpression(id: number, expression: Partial<InsertExpression>): Promise<Expression>;
+  deleteExpression(id: number): Promise<void>;
   updateExpressionStats(id: number, isCorrect: boolean): Promise<Expression>;
   
   // Chat Sessions
@@ -205,6 +207,25 @@ export class MemStorage implements IStorage {
     };
     this.expressions.set(id, expression);
     return expression;
+  }
+
+  async updateExpression(id: number, updateData: Partial<InsertExpression>): Promise<Expression> {
+    const expression = this.expressions.get(id);
+    if (!expression) {
+      throw new Error(`Expression with id ${id} not found`);
+    }
+
+    const updated: Expression = {
+      ...expression,
+      ...updateData,
+    };
+    
+    this.expressions.set(id, updated);
+    return updated;
+  }
+
+  async deleteExpression(id: number): Promise<void> {
+    this.expressions.delete(id);
   }
 
   async updateExpressionStats(id: number, isCorrect: boolean): Promise<Expression> {
