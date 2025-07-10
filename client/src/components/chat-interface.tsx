@@ -111,6 +111,8 @@ export default function ChatInterface() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
+      console.log("sendMessageMutation called with content:", content);
+      
       if (!activeSession) {
         const newSession = await createSession("Coffee shop conversation");
         const sessionId = newSession.id;
@@ -124,7 +126,8 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
-        return { sessionId, userMessage };
+        console.log("Created user message:", userMessage);
+        return { sessionId, userMessage, originalContent: content };
       } else {
         const userMessage = await apiRequest("POST", "/api/chat/messages", {
           sessionId: activeSession.id,
@@ -134,24 +137,29 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
-        return { sessionId: activeSession.id, userMessage };
+        console.log("Created user message:", userMessage);
+        return { sessionId: activeSession.id, userMessage, originalContent: content };
       }
     },
-    onSuccess: async ({ sessionId, userMessage }) => {
+    onSuccess: async ({ sessionId, userMessage, originalContent }) => {
       setIsTyping(true);
       
       // Generate bot response
       try {
+        // Use the original content that was passed to the mutation
+        const messageContent = userMessage.content || originalContent;
+        
         console.log("Sending request to /api/chat/respond with:", {
-          message: userMessage.content,
+          message: messageContent,
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
         
         console.log("User message content:", userMessage.content);
+        console.log("Original content:", originalContent);
         
         const response = await apiRequest("POST", "/api/chat/respond", {
-          message: userMessage.content, // Use the actual message content from the created message
+          message: messageContent, // Use either the saved content or original content
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
