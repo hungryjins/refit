@@ -250,21 +250,7 @@ export default function ChatInterface() {
     }
   };
 
-  // Initialize first session with welcome message (only if in setup mode)
-  useEffect(() => {
-    if (!activeSession && expressions.length > 0 && isSetupMode) {
-      createSession("Welcome conversation").then(async (newSession) => {
-        await apiRequest("POST", "/api/chat/messages", {
-          sessionId: newSession.id,
-          content: "Hello! I'm excited to help you practice English conversation. Let's start with a scenario at a coffee shop. You're ordering your favorite drink. What would you like to say to the barista?",
-          isUser: false,
-          expressionUsed: null,
-          isCorrect: null,
-        });
-        queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
-      });
-    }
-  }, [activeSession, expressions.length, createSession, queryClient, isSetupMode]);
+  // No automatic session creation - user must explicitly start sessions
 
   const filteredExpressions = selectedCategory 
     ? expressions.filter(expr => expr.categoryId === selectedCategory.id)
