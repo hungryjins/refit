@@ -20,7 +20,7 @@ export default function NavigationHeader() {
               <span className="text-lg">💬</span>
             </motion.div>
             <div>
-              <h1 className="text-xl font-bold">Refit</h1>
+              <h1 className="text-xl font-bold">Convo</h1>
               <p className="text-xs opacity-90">Master conversations daily</p>
             </div>
           </div>
