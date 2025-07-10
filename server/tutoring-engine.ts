@@ -120,7 +120,8 @@ export class TutoringEngine {
           isCorrect = true;
           feedback = `✅ 완벽합니다! "${detectedExpression.text}" 표현을 정확하게 사용했습니다!`;
         } else {
-          // 이미 완료된 표현을 다시 사용한 경우
+          // 이미 완료된 표현을 다시 사용한 경우 - 여전히 정답으로 처리
+          isCorrect = true;
           feedback = `✅ "${detectedExpression.text}" 표현을 또 사용하셨네요! 이미 완료된 표현입니다.`;
         }
       }
