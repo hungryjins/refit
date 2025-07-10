@@ -54,21 +54,35 @@ export default function SessionCompleteModal({
           <div className={`text-center p-4 rounded-lg border ${
             accuracy === 100 
               ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-              : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+              : accuracy >= 70
+              ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+              : "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800"
           }`}>
             <h3 className={`text-lg font-semibold mb-2 ${
               accuracy === 100 
                 ? "text-green-800 dark:text-green-200"
-                : "text-blue-800 dark:text-blue-200"
+                : accuracy >= 70
+                ? "text-blue-800 dark:text-blue-200"
+                : "text-orange-800 dark:text-orange-200"
             }`}>
-              {accuracy === 100 ? "🎉 축하합니다!" : "📚 연습 완료!"}
+              {accuracy === 100 
+                ? "🎉 축하합니다!" 
+                : accuracy >= 70
+                ? "📚 연습 완료!"
+                : "💪 연습 완료!"
+              }
             </h3>
-            <p className={accuracy === 100 
-              ? "text-green-700 dark:text-green-300"
-              : "text-blue-700 dark:text-blue-300"
+            <p className={
+              accuracy === 100 
+                ? "text-green-700 dark:text-green-300"
+                : accuracy >= 70
+                ? "text-blue-700 dark:text-blue-300"
+                : "text-orange-700 dark:text-orange-300"
             }>
               {accuracy === 100 
                 ? "모든 표현을 성공적으로 연습했습니다!"
+                : accuracy >= 70
+                ? "모든 표현을 연습했습니다. 계속 연습하면 더 좋아질 거예요!"
                 : "모든 표현을 연습했습니다. 계속 연습하면 더 좋아질 거예요!"
               }
             </p>
