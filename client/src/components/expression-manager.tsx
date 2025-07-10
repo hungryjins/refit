@@ -211,32 +211,32 @@ export default function ExpressionManager() {
         className="gradient-primary rounded-2xl shadow-lg p-6 text-white"
       >
         <h3 className="text-xl font-bold mb-4 flex items-center">
-          ➕ Add New Expression
+          ➕ {t('expressions.add.new')}
         </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2 opacity-90">
-              English Expression
+              {t('expressions.english.expression')}
             </label>
             <Input
               value={newExpression}
               onChange={(e) => setNewExpression(e.target.value)}
-              placeholder="e.g., Could you please help me with..."
+              placeholder={t('expressions.placeholder')}
               className="w-full bg-white bg-opacity-20 backdrop-blur-sm rounded-xl py-3 px-4 text-white placeholder-white placeholder-opacity-70 border-white border-opacity-30 focus:ring-2 focus:ring-white focus:ring-opacity-50"
               onKeyPress={(e) => e.key === "Enter" && handleAddExpression()}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 opacity-90">
-              Category (Optional)
+              {t('expressions.category.optional')}
             </label>
             <div className="flex gap-2">
               <Select value={selectedCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setSelectedCategoryId(value === "uncategorized" ? null : parseInt(value))}>
                 <SelectTrigger className="flex-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl py-3 px-4 text-white border-white border-opacity-30">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder={t('expressions.select.category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="uncategorized">미분류</SelectItem>
+                  <SelectItem value="uncategorized">{t('expressions.uncategorized')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -253,22 +253,22 @@ export default function ExpressionManager() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Create New Category</DialogTitle>
+                    <DialogTitle>{t('expressions.create.category')}</DialogTitle>
                     <DialogDescription>
-                      새로운 카테고리를 만들어 표현들을 분류해보세요.
+                      {t('expressions.create.description')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Category Name</label>
+                      <label className="block text-sm font-medium mb-2">{t('expressions.category.name')}</label>
                       <Input
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="e.g., Daily Conversations"
+                        placeholder={t('expressions.category.placeholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Icon</label>
+                      <label className="block text-sm font-medium mb-2">{t('expressions.icon')}</label>
                       <Input
                         value={newCategoryIcon}
                         onChange={(e) => setNewCategoryIcon(e.target.value)}
@@ -277,7 +277,7 @@ export default function ExpressionManager() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Color Theme</label>
+                      <label className="block text-sm font-medium mb-2">{t('expressions.color.theme')}</label>
                       <div className="grid grid-cols-4 gap-2">
                         {colorOptions.map((color) => (
                           <button
@@ -296,14 +296,14 @@ export default function ExpressionManager() {
                         disabled={addCategoryMutation.isPending}
                         className="flex-1"
                       >
-                        {addCategoryMutation.isPending ? "Creating..." : "Create Category"}
+                        {addCategoryMutation.isPending ? t('expressions.creating') : t('expressions.create')}
                       </Button>
                       <Button 
                         variant="outline" 
                         onClick={() => setIsCreateCategoryOpen(false)}
                         className="flex-1"
                       >
-                        Cancel
+                        {t('expressions.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -316,7 +316,7 @@ export default function ExpressionManager() {
             disabled={addExpressionMutation.isPending}
             className="w-full bg-white text-primary-600 font-semibold py-3 rounded-xl hover:bg-opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            {addExpressionMutation.isPending ? "Saving..." : "💾 Save Expression"}
+            {addExpressionMutation.isPending ? t('expressions.saving') : t('expressions.save.expression')}
           </Button>
         </div>
       </motion.div>
