@@ -168,8 +168,10 @@ export default function ChatInterface() {
         });
         
         console.log("Received response:", response);
+        console.log("Response keys:", Object.keys(response));
         console.log("Session complete:", response.sessionComplete);
         console.log("Session stats:", response.sessionStats);
+        console.log("Full response object:", JSON.stringify(response, null, 2));
         
         // Handle expression detection and update UI
         if (response.detectedExpression && response.detectedExpression.isCorrect) {
