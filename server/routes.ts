@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate conversation response with AI service
   app.post("/api/chat/respond", async (req, res) => {
     try {
-      const { message, sessionId } = req.body;
+      const { message, sessionId, selectedExpressions } = req.body;
       
       // Get conversation context
       const expressions = await storage.getExpressions();
@@ -195,9 +195,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content,
       }));
 
+      // Use only selected expressions if provided
+      const targetExpressions = selectedExpressions && selectedExpressions.length > 0
+        ? expressions.filter(expr => selectedExpressions.includes(expr.id))
+        : expressions;
+
       // Prepare context for AI service
       const context = {
-        userExpressions: expressions,
+        userExpressions: targetExpressions,
         conversationHistory,
         scenario: currentSession?.scenario || "General conversation",
         messageCount: messages.filter(m => m.isUser).length,
@@ -286,6 +291,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const words2 = str2.split(' ');
     const commonWords = words1.filter(word => words2.includes(word));
     return commonWords.length / Math.max(words1.length, words2.length);
+  }
+
+  function getScenarioResponsesForSelectedExpressions(expressions: any[], messageCount: number): string[] {
+    const expressionTexts = expressions.map(e => `"${e.text}"`).slice(0, 3).join(", ");
+    
+    if (messageCount < 3) {
+      return [
+        `Great! Try using expressions like ${expressionTexts} in our conversation.`,
+        `Perfect start! Can you incorporate ${expressionTexts} naturally into your responses?`,
+        `Excellent! I'd love to hear you use expressions such as ${expressionTexts}.`,
+      ];
+    } else if (messageCount < 6) {
+      return [
+        `You're doing well! Remember to practice with ${expressionTexts} when appropriate.`,
+        `Nice flow! Try to naturally include ${expressionTexts} in your next responses.`,
+        `Great conversation! Can you work in expressions like ${expressionTexts}?`,
+      ];
+    } else {
+      return [
+        `Excellent practice! Keep using those expressions like ${expressionTexts}.`,
+        `You're really improving! Continue incorporating ${expressionTexts} naturally.`,
+        `Amazing job! These expressions ${expressionTexts} are becoming more natural for you.`,
+      ];
+    }
   }
 
   function getScenarioResponses(expressions: any[], messageCount: number): string[] {

@@ -3,11 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useChatSession } from "@/hooks/use-chat";
 import { useExpressions } from "@/hooks/use-expressions";
-import type { ChatMessage, Expression } from "@shared/schema";
+import { useCategories } from "@/hooks/use-categories";
+import type { ChatMessage, Expression, Category } from "@shared/schema";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -90,12 +93,16 @@ function TypingIndicator() {
 export default function ChatInterface() {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedExpressions, setSelectedExpressions] = useState<Set<number>>(new Set());
+  const [isSetupMode, setIsSetupMode] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { activeSession, createSession } = useChatSession();
   const { expressions } = useExpressions();
+  const { categories } = useCategories();
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: [`/api/chat/sessions/${activeSession?.id}/messages`],
@@ -138,6 +145,7 @@ export default function ChatInterface() {
         const response = await apiRequest("POST", "/api/chat/respond", {
           message,
           sessionId,
+          selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
         const responseData = await response.json();
         
@@ -206,8 +214,221 @@ export default function ChatInterface() {
     }
   }, [activeSession, expressions.length, createSession, queryClient]);
 
+  const filteredExpressions = selectedCategory 
+    ? expressions.filter(expr => expr.categoryId === selectedCategory.id)
+    : [];
+
+  const handleCategorySelect = (category: Category) => {
+    setSelectedCategory(category);
+    setSelectedExpressions(new Set());
+  };
+
+  const handleExpressionToggle = (expressionId: number) => {
+    const newSelected = new Set(selectedExpressions);
+    if (newSelected.has(expressionId)) {
+      newSelected.delete(expressionId);
+    } else {
+      newSelected.add(expressionId);
+    }
+    setSelectedExpressions(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedExpressions.size === filteredExpressions.length) {
+      setSelectedExpressions(new Set());
+    } else {
+      setSelectedExpressions(new Set(filteredExpressions.map(expr => expr.id)));
+    }
+  };
+
+  const handleStartChat = async () => {
+    if (selectedExpressions.size === 0) {
+      toast({
+        title: "표현을 선택하세요",
+        description: "최소 하나의 표현을 선택해야 대화를 시작할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSetupMode(false);
+    const selectedExpressionsArray = Array.from(selectedExpressions);
+    const newSession = await createSession(`${selectedCategory?.name} Practice`);
+    
+    await apiRequest("POST", "/api/chat/messages", {
+      sessionId: newSession.id,
+      content: `안녕하세요! ${selectedCategory?.name} 카테고리의 표현들을 연습해보겠습니다. 선택하신 ${selectedExpressionsArray.length}개의 표현을 자연스럽게 대화에 사용해보세요. 커피숍 상황으로 시작해볼까요?`,
+      isUser: false,
+      expressionUsed: null,
+      isCorrect: null,
+    });
+    queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
+  };
+
+  const handleBackToSetup = () => {
+    setIsSetupMode(true);
+    setSelectedCategory(null);
+    setSelectedExpressions(new Set());
+  };
+
   const expressionsUsed = messages.filter(m => m.expressionUsed).length;
-  const totalExpressions = expressions.length;
+  const totalExpressions = Array.from(selectedExpressions).length;
+
+  if (isSetupMode) {
+    return (
+      <div className="space-y-6">
+        {/* Setup Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="gradient-primary rounded-2xl shadow-lg p-6 text-white"
+        >
+          <h2 className="text-2xl font-bold mb-2">🎯 대화 연습 설정</h2>
+          <p className="opacity-90">연습하고 싶은 카테고리를 선택하고, 특정 표현들을 골라서 집중 연습해보세요.</p>
+        </motion.div>
+
+        {/* Category Selection */}
+        {!selectedCategory && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-2xl shadow-lg p-6"
+          >
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
+              📚 카테고리 선택
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((category, index) => (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleCategorySelect(category)}
+                  className="cursor-pointer"
+                >
+                  <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
+                    <CardHeader className={`bg-gradient-to-r ${category.color} text-white`}>
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <span className="text-lg">{category.icon}</span>
+                        {category.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-600">
+                        {expressions.filter(expr => expr.categoryId === category.id).length} 표현
+                      </p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Expression Selection */}
+        {selectedCategory && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-lg p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <span>{selectedCategory.icon}</span>
+                {selectedCategory.name} 표현 선택
+              </h3>
+              <Button variant="outline" onClick={() => setSelectedCategory(null)}>
+                뒤로가기
+              </Button>
+            </div>
+
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handleSelectAll}
+                  className="text-sm"
+                >
+                  {selectedExpressions.size === filteredExpressions.length ? "전체 해제" : "전체 선택"}
+                </Button>
+                <span className="text-sm text-gray-600">
+                  {selectedExpressions.size} / {filteredExpressions.length} 선택됨
+                </span>
+              </div>
+              <Button 
+                onClick={handleStartChat}
+                disabled={selectedExpressions.size === 0}
+                className="gradient-primary text-white"
+              >
+                대화 시작하기 ({selectedExpressions.size}개 표현)
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {filteredExpressions.map((expr, index) => {
+                const accuracy = expr.totalCount > 0 
+                  ? Math.round((expr.correctCount / expr.totalCount) * 100) 
+                  : 0;
+                
+                return (
+                  <motion.div
+                    key={expr.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                      selectedExpressions.has(expr.id) 
+                        ? "border-blue-500 bg-blue-50" 
+                        : "border-gray-200 hover:border-gray-300 bg-gray-50"
+                    }`}
+                    onClick={() => handleExpressionToggle(expr.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox 
+                          checked={selectedExpressions.has(expr.id)}
+                          onChange={() => handleExpressionToggle(expr.id)}
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">"{expr.text}"</p>
+                          <p className="text-sm text-gray-600">{selectedCategory.name}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {expr.totalCount > 0 ? (
+                          <div className="space-y-1">
+                            <div className={`text-sm font-medium ${
+                              accuracy >= 80 ? "text-green-600" : 
+                              accuracy >= 60 ? "text-yellow-600" : "text-red-600"
+                            }`}>
+                              {accuracy >= 80 ? "✅" : accuracy >= 60 ? "⚠️" : "❌"} {accuracy}%
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ✅ {expr.correctCount} ❌ {expr.totalCount - expr.correctCount}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              📅 {expr.lastUsed ? new Date(expr.lastUsed).toLocaleDateString() : "Never"}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {expr.totalCount} attempts
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">새로운 표현</div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -228,13 +449,23 @@ export default function ChatInterface() {
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  <span>Online • Ready to practice</span>
+                  <span>Online • {selectedCategory?.name} 연습중</span>
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs opacity-90">Session Progress</p>
-              <p className="font-bold">{expressionsUsed}/{totalExpressions} expressions used</p>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-xs opacity-90">Session Progress</p>
+                <p className="font-bold">{expressionsUsed}/{totalExpressions} expressions used</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleBackToSetup}
+                className="bg-white bg-opacity-20 border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-30"
+              >
+                새 연습
+              </Button>
             </div>
           </div>
         </div>
@@ -267,7 +498,7 @@ export default function ChatInterface() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your response here..."
+                placeholder="선택한 표현들을 사용해서 대화해보세요..."
                 className="w-full bg-gray-100 rounded-2xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
                 disabled={sendMessageMutation.isPending}
               />
@@ -292,31 +523,34 @@ export default function ChatInterface() {
         </div>
       </div>
 
-      {/* Quick Suggestions */}
-      {expressions.length > 0 && (
+      {/* Selected Expressions Reference */}
+      {!isSetupMode && selectedCategory && (
         <motion.div 
           className="bg-white rounded-2xl shadow-lg p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
-            💡 Suggested Expressions to Practice
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <span>{selectedCategory.icon}</span>
+            연습중인 표현들 ({selectedExpressions.size}개)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {expressions.slice(0, 4).map((expr, index) => (
-              <motion.div
-                key={expr.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200 cursor-pointer"
-                onClick={() => setMessage(expr.text)}
-              >
-                <p className="text-sm font-medium text-gray-800">"{expr.text}"</p>
-                <p className="text-xs text-gray-600 mt-1">{expr.category || "General"}</p>
-              </motion.div>
-            ))}
+            {Array.from(selectedExpressions).map((exprId) => {
+              const expr = expressions.find(e => e.id === exprId);
+              if (!expr) return null;
+              
+              return (
+                <motion.div
+                  key={expr.id}
+                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  onClick={() => setMessage(expr.text)}
+                >
+                  <p className="text-sm font-medium text-gray-800">"{expr.text}"</p>
+                  <p className="text-xs text-gray-600 mt-1">클릭해서 사용하기</p>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       )}
