@@ -277,17 +277,28 @@ export default function ChatInterface() {
     }
 
     setIsSetupMode(false);
-    const selectedExpressionsArray = Array.from(selectedExpressions);
-    const newSession = await createSession(`${selectedCategory?.name} Practice`);
     
-    await apiRequest("POST", "/api/chat/messages", {
-      sessionId: newSession.id,
-      content: `안녕하세요! ${selectedCategory?.name} 카테고리의 표현들을 연습해보겠습니다. 선택하신 ${selectedExpressionsArray.length}개의 표현을 자연스럽게 대화에 사용해보세요. 커피숍 상황으로 시작해볼까요?`,
-      isUser: false,
-      expressionUsed: null,
-      isCorrect: null,
-    });
-    queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
+    // Create new session
+    const categoryName = selectedCategory?.name || "Practice";
+    const newSession = await createSession(`${categoryName} Practice`);
+    
+    // Generate initial AI scenario message
+    try {
+      const response = await apiRequest("POST", "/api/chat/respond", {
+        message: "START_SESSION", // Special message to trigger initial scenario
+        sessionId: newSession.id,
+        selectedExpressions: Array.from(selectedExpressions),
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/chat/sessions/${newSession.id}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start chat session",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBackToSetup = () => {
@@ -565,14 +576,44 @@ export default function ChatInterface() {
               const expr = expressions.find(e => e.id === exprId);
               if (!expr) return null;
               
+              const usedMessage = messages.find(m => m.isUser && m.expressionUsed === exprId);
+              
               return (
                 <motion.div
                   key={expr.id}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    usedMessage
+                      ? usedMessage.isCorrect
+                        ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-md'
+                        : 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 hover:shadow-md'
+                      : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100 hover:shadow-md'
+                  }`}
                   onClick={() => setMessage(expr.text)}
                 >
-                  <p className="text-sm font-medium text-gray-800">"{expr.text}"</p>
-                  <p className="text-xs text-gray-600 mt-1">클릭해서 사용하기</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        usedMessage
+                          ? usedMessage.isCorrect
+                            ? 'text-green-800 line-through opacity-75'
+                            : 'text-yellow-800 line-through opacity-75'
+                          : 'text-gray-800'
+                      }`}>
+                        "{expr.text}"
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {usedMessage ? '완료됨' : '클릭해서 사용하기'}
+                      </p>
+                    </div>
+                    <span className="text-lg">
+                      {usedMessage
+                        ? usedMessage.isCorrect
+                          ? '✅'
+                          : '⚠️'
+                        : '⭕'
+                      }
+                    </span>
+                  </div>
                 </motion.div>
               );
             })}

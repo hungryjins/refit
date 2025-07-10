@@ -227,6 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Manual expression detection for selected expressions
       let detectedExpression = null;
       let isCorrect = false;
+      let feedbackMessage = "";
       
       if (selectedExpressions && selectedExpressions.length > 0) {
         // Check if user message contains any of the selected expressions
@@ -238,11 +239,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               detectedExpression = expr;
               isCorrect = similarity > 0.8;
               
+              if (isCorrect) {
+                feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
+              } else {
+                feedbackMessage = `⚠️ 좋은 시도입니다! "${expr.text}" 표현과 비슷하지만 조금 더 정확하게 사용해보세요.`;
+              }
+              
               // Update expression stats
               await storage.updateExpressionStats(expr.id, isCorrect);
               break;
             }
           }
+        }
+        
+        // If no expression was detected
+        if (!detectedExpression) {
+          feedbackMessage = "💡 연습중인 표현을 사용해보세요!";
         }
       }
 
@@ -294,12 +306,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
       }
 
+      // Combine AI response with feedback
+      let finalResponse = aiResponse.response;
+      if (feedbackMessage) {
+        finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
+      }
+      
+      if (sessionComplete) {
+        finalResponse += `\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`;
+      }
+
       // Save the AI response as a chat message
       await storage.createChatMessage({
         sessionId: sessionId,
-        content: sessionComplete 
-          ? `${aiResponse.response}\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`
-          : aiResponse.response,
+        content: finalResponse,
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
@@ -398,26 +418,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function getScenarioResponsesForSelectedExpressions(expressions: any[], messageCount: number): string[] {
-    const expressionTexts = expressions.map(e => `"${e.text}"`).slice(0, 3).join(", ");
+    const remainingExpressions = expressions.filter(expr => {
+      // This would need to check against used expressions in a real implementation
+      return true; // For now, assume all are remaining
+    });
     
-    if (messageCount < 3) {
-      return [
-        `Great! Try using expressions like ${expressionTexts} in our conversation.`,
-        `Perfect start! Can you incorporate ${expressionTexts} naturally into your responses?`,
-        `Excellent! I'd love to hear you use expressions such as ${expressionTexts}.`,
-      ];
-    } else if (messageCount < 6) {
-      return [
-        `You're doing well! Remember to practice with ${expressionTexts} when appropriate.`,
-        `Nice flow! Try to naturally include ${expressionTexts} in your next responses.`,
-        `Great conversation! Can you work in expressions like ${expressionTexts}?`,
-      ];
+    if (messageCount === 0) {
+      // Initial scenario setup based on category
+      if (expressions.some(e => e.text.includes("coffee") || e.text.includes("order"))) {
+        return [
+          "Welcome to our coffee shop! I'm your barista today. You look like you might want to place an order. What can I get started for you?",
+          "Good morning! Welcome to Daily Brew. I see you checking out our menu. Are you ready to order something delicious?",
+          "Hi there! I'm here to help you with your order today. What's catching your eye on our menu?"
+        ];
+      } else if (expressions.some(e => e.text.includes("nice to meet") || e.text.includes("hello"))) {
+        return [
+          "Hello! I'm new here and looking to make some friends. I heard this is a great place to meet people. Are you from around here?",
+          "Hi there! I just moved to this neighborhood. You seem friendly - mind if I introduce myself?",
+          "Good morning! I'm waiting for my friend who's running late. Would you like to chat while I wait?"
+        ];
+      } else {
+        return [
+          "Hi! I'm excited to practice English conversation with you today. Let's start with a friendly chat - how are you doing?",
+          "Hello! Welcome to our conversation practice. I'd love to get to know you better. What brings you here today?",
+          "Good to see you! I'm here to help you practice. Let's begin with some natural conversation."
+        ];
+      }
+    } else if (messageCount === 1) {
+      // Guide toward first expression
+      const firstExpr = remainingExpressions[0];
+      if (firstExpr) {
+        return [
+          `That's great! Now, I'm curious about your preferences. ${getPromptForExpression(firstExpr)}`,
+          `Perfect! I'd love to know more. ${getPromptForExpression(firstExpr)}`,
+          `Wonderful! Let me ask you something. ${getPromptForExpression(firstExpr)}`
+        ];
+      }
     } else {
-      return [
-        `Excellent practice! Keep using those expressions like ${expressionTexts}.`,
-        `You're really improving! Continue incorporating ${expressionTexts} naturally.`,
-        `Amazing job! These expressions ${expressionTexts} are becoming more natural for you.`,
-      ];
+      // Continue guiding toward remaining expressions
+      const nextExpr = remainingExpressions[Math.floor(Math.random() * remainingExpressions.length)];
+      if (nextExpr) {
+        return [
+          `Great conversation! Now, ${getPromptForExpression(nextExpr)}`,
+          `That's interesting! ${getPromptForExpression(nextExpr)}`,
+          `I see! Let me ask you something else. ${getPromptForExpression(nextExpr)}`
+        ];
+      }
+    }
+    
+    return [
+      "That's wonderful! Keep practicing - you're doing great!",
+      "Excellent! Your English is really improving.",
+      "Perfect! You're using natural expressions well."
+    ];
+  }
+
+  function getPromptForExpression(expression: any): string {
+    const text = expression.text.toLowerCase();
+    
+    if (text.includes("coffee") || text.includes("order")) {
+      return "What would you like to order from our menu today?";
+    } else if (text.includes("nice to meet")) {
+      return "I'd love to get to know you better!";
+    } else if (text.includes("excuse me")) {
+      return "Oh, I think you might need to ask me something?";
+    } else if (text.includes("help")) {
+      return "It looks like you might need some assistance with something?";
+    } else if (text.includes("thank you")) {
+      return "I just helped you with something - how do you feel about it?";
+    } else {
+      return "How would you express this naturally in English?";
     }
   }
 
