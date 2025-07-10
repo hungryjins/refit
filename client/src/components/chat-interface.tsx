@@ -11,6 +11,7 @@ import { useChatSession } from "@/hooks/use-chat";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
 import SessionCompleteModal from "./session-complete-modal";
+import { useLanguage } from "@/contexts/language-context";
 import type { ChatMessage, Expression, Category } from "@shared/schema";
 
 interface ChatBubbleProps {
@@ -102,6 +103,7 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const { activeSession, createSession } = useChatSession();
   const { expressions } = useExpressions();
@@ -390,8 +392,8 @@ export default function ChatInterface() {
           animate={{ opacity: 1, y: 0 }}
           className="gradient-primary rounded-2xl shadow-lg p-6 text-white"
         >
-          <h2 className="text-2xl font-bold mb-2">🎯 대화 연습 설정</h2>
-          <p className="opacity-90">연습하고 싶은 카테고리를 선택하고, 특정 표현들을 골라서 집중 연습해보세요.</p>
+          <h2 className="text-2xl font-bold mb-2">🎯 {t('chat.title')}</h2>
+          <p className="opacity-90">{t('chat.description')}</p>
         </motion.div>
 
         {/* Category Selection */}
@@ -403,7 +405,7 @@ export default function ChatInterface() {
             className="bg-white rounded-2xl shadow-lg p-6"
           >
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
-              📚 카테고리 선택
+              📚 {t('chat.category.selection')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {categories.map((category, index) => (
@@ -424,7 +426,7 @@ export default function ChatInterface() {
                     </CardHeader>
                     <CardContent className="p-4">
                       <p className="text-sm text-gray-600">
-                        {expressions.filter(expr => expr.categoryId === category.id).length} 표현
+                        {expressions.filter(expr => expr.categoryId === category.id).length} {t('chat.expressions.count')}
                       </p>
                     </CardContent>
                   </Card>
@@ -444,10 +446,10 @@ export default function ChatInterface() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                 <span>{selectedCategory.icon}</span>
-                {selectedCategory.name} 표현 선택
+                {selectedCategory.name} {t('chat.select.expressions')}
               </h3>
               <Button variant="outline" onClick={() => setSelectedCategory(null)}>
-                뒤로가기
+                {t('chat.back')}
               </Button>
             </div>
 
@@ -458,10 +460,10 @@ export default function ChatInterface() {
                   onClick={handleSelectAll}
                   className="text-sm"
                 >
-                  {selectedExpressions.size === filteredExpressions.length ? "전체 해제" : "전체 선택"}
+                  {selectedExpressions.size === filteredExpressions.length ? t('chat.deselect.all') : t('chat.select.all')}
                 </Button>
                 <span className="text-sm text-gray-600">
-                  {selectedExpressions.size} / {filteredExpressions.length} 선택됨
+                  {selectedExpressions.size} / {filteredExpressions.length} {t('chat.selected')}
                 </span>
               </div>
               <Button 
@@ -469,7 +471,7 @@ export default function ChatInterface() {
                 disabled={selectedExpressions.size === 0}
                 className="gradient-primary text-white"
               >
-                대화 시작하기 ({selectedExpressions.size}개 표현)
+                {t('chat.start.conversation')} ({selectedExpressions.size} {t('expressions.total')})
               </Button>
             </div>
 
@@ -516,14 +518,14 @@ export default function ChatInterface() {
                               ✅ {expr.correctCount} ❌ {expr.totalCount - expr.correctCount}
                             </div>
                             <div className="text-xs text-gray-500">
-                              📅 {expr.lastUsed ? new Date(expr.lastUsed).toLocaleDateString() : "Never"}
+                              📅 {expr.lastUsed ? new Date(expr.lastUsed).toLocaleDateString() : t('chat.never')}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {expr.totalCount} attempts
+                              {expr.totalCount} {t('chat.attempts')}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-sm text-gray-500">새로운 표현</div>
+                          <div className="text-sm text-gray-500">{t('chat.new.expression')}</div>
                         )}
                       </div>
                     </div>
@@ -556,14 +558,14 @@ export default function ChatInterface() {
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  <span>Online • {selectedCategory?.name} 연습중</span>
+                  <span>Online • {selectedCategory?.name} {t('chat.practicing')}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-xs opacity-90">Session Progress</p>
-                <p className="font-bold">{expressionsUsed}/{totalExpressions} expressions used</p>
+                <p className="text-xs opacity-90">{t('chat.session.progress')}</p>
+                <p className="font-bold">{expressionsUsed}/{totalExpressions} {t('chat.expressions.used')}</p>
               </div>
               <Button 
                 variant="outline" 
@@ -571,7 +573,7 @@ export default function ChatInterface() {
                 onClick={handleBackToSetup}
                 className="bg-white bg-opacity-20 border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-30"
               >
-                새 연습
+                {t('chat.new.practice')}
               </Button>
             </div>
           </div>
@@ -605,7 +607,7 @@ export default function ChatInterface() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="선택한 표현들을 사용해서 대화해보세요..."
+                placeholder={t('chat.placeholder')}
                 className="w-full bg-gray-100 rounded-2xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
                 disabled={sendMessageMutation.isPending}
               />
@@ -640,7 +642,7 @@ export default function ChatInterface() {
         >
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <span>{selectedCategory.icon}</span>
-            연습중인 표현들 ({selectedExpressions.size}개)
+            {t('expressions.practicing')} ({selectedExpressions.size}개)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Array.from(selectedExpressions).map((exprId) => {
@@ -673,7 +675,7 @@ export default function ChatInterface() {
                         "{expr.text}"
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {usedMessage ? '완료됨' : '클릭해서 사용하기'}
+                        {usedMessage ? t('expressions.completed') : t('expressions.click.to.use')}
                       </p>
                     </div>
                     <span className="text-lg">
