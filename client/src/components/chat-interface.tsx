@@ -167,23 +167,20 @@ export default function ChatInterface() {
         console.log("Received response:", response);
         
         // Handle expression detection and update UI
-        if (response.detectedExpression) {
+        if (response.detectedExpression && response.detectedExpression.isCorrect) {
           const expressionId = response.detectedExpression.id;
-          const isCorrect = response.detectedExpression.isCorrect;
           
           // Update the message with expression info
           await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
             expressionUsed: expressionId,
-            isCorrect: isCorrect,
+            isCorrect: true,
           });
           
-          // Show feedback toast
+          // Show success toast
           toast({
-            title: isCorrect ? "훌륭합니다!" : "좋은 시도입니다!",
-            description: isCorrect 
-              ? `"${response.detectedExpression.text}" 표현을 정확하게 사용했습니다!`
-              : `"${response.detectedExpression.text}" 표현과 비슷하지만 조금 더 정확하게 사용해보세요.`,
-            variant: isCorrect ? "default" : "destructive",
+            title: "✅ 완벽합니다!",
+            description: `"${response.detectedExpression.text}" 표현을 정확하게 사용했습니다!`,
+            variant: "default",
           });
         }
         

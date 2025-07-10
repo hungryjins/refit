@@ -277,15 +277,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               (expr.text || "").toLowerCase()
             );
             
-            if (similarity > 0.8) { // Increased threshold to prevent false positives
+            console.log(`Expression "${expr.text}" similarity: ${similarity}`);
+            
+            if (similarity >= 0.9) { // High threshold for accurate detection
               detectedExpression = expr;
-              isCorrect = similarity >= 1.0; // Only exact matches are correct
+              isCorrect = true; // If detected with high similarity, it's correct
+              console.log(`✅ Expression detected and marked correct: ${expr.text}`);
               
-              if (isCorrect) {
-                feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
-              } else {
-                feedbackMessage = `⚠️ 좋은 시도입니다! "${expr.text}" 표현과 비슷하지만 조금 더 정확하게 사용해보세요.`;
-              }
+              feedbackMessage = `✅ 훌륭합니다! "${expr.text}" 표현을 정확하게 사용했습니다!`;
               
               // Update expression stats
               await storage.updateExpressionStats(expr.id, isCorrect);
@@ -344,27 +343,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check session completion if using selected expressions
       let sessionComplete = false;
+      let nextTargetExpression = null;
+      
       if (selectedExpressions && selectedExpressions.length > 0) {
         const usedExpressions = messages
           .filter(m => m.isUser && m.expressionUsed)
           .map(m => m.expressionUsed);
         
-        if (detectedExpression) {
+        if (detectedExpression && isCorrect) {
           usedExpressions.push(detectedExpression.id);
         }
         
         const uniqueUsedExpressions = [...new Set(usedExpressions)];
         sessionComplete = uniqueUsedExpressions.length >= selectedExpressions.length;
+        
+        // Find next expression to practice
+        if (!sessionComplete) {
+          const remainingExpressions = selectedExpressions.filter(id => !uniqueUsedExpressions.includes(id));
+          if (remainingExpressions.length > 0) {
+            nextTargetExpression = targetExpressions.find(e => e.id === remainingExpressions[0]);
+          }
+        }
       }
 
-      // Combine AI response with feedback
+      // Combine AI response with feedback and next expression prompt
       let finalResponse = aiResponse.response;
-      if (feedbackMessage) {
-        finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
-      }
       
-      if (sessionComplete) {
-        finalResponse += `\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`;
+      if (detectedExpression && isCorrect) {
+        // Give positive feedback and move to next expression
+        if (nextTargetExpression) {
+          finalResponse = `${feedbackMessage}\n\n${getPromptForExpression(nextTargetExpression)}`;
+        } else if (sessionComplete) {
+          finalResponse = `${feedbackMessage}\n\n🎉 축하합니다! 모든 표현을 성공적으로 사용했습니다. 연습 세션이 완료되었습니다!`;
+        } else {
+          finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
+        }
+      } else if (feedbackMessage) {
+        finalResponse = `${feedbackMessage}\n\n${aiResponse.response}`;
       }
 
       // Save the AI response as a chat message
@@ -388,6 +403,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: isCorrect,
         contextualSuggestions: aiResponse.contextualSuggestions || [],
         sessionComplete,
+        nextTargetExpression: nextTargetExpression ? {
+          id: nextTargetExpression.id,
+          text: nextTargetExpression.text
+        } : null,
         detectedExpression: detectedExpression ? {
           id: detectedExpression.id,
           text: detectedExpression.text,
