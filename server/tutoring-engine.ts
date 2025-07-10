@@ -119,11 +119,9 @@ export class TutoringEngine {
 
     // 세션 완료 확인
     const sessionComplete = this.shouldEndSession(sessionId);
-    console.log(`[TutoringEngine] Session complete check for ${sessionId}: ${sessionComplete}`);
     if (sessionComplete) {
       session.isComplete = true;
       session.endTime = new Date();
-      console.log(`[TutoringEngine] Session ${sessionId} marked as complete`);
     }
 
     return {
@@ -171,21 +169,12 @@ export class TutoringEngine {
     }
 
     // 모든 표현이 완료되었는지 확인
-    const states = Array.from(session.expressionStates.values());
-    console.log(`[TutoringEngine] Checking session ${sessionId} completion. States:`, states.map(s => ({
-      id: s.expressionId,
-      text: s.text,
-      isCompleted: s.isCompleted
-    })));
-    
     for (const state of session.expressionStates.values()) {
       if (!state.isCompleted) {
-        console.log(`[TutoringEngine] Expression not completed: ${state.text}`);
         return false;
       }
     }
     
-    console.log(`[TutoringEngine] All expressions completed for session ${sessionId}`);
     return true;
   }
 

@@ -121,7 +121,7 @@ export default function ChatInterface() {
         const sessionId = newSession.id;
         
         // Send user message
-        const userMessage = await apiRequest("POST", "/api/chat/messages", {
+        const userMessageResponse = await apiRequest("POST", "/api/chat/messages", {
           sessionId,
           content,
           isUser: true,
@@ -129,10 +129,11 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
+        const userMessage = await userMessageResponse.json();
         console.log("Created user message:", userMessage);
         return { sessionId, userMessage, originalContent: content };
       } else {
-        const userMessage = await apiRequest("POST", "/api/chat/messages", {
+        const userMessageResponse = await apiRequest("POST", "/api/chat/messages", {
           sessionId: activeSession.id,
           content,
           isUser: true,
@@ -140,6 +141,7 @@ export default function ChatInterface() {
           isCorrect: null,
         });
         
+        const userMessage = await userMessageResponse.json();
         console.log("Created user message:", userMessage);
         return { sessionId: activeSession.id, userMessage, originalContent: content };
       }
@@ -169,21 +171,24 @@ export default function ChatInterface() {
         
         const response = await responseObj.json();
         
-        console.log("Received response:", response);
-        console.log("Response keys:", Object.keys(response));
         console.log("Session complete:", response.sessionComplete);
         console.log("Session stats:", response.sessionStats);
-        console.log("Full response object:", JSON.stringify(response, null, 2));
         
         // Handle expression detection and update UI
         if (response.detectedExpression && response.detectedExpression.isCorrect) {
           const expressionId = response.detectedExpression.id;
           
-          // Update the message with expression info
-          await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
-            expressionUsed: expressionId,
-            isCorrect: true,
-          });
+          // Update the message with expression info only if userMessage has valid id
+          if (userMessage && userMessage.id) {
+            try {
+              await apiRequest("PATCH", `/api/chat/messages/${userMessage.id}`, {
+                expressionUsed: expressionId,
+                isCorrect: true,
+              });
+            } catch (error) {
+              console.log("Failed to update message, but continuing...");
+            }
+          }
           
           // Show success toast
           toast({
