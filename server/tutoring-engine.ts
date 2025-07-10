@@ -89,11 +89,8 @@ export class TutoringEngine {
       const userInput = answer.toLowerCase().trim();
       const expression = expr.text.toLowerCase().trim();
       
-      console.log(`[Expression Detection] Testing "${userInput}" against "${expression}"`);
-      
       // 1. 정확한 부분 일치 확인
       if (userInput.includes(expression)) {
-        console.log(`[Expression Detection] Found exact match: "${expression}"`);
         detectedExpression = expr;
         maxSimilarity = 1.0;
         break;
@@ -101,14 +98,11 @@ export class TutoringEngine {
       
       // 2. 유사도 계산 (부분 문자열로)
       const similarity = this.calculateSimilarity(userInput, expression);
-      console.log(`[Expression Detection] Similarity score: ${similarity}`);
       if (similarity > maxSimilarity && similarity >= 0.8) {
         maxSimilarity = similarity;
         detectedExpression = expr;
       }
     }
-    
-    console.log(`[Expression Detection] Final result: ${detectedExpression ? detectedExpression.text : 'none'} (similarity: ${maxSimilarity})`);
 
     let isCorrect = false;
     let feedback = "";
@@ -131,8 +125,26 @@ export class TutoringEngine {
         }
       }
     } else {
-      // 표현을 감지하지 못한 경우
-      feedback = "좋은 답변입니다! 연습 중인 표현을 사용해보세요.";
+      // 표현을 감지하지 못한 경우 - 완료되지 않은 표현들 중 하나를 오답 처리
+      const incompleteExpressions = session.expressions.filter(expr => {
+        const state = session.expressionStates.get(expr.id);
+        return state && !state.isCompleted;
+      });
+      
+      if (incompleteExpressions.length > 0) {
+        // 첫 번째 완료되지 않은 표현을 오답 처리
+        const targetExpression = incompleteExpressions[0];
+        const state = session.expressionStates.get(targetExpression.id);
+        if (state) {
+          state.attempts++;
+          state.isCompleted = true;
+          state.correctUsage = false; // 오답으로 처리
+          state.usedAt = new Date();
+          feedback = `❌ "${targetExpression.text}" 표현을 사용하지 못했습니다.`;
+        }
+      } else {
+        feedback = "좋은 답변입니다!";
+      }
     }
 
     // 세션 완료 확인
