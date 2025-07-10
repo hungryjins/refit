@@ -252,18 +252,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // If no expression was detected, provide specific guidance
+        // If no expression was detected, don't give explicit feedback - let the conversation flow naturally
         if (!detectedExpression) {
-          const unusedExpressions = targetExpressions.filter(expr => 
-            !messages.some(m => m.isUser && m.expressionUsed === expr.id)
-          );
-          
-          if (unusedExpressions.length > 0) {
-            const randomUnused = unusedExpressions[Math.floor(Math.random() * unusedExpressions.length)];
-            feedbackMessage = `💡 아직 "${randomUnused.text}" 표현을 사용해보지 않았어요. 자연스럽게 대화에 포함해보세요!`;
-          } else {
-            feedbackMessage = "💡 연습중인 표현을 사용해보세요!";
-          }
+          feedbackMessage = ""; // Remove explicit prompting
         }
       }
 
@@ -438,21 +429,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (expressions.some(e => e.text.toLowerCase().includes("coffee") || e.text.toLowerCase().includes("order"))) {
         return [
-          `☕ Welcome to Daily Brew Coffee Shop! I'm your friendly barista. It's a busy morning and you're looking at our menu board. I notice you're ready to order something delicious. How would you like to start your order today?`,
-          `☕ Good morning! You've just walked into our cozy coffee shop. The aroma of fresh coffee fills the air, and I'm here behind the counter ready to help. What would you like to try from our menu?`,
-          `☕ Hi there! You're standing at the counter of our popular coffee shop. I can see you're deciding what to get. The morning rush is starting and I'm ready to take your order. What sounds good to you today?`
+          `☕ *You walk into a busy coffee shop. The barista looks up with a friendly smile as you approach the counter.* Good morning! *I wipe my hands on my apron and give you my full attention.* Welcome to Daily Brew! You've got perfect timing - we just finished brewing a fresh batch of our signature roast. *I gesture to the menu board above.* First time here? Our regulars love the caramel macchiato, but honestly, everything's pretty amazing. *I wait expectantly with a pen ready.*`,
+          `☕ *The coffee shop is bustling with the morning rush. You're next in line and I greet you with enthusiasm.* Morning! *I smile warmly.* You look like you could use some serious caffeine today! *I chuckle.* Lucky for you, we've got exactly what you need. Our espresso is pulling perfectly this morning. *I lean forward slightly.* So, what's going to make your day better?`,
+          `☕ *You enter the cozy neighborhood coffee shop. I'm behind the counter organizing cups when I notice you studying the menu.* Hey there! *I approach with a welcoming smile.* Take your time with the menu - I know it can be overwhelming with all the options. *I pause.* But between you and me, if you're looking for something really special, our house blend with a splash of vanilla is incredible. *I wait for your response.*`
         ];
       } else if (expressions.some(e => e.text.toLowerCase().includes("nice to meet") || e.text.toLowerCase().includes("hello") || e.text.toLowerCase().includes("good"))) {
         return [
-          `👋 You're at a community center where people come to meet new friends. I'm sitting alone at a table reading a book when I notice you walking in. You seem friendly and I'm hoping to make a new friend today. I look up from my book with a welcoming smile.`,
-          `👋 It's your first day at a new workplace and you're in the break room. I'm a colleague who's been working here for a while. I see you getting coffee and want to introduce myself to make you feel welcome.`,
-          `👋 You're at a local park and I'm walking my dog. We keep crossing paths on the walking trail and I finally decide to strike up a conversation. I approach you with a friendly demeanor.`
+          `👋 *I'm sitting alone at a cafe reading when you walk in. I look up with a friendly smile and wave.* Oh, hello there! *I close my book and gesture to the empty chair across from me.* You look familiar - I think we might have seen each other around the neighborhood before, but we've never actually been introduced. *I extend my hand with a warm smile.* I'm Sarah, by the way.`,
+          `👋 *It's your first day at a new job. I'm in the break room making coffee when you walk in looking a bit nervous.* Hey! *I turn around with a welcoming smile.* You must be the new person everyone's been talking about! *I walk over and extend my hand.* I'm Mike from the marketing department. I've been working here for about three years now.`,
+          `👋 *We're both at a local community event. I've been wanting to introduce myself all evening and finally approach you.* Excuse me, hi! *I say with a genuine smile.* I've been admiring your confidence all evening - you seem to know everyone here! *I extend my hand.* I'm Jessica, and I just moved to this neighborhood last month.`
         ];
       } else if (expressions.some(e => e.text.toLowerCase().includes("thank") || e.text.toLowerCase().includes("help"))) {
         return [
-          `🤝 You're at a busy shopping mall and you look lost. I'm a helpful store employee who notices you seem confused while looking at the directory map. I approach you with a genuine desire to help.`,
-          `🤝 You're at a library and struggling to find a specific book. I'm a librarian who sees you looking around the shelves with a confused expression. I walk over to offer assistance.`,
-          `🤝 You're at a new city's train station with luggage, clearly looking for directions. I'm a local resident who notices you checking your phone and the station signs repeatedly. I decide to offer help.`
+          `🤝 *You're standing in a busy shopping mall looking confused at the directory map. I'm walking by and notice you seem lost.* Oh, you look like you might need some directions! *I approach with a helpful smile.* I work here and know this place like the back of my hand. *I point to the map.* Are you trying to find a specific store? I'd be happy to point you in the right direction - this mall can be pretty confusing, especially if it's your first time here.`,
+          `🤝 *You're in the library looking frustrated while searching through the shelves. I'm the librarian and I walk over.* I couldn't help but notice you've been searching for a while. *I say gently.* Our system can be a bit tricky sometimes. *I gesture toward the computer terminal.* I just helped someone find exactly what they were looking for - let me see if I can do the same for you. What book are you trying to track down?`,
+          `🤝 *You're at the train station with luggage, checking your phone and looking at the signs repeatedly. I'm a local who notices your confusion.* Hey there! *I approach with a friendly smile.* You look like you might be trying to figure out the train system. *I chuckle.* It took me months to understand it when I first moved here. *I point to your luggage.* Are you heading somewhere specific? I take this route every day for work - I'd be glad to help you figure out which platform you need.`
         ];
       } else {
         // Generic scenario that can work with any expression
@@ -463,24 +454,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `🌟 Scenario: We're at a local community event where people are mingling and getting to know each other. I'm standing near the refreshment table when I see you. This is the perfect setting to use "${targetExpression}" naturally. How do you begin?`
         ];
       }
-    } else if (messageCount === 1) {
-      // Guide toward first expression
-      const firstExpr = remainingExpressions[0];
-      if (firstExpr) {
-        return [
-          `That's great! Now, I'm curious about your preferences. ${getPromptForExpression(firstExpr)}`,
-          `Perfect! I'd love to know more. ${getPromptForExpression(firstExpr)}`,
-          `Wonderful! Let me ask you something. ${getPromptForExpression(firstExpr)}`
-        ];
-      }
     } else {
-      // Continue guiding toward remaining expressions
-      const nextExpr = remainingExpressions[Math.floor(Math.random() * remainingExpressions.length)];
-      if (nextExpr) {
+      // Continue natural conversation based on context
+      if (expressions.some(e => e.text.toLowerCase().includes("coffee") || e.text.toLowerCase().includes("order"))) {
         return [
-          `Great conversation! Now, ${getPromptForExpression(nextExpr)}`,
-          `That's interesting! ${getPromptForExpression(nextExpr)}`,
-          `I see! Let me ask you something else. ${getPromptForExpression(nextExpr)}`
+          `*I nod and smile while writing on my notepad.* Perfect choice! And would you like that hot or iced today? *I look up from my notes.* Also, we have some amazing pastries that pair really well with that drink if you're interested.`,
+          `*I start preparing your order.* Great selection! You know, you picked one of my personal favorites. *I work efficiently while talking.* Have you tried our loyalty program? You get every tenth drink free.`,
+          `*I punch your order into the register.* Excellent! That'll be ready in just a few minutes. *I smile.* Oh, and just so you know, we're featuring a new seasonal flavor this week if you want to try something different next time.`
+        ];
+      } else if (expressions.some(e => e.text.toLowerCase().includes("nice to meet") || e.text.toLowerCase().includes("hello") || e.text.toLowerCase().includes("good"))) {
+        return [
+          `*I smile warmly and settle into my chair.* That's wonderful! I love meeting new people from the neighborhood. *I lean forward with interest.* What brought you to this area? Work, family, or just looking for a change of scenery?`,
+          `*I grin and relax visibly.* Fantastic! It's always exciting to meet someone new. *I gesture around.* Have you had a chance to explore much of the neighborhood yet? There are some hidden gems around here that most people don't know about.`,
+          `*My face lights up.* How wonderful! I've been hoping to meet more people in the area. *I sit back comfortably.* So tell me, what's your story? Are you originally from around here, or did you move from somewhere else?`
+        ];
+      } else {
+        return [
+          `*I listen intently and nod.* That sounds really interesting! Tell me more about that - I'd love to hear the details.`,
+          `*I smile encouragingly.* Oh, that's fascinating! You seem to have a lot of experience with that. What's been the most rewarding part?`,
+          `*I lean in with genuine curiosity.* That's really cool! I've always been curious about that kind of thing. How did you get started with it?`
         ];
       }
     }
