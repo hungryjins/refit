@@ -350,8 +350,18 @@ export class HybridStorage implements IStorage {
       .where(eq(chatSessions.id, id));
   }
 
-  // Chat Messages (always from database or memory based on session)
+  // Chat Messages (hybrid based on session type)
   async getChatMessages(sessionId: number): Promise<ChatMessage[]> {
+    // Try to find which storage this session belongs to
+    // First check if it's a guest session
+    for (const [guestSessionId, guestStorage] of this.guestStorageMap) {
+      const guestSessions = await guestStorage.getChatSessions();
+      if (guestSessions.some(s => s.id === sessionId)) {
+        return await guestStorage.getChatMessages(sessionId);
+      }
+    }
+    
+    // If not found in guest storage, try database
     return await db
       .select()
       .from(chatMessages)
@@ -359,7 +369,21 @@ export class HybridStorage implements IStorage {
       .orderBy(chatMessages.createdAt);
   }
 
-  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+  async createChatMessage(insertMessage: InsertChatMessage, userId?: string, sessionId?: string): Promise<ChatMessage> {
+    // Check if this is for a guest session
+    if (!this.isAuthenticated(userId) && sessionId) {
+      // Check if the session exists in guest storage
+      for (const [guestSessionId, guestStorage] of this.guestStorageMap) {
+        if (guestSessionId === sessionId) {
+          const guestSessions = await guestStorage.getChatSessions();
+          if (guestSessions.some(s => s.id === insertMessage.sessionId)) {
+            return await guestStorage.createChatMessage(insertMessage);
+          }
+        }
+      }
+    }
+    
+    // Default to database for authenticated users
     const [message] = await db
       .insert(chatMessages)
       .values(insertMessage)

@@ -45,7 +45,7 @@ class SessionManager {
       isUser: false,
       expressionUsed: null,
       isCorrect: null,
-    });
+    }, userId, sessionId);
 
     // 세션 상태 저장
     const sessionState: SessionState = {

@@ -339,6 +339,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Active session not found" });
       }
       
+      // Get user info for hybrid storage
+      const userId = req.user?.claims?.sub;
+      const requestSessionId = req.sessionID;
+      
       // Create user message
       const userMessage = await storage.createChatMessage({
         sessionId,
@@ -346,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isUser: true,
         expressionUsed: null, // Will be determined by evaluation
         isCorrect: null,
-      });
+      }, userId, requestSessionId);
 
       // Evaluate response using OpenAI (5단계: GPT-4o 평가)
       const context = {
@@ -383,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
-      });
+      }, userId, requestSessionId);
 
       // Update expression stats
       await storage.updateExpressionStats(currentExpression.id, evaluation.isCorrect);
