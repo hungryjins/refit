@@ -214,6 +214,11 @@ export default function NewChatInterface() {
       if (data.usedExpression && data.isCorrect) {
         setUsedExpressions(prev => new Set([...prev, data.usedExpression]));
       }
+      
+      // Show visual feedback for incorrect attempts (but don't disable input)
+      if (!data.isCorrect && data.evaluation) {
+        console.log('Incorrect attempt, user can try again');
+      }
 
       // Check if session is complete
       if (data.sessionComplete) {
@@ -399,24 +404,40 @@ export default function NewChatInterface() {
             <CardContent className="space-y-3">
               {selectedExpressions.map((expr) => {
                 const isUsed = usedExpressions.has(expr.id);
+                // Check if this expression is currently being practiced
+                const isCurrentTarget = currentSession && messages.length > 0;
+                const lastMessage = messages[messages.length - 1];
+                const isCurrentExpression = lastMessage && !lastMessage.isUser && 
+                  (lastMessage.content.includes('새로운 표현') || lastMessage.content.includes(expr.text));
+                
                 return (
                   <div key={expr.id} className={`p-3 rounded-lg border transition-all duration-300 ${
                     isUsed 
                       ? 'bg-green-100 border-green-300 shadow-sm' 
+                      : isCurrentExpression
+                      ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-200'
                       : 'bg-gray-50 border-gray-200'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${isUsed ? 'text-green-800' : 'text-gray-700'}`}>
+                      <span className={`text-sm font-medium ${
+                        isUsed ? 'text-green-800' : 
+                        isCurrentExpression ? 'text-blue-800' : 'text-gray-700'
+                      }`}>
                         {expr.text}
                       </span>
                       {isUsed ? (
                         <CheckCircle2 size={18} className="text-green-600" />
+                      ) : isCurrentExpression ? (
+                        <Play size={16} className="text-blue-600" />
                       ) : (
                         <Clock size={16} className="text-gray-400" />
                       )}
                     </div>
-                    <div className={`text-xs mt-1 ${isUsed ? 'text-green-600' : 'text-gray-500'}`}>
-                      {isUsed ? '✨ 완료!' : '대기 중...'}
+                    <div className={`text-xs mt-1 ${
+                      isUsed ? 'text-green-600' : 
+                      isCurrentExpression ? 'text-blue-600' : 'text-gray-500'
+                    }`}>
+                      {isUsed ? '✨ 완료!' : isCurrentExpression ? '🎯 연습 중...' : '대기 중...'}
                     </div>
                   </div>
                 );
@@ -496,7 +517,7 @@ export default function NewChatInterface() {
                     onKeyPress={handleKeyPress}
                     placeholder="상황에 맞는 영어 표현을 사용해서 대화해보세요..."
                     className="flex-1 border-gray-300 focus:border-blue-500"
-                    disabled={sendMessageMutation.isPending || sessionComplete}
+                    disabled={sendMessageMutation.isPending}
                   />
                   <Button 
                     onClick={handleSendMessage}
