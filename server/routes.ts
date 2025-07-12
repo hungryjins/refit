@@ -305,145 +305,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Handle user responses and evaluation
+  // Handle user responses and evaluation (4단계: 사용자 응답, 5단계: 평가)
   app.post("/api/chat/respond", async (req, res) => {
     try {
       const { message, sessionId, targetExpressionId } = req.body;
       
-      if (!message || !sessionId || !targetExpressionId) {
-        return res.status(400).json({ 
-          message: "Message, sessionId, and targetExpressionId are required"
-        });
+      if (!message || !sessionId) {
+        return res.status(400).json({ message: "Missing required fields" });
       }
-      
-      // Get target expression
-      const targetExpression = await storage.getExpressionById(targetExpressionId);
-      if (!targetExpression) {
-        return res.status(404).json({ message: "Target expression not found" });
+
+      // Get session state
+      const sessionState = sessionManager.getCurrentSession(sessionId);
+      if (!sessionState) {
+        return res.status(404).json({ message: "Session not found" });
       }
-      
-      // Get session and conversation history
+
+      // Get the current target expression (랜덤으로 선택된 표현)
+      const currentExpression = sessionState.expressions[sessionState.currentExpressionIndex];
+      if (!currentExpression) {
+        return res.status(404).json({ message: "No current expression found" });
+      }
+
+      console.log(`Evaluating user response: "${message}" for target: "${currentExpression.text}"`);
+
+      // Get session and conversation history for context
       const session = await storage.getChatSessions();
       const activeSession = session.find(s => s.id === sessionId && s.isActive);
       if (!activeSession) {
         return res.status(404).json({ message: "Active session not found" });
       }
       
-      const conversationHistory = await storage.getChatMessages(sessionId);
-      
-      // Create conversation context
-      const context = {
-        targetExpression,
-        scenario: activeSession.scenario || "Conversation practice",
-        conversationHistory: conversationHistory.map(msg => ({
-          role: msg.isUser ? 'user' as const : 'assistant' as const,
-          content: msg.content
-        }))
-      };
-      
-      // Save user message first
+      // Create user message
       const userMessage = await storage.createChatMessage({
-        sessionId: sessionId,
+        sessionId,
         content: message,
         isUser: true,
-        expressionUsed: null,
+        expressionUsed: null, // Will be determined by evaluation
         isCorrect: null,
       });
+
+      // Evaluate response using OpenAI (5단계: GPT-4o 평가)
+      const context = {
+        targetExpression: currentExpression,
+        scenario: activeSession.scenario || "Conversation practice",
+        conversationHistory: []
+      };
       
-      // 현재 타겟 표현 가져오기
-      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
-      if (!currentTargetExpression) {
-        return res.status(400).json({ message: "No active expression for this session" });
-      }
+      const evaluation = await openaiService.evaluateResponse(message, currentExpression, context);
+      console.log('OpenAI evaluation result:', evaluation);
       
-      // 평가 수행
-      const evaluation = await openaiService.evaluateResponse(message, currentTargetExpression, context);
-      
-      // 사용자 메시지 업데이트
+      // Update user message with evaluation
       await storage.updateChatMessage(userMessage.id, {
-        expressionUsed: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
-        isCorrect: evaluation.isCorrect
+        expressionUsed: evaluation.usedTargetExpression ? currentExpression.text : null,
+        isCorrect: evaluation.isCorrect,
       });
-      
-      // 표현 통계 업데이트 (모든 시도에 대해 기록)
-      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
-        await storage.updateExpressionStats(currentTargetExpression.id, true);
-      } else {
-        // 오답인 경우에도 통계 업데이트 (시도했으나 실패)
-        await storage.updateExpressionStats(currentTargetExpression.id, false);
+
+      // Create AI response with feedback and corrections
+      let aiResponseContent = evaluation.feedback;
+      if (evaluation.corrections) {
+        aiResponseContent += `\n\n📝 정정: ${evaluation.corrections}`;
       }
       
-      let botResponse = "";
-      let sessionComplete = false;
-      let nextExpression = null;
-      
-      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
-        // 정답! (정확한 표현 또는 의미상 유사한 표현) - 다음 표현으로 진행 또는 세션 완료
-        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id);
-        
-        if (result.isSessionComplete) {
-          botResponse = `🎉 축하합니다! 모든 표현을 완벽하게 완료했습니다!`;
-          sessionComplete = true;
-        } else {
-          // 정확도에 따른 피드백 분기
-          let successMessage = "";
-          if (evaluation.matchType === "exact") {
-            successMessage = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확히 사용하셨어요!`;
-          } else if (evaluation.matchType === "equivalent") {
-            successMessage = `👍 적절한 표현을 사용했어요! 저장하신 표현은 "${currentTargetExpression.text}"입니다.`;
-          }
-          
-          botResponse = `${successMessage}\n\n${result.nextMessage}`;
-          nextExpression = result.nextExpression;
-        }
-      } else {
-        // 오답 또는 미사용 - 오답으로 처리하고 다음 표현으로 진행
-        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id, false); // false = 오답 처리
-        
-        if (result.isSessionComplete) {
-          botResponse = `🎉 모든 표현 연습이 완료되었습니다!`;
-          sessionComplete = true;
-        } else {
-          let wrongMessage = "";
-          if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
-            wrongMessage = `❌ 아쉬워요! 문맥상 같은 의미지만 저장된 표현을 쓰지 않았어요. 정답은 "${currentTargetExpression.text}"였습니다.`;
-          } else {
-            wrongMessage = `❌ ${evaluation.feedback || "다시 시도해보세요!"} 정답은 "${currentTargetExpression.text}"였습니다.`;
-          }
-          
-          botResponse = `${wrongMessage}\n\n🎯 새로운 표현 연습!\n\n${result.nextMessage}`;
-          nextExpression = result.nextExpression;
-        }
+      // Add success message if correct
+      if (evaluation.isCorrect) {
+        aiResponseContent += `\n\n✅ 완벽합니다! "${currentExpression.text}" 표현을 성공적으로 사용했습니다!`;
+        // Update session state if expression was used correctly
+        await sessionManager.completeExpression(sessionId, currentExpression.id, true);
       }
-      
-      // Create bot response message
-      const botMessage = await storage.createChatMessage({
-        sessionId: sessionId,
-        content: botResponse,
+
+      const aiMessage = await storage.createChatMessage({
+        sessionId,
+        content: aiResponseContent,
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
       });
-      
-      const progressData = sessionComplete ? 
-        sessionManager.getFinalSessionResults(sessionId) : 
-        sessionManager.getSessionProgress(sessionId);
-      console.log('Sending progress data:', progressData);
-      
+
+      // Update expression stats
+      await storage.updateExpressionStats(currentExpression.id, evaluation.isCorrect);
+
       res.json({
-        response: botResponse,
-        messageId: botMessage.id,
-        evaluation: evaluation,
-        sessionComplete: sessionComplete,
-        usedExpression: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
-        isCorrect: evaluation.isCorrect,
-        nextExpression: nextExpression,
-        progress: progressData
+        evaluation,
+        aiMessage,
+        sessionComplete: evaluation.sessionComplete || evaluation.isCorrect,
+        targetExpression: currentExpression
       });
-      
+
     } catch (error) {
-      console.error("Chat respond error:", error);
-      res.status(500).json({ message: "Failed to process response" });
+      console.error("Response evaluation error:", error);
+      res.status(500).json({ message: "Failed to evaluate response" });
     }
   });
 

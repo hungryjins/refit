@@ -25,9 +25,10 @@ class SessionManager {
       throw new Error(`No valid expressions found. Available IDs: ${expressions.map(e => e.id).join(', ')}, Requested IDs: ${expressionIds.join(', ')}`);
     }
 
-    // 첫 번째 표현으로 세션 시작
-    const firstExpression = selectedExpressions[0];
-    const scenarioResponse = await openaiService.generateScenario(firstExpression);
+    // 랜덤으로 표현 선택 (1단계: 랜덤 선택)
+    const randomExpression = selectedExpressions[Math.floor(Math.random() * selectedExpressions.length)];
+    console.log('Random expression selected:', randomExpression.text);
+    const scenarioResponse = await openaiService.generateScenario(randomExpression);
     
     // 세션 생성
     const session = await storage.createChatSession({
@@ -35,10 +36,12 @@ class SessionManager {
       isActive: true
     });
 
-    // 초기 메시지 생성
+    // 초기 메시지 생성 (2단계: 상황 설명 + 3단계: 대화 시작)
+    const fullInitialMessage = `📝 상황: ${scenarioResponse.scenario}\n\n${scenarioResponse.initialMessage}`;
+    
     await storage.createChatMessage({
       sessionId: session.id,
-      content: scenarioResponse.initialMessage,
+      content: fullInitialMessage,
       isUser: false,
       expressionUsed: null,
       isCorrect: null,
@@ -105,6 +108,10 @@ class SessionManager {
       nextMessage: `\n🎯 새로운 표현 연습!\n\n${scenarioResponse.initialMessage}`,
       isSessionComplete: false
     };
+  }
+
+  getCurrentSession(sessionId: number): SessionState | null {
+    return this.sessions.get(sessionId) || null;
   }
 
   getCurrentExpression(sessionId: number): Expression | null {
