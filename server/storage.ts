@@ -5,6 +5,7 @@ import {
   chatMessages, 
   userStats, 
   achievements,
+  users,
   type Category,
   type InsertCategory,
   type Expression, 
@@ -16,12 +17,18 @@ import {
   type UserStats,
   type InsertUserStats,
   type Achievement,
-  type InsertAchievement
+  type InsertAchievement,
+  type User,
+  type UpsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 
 export interface IStorage {
+  // User operations (required for authentication)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
   // Categories
   getCategories(): Promise<Category[]>;
   getCategoryById(id: number): Promise<Category | undefined>;
@@ -29,18 +36,18 @@ export interface IStorage {
   updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
   deleteCategory(id: number): Promise<void>;
   
-  // Expressions
-  getExpressions(): Promise<Expression[]>;
+  // Expressions (user-aware)
+  getExpressions(userId?: string): Promise<Expression[]>;
   getExpressionById(id: number): Promise<Expression | undefined>;
-  createExpression(expression: InsertExpression): Promise<Expression>;
+  createExpression(expression: InsertExpression, userId?: string): Promise<Expression>;
   updateExpression(id: number, expression: Partial<InsertExpression>): Promise<Expression>;
   deleteExpression(id: number): Promise<void>;
   updateExpressionStats(id: number, isCorrect: boolean): Promise<Expression>;
   
-  // Chat Sessions
-  getChatSessions(): Promise<ChatSession[]>;
-  getActiveChatSession(): Promise<ChatSession | undefined>;
-  createChatSession(session: InsertChatSession): Promise<ChatSession>;
+  // Chat Sessions (user-aware)
+  getChatSessions(userId?: string): Promise<ChatSession[]>;
+  getActiveChatSession(userId?: string): Promise<ChatSession | undefined>;
+  createChatSession(session: InsertChatSession, userId?: string): Promise<ChatSession>;
   endChatSession(id: number): Promise<void>;
   
   // Chat Messages
@@ -48,9 +55,9 @@ export interface IStorage {
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   updateChatMessage(id: number, updates: Partial<InsertChatMessage>): Promise<ChatMessage>;
   
-  // User Stats
-  getUserStats(): Promise<UserStats>;
-  updateUserStats(stats: Partial<InsertUserStats>): Promise<UserStats>;
+  // User Stats (user-aware)
+  getUserStats(userId?: string): Promise<UserStats>;
+  updateUserStats(stats: Partial<InsertUserStats>, userId?: string): Promise<UserStats>;
   
   // Achievements
   getAchievements(): Promise<Achievement[]>;
@@ -569,5 +576,8 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Database storage with PostgreSQL
-export const storage = new DatabaseStorage();
+// Import the hybrid storage system
+import { HybridStorage } from "./hybrid-storage";
+
+// Use hybrid storage for dual auth/guest system
+export const storage = new HybridStorage();

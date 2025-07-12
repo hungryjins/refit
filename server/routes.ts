@@ -5,8 +5,21 @@ import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, 
 import { openaiService } from "./openai-service";
 import { sessionManager } from "./session-manager";
 import { tutoringEngine } from "./tutoring-engine";
+import { verifyFirebaseToken, getSessionId } from "./firebase-auth";
+import session from "express-session";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add session management for guest users
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'development-secret',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true in production with HTTPS
+  }));
+
+  // Add Firebase token verification to all routes
+  app.use(verifyFirebaseToken);
+
   // Category routes
   app.get("/api/categories", async (req, res) => {
     try {
@@ -48,10 +61,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Expression routes
+  // Expression routes (user-aware)
   app.get("/api/expressions", async (req, res) => {
     try {
-      const expressions = await storage.getExpressions();
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const expressions = await storage.getExpressions(userId, sessionId);
       res.json(expressions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch expressions" });
@@ -61,7 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/expressions", async (req, res) => {
     try {
       const validatedData = insertExpressionSchema.parse(req.body);
-      const expression = await storage.createExpression(validatedData);
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const expression = await storage.createExpression(validatedData, userId, sessionId);
       res.json(expression);
     } catch (error) {
       res.status(400).json({ message: "Invalid expression data" });
@@ -100,10 +117,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat session routes
+  // Chat session routes (user-aware)
   app.get("/api/chat/sessions", async (req, res) => {
     try {
-      const sessions = await storage.getChatSessions();
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const sessions = await storage.getChatSessions(userId, sessionId);
       res.json(sessions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chat sessions" });
@@ -112,7 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/chat/active", async (req, res) => {
     try {
-      const session = await storage.getActiveChatSession();
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const session = await storage.getActiveChatSession(userId, sessionId);
       res.json(session || null);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch active session" });
@@ -122,7 +143,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat/sessions", async (req, res) => {
     try {
       const validatedData = insertChatSessionSchema.parse(req.body);
-      const session = await storage.createChatSession(validatedData);
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const session = await storage.createChatSession(validatedData, userId, sessionId);
       res.json(session);
     } catch (error) {
       res.status(400).json({ message: "Invalid session data" });
@@ -176,10 +199,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User stats routes
+  // User stats routes (user-aware)
   app.get("/api/stats", async (req, res) => {
     try {
-      const stats = await storage.getUserStats();
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const stats = await storage.getUserStats(userId, sessionId);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user stats" });
@@ -189,10 +214,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/stats", async (req, res) => {
     try {
       const updates = req.body;
-      const stats = await storage.updateUserStats(updates);
+      const userId = req.user?.uid;
+      const sessionId = getSessionId(req);
+      const stats = await storage.updateUserStats(updates, userId, sessionId);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user stats" });
+    }
+  });
+
+  // Authentication routes
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      if (req.user) {
+        // User is authenticated with Firebase
+        res.json({
+          uid: req.user.uid,
+          email: req.user.email,
+          name: req.user.name,
+          picture: req.user.picture,
+          isAuthenticated: true
+        });
+      } else {
+        // User is not authenticated (guest)
+        res.json({
+          isAuthenticated: false,
+          isGuest: true
+        });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user info" });
     }
   });
 

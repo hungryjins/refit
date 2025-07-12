@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthChange, signInWithGoogle, logOut } from '@/lib/firebase';
+import { onAuthStateChange, signInWithGoogle, signOutUser } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((user) => {
+    const unsubscribe = onAuthStateChange((user) => {
       setUser(user);
       setLoading(false);
     });
@@ -44,9 +44,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signOutUser = async () => {
+  const signOut = async () => {
     try {
-      await logOut();
+      await signOutUser();
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     signIn,
-    signOut: signOutUser,
+    signOut,
   };
 
   return (

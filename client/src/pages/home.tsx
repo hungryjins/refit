@@ -1,28 +1,39 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import NavigationHeader from "@/components/navigation-header";
-import NewChatInterface from "@/components/new-chat-interface";
-import ExpressionManager from "@/components/expression-manager";
-import ProgressRepository from "@/components/progress-repository";
-import FloatingActionButton from "@/components/floating-action-button";
-import AdSenseContainer from "@/components/adsense-container";
-import { useLanguage } from "@/contexts/language-context";
+import { useAuth } from "@/hooks/useAuth";
 
 type Tab = "chat" | "expressions" | "repository";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
-  const { t } = useLanguage();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   const tabs = [
-    { id: "chat", label: t('nav.practice'), icon: "💬" },
-    { id: "expressions", label: t('nav.expressions'), icon: "📚" },
-    { id: "repository", label: t('nav.progress'), icon: "📊" },
+    { id: "chat", label: "Practice", icon: "💬" },
+    { id: "expressions", label: "Expressions", icon: "📚" },
+    { id: "repository", label: "Progress", icon: "📊" },
   ] as const;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavigationHeader />
+      <div className="bg-white shadow-sm border-b p-4">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Daily Convo</h1>
+          {isAuthenticated && (
+            <div className="text-sm text-gray-600">
+              Welcome, {user?.email}
+            </div>
+          )}
+        </div>
+      </div>
       
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Tab Navigation */}
@@ -34,18 +45,10 @@ export default function Home() {
                 onClick={() => setActiveTab(tab.id as Tab)}
                 className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 relative ${
                   activeTab === tab.id
-                    ? "text-white shadow-md"
+                    ? "text-white shadow-md bg-blue-500"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 gradient-primary rounded-xl"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   <span>{tab.icon}</span>
                   {tab.label}
@@ -55,55 +58,46 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main Content Area with Ads */}
-        <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {activeTab === "chat" && <NewChatInterface />}
-              {activeTab === "expressions" && <ExpressionManager />}
-              {activeTab === "repository" && <ProgressRepository />}
-            </motion.div>
-          </div>
-
-          {/* Sidebar with Ads */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Top Ad */}
-            <AdSenseContainer 
-              slot="1234567890"
-              format="auto"
-              style="minimal"
-              className="sticky top-20"
-            />
-            
-            {/* Middle Ad (only on larger screens) */}
-            <div className="hidden lg:block">
-              <AdSenseContainer 
-                slot="1234567891" 
-                format="vertical"
-                style="gradient"
-              />
+        {/* Content */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="relative"
+        >
+          {activeTab === "chat" && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Practice Chat</h2>
+              <p className="text-gray-600">
+                {isAuthenticated 
+                  ? "Start practicing English expressions with AI chat!" 
+                  : "Sign in to save your progress, or continue as a guest."}
+              </p>
             </div>
-          </div>
-        </div>
-
-        {/* Bottom Banner Ad (mobile friendly) */}
-        <div className="sticky bottom-0 bg-white border-t lg:hidden">
-          <AdSenseContainer 
-            slot="1234567892"
-            format="horizontal"
-            style="outlined"
-            className="mx-4 my-2"
-          />
-        </div>
+          )}
+          {activeTab === "expressions" && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Your Expressions</h2>
+              <p className="text-gray-600">
+                {isAuthenticated 
+                  ? "Manage your saved expressions here." 
+                  : "Sign in to save and manage expressions."}
+              </p>
+            </div>
+          )}
+          {activeTab === "repository" && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Progress</h2>
+              <p className="text-gray-600">
+                {isAuthenticated 
+                  ? "Track your learning progress." 
+                  : "Sign in to see your progress and statistics."}
+              </p>
+            </div>
+          )}
+        </motion.div>
       </div>
-
-      <FloatingActionButton onAdd={() => setActiveTab("expressions")} />
     </div>
   );
 }

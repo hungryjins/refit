@@ -1,7 +1,29 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Session storage table for authentication
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for authentication
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -15,6 +37,7 @@ export const expressions = pgTable("expressions", {
   id: serial("id").primaryKey(),
   text: text("text").notNull(),
   categoryId: integer("category_id").references(() => categories.id),
+  userId: varchar("user_id").references(() => users.id), // null for guest users
   correctCount: integer("correct_count").default(0).notNull(),
   totalCount: integer("total_count").default(0).notNull(),
   lastUsed: timestamp("last_used"),
@@ -24,6 +47,7 @@ export const expressions = pgTable("expressions", {
 export const chatSessions = pgTable("chat_sessions", {
   id: serial("id").primaryKey(),
   scenario: text("scenario").notNull(),
+  userId: varchar("user_id").references(() => users.id), // null for guest users
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -40,6 +64,7 @@ export const chatMessages = pgTable("chat_messages", {
 
 export const userStats = pgTable("user_stats", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).unique(), // null for guest users
   totalSessions: integer("total_sessions").default(0).notNull(),
   currentStreak: integer("current_streak").default(0).notNull(),
   lastPracticeDate: timestamp("last_practice_date"),
@@ -59,10 +84,20 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   expressions: many(expressions),
 }));
 
+export const usersRelations = relations(users, ({ many }) => ({
+  expressions: many(expressions),
+  chatSessions: many(chatSessions),
+  userStats: many(userStats),
+}));
+
 export const expressionsRelations = relations(expressions, ({ one, many }) => ({
   category: one(categories, {
     fields: [expressions.categoryId],
     references: [categories.id],
+  }),
+  user: one(users, {
+    fields: [expressions.userId],
+    references: [users.id],
   }),
   chatMessages: many(chatMessages),
 }));
@@ -95,6 +130,11 @@ export const insertExpressionSchema = createInsertSchema(expressions).omit({
   createdAt: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
   id: true,
   isActive: true,
@@ -115,6 +155,8 @@ export const insertAchievementSchema = createInsertSchema(achievements).omit({
   unlockedAt: true,
 });
 
+export type User = typeof users.$inferSelect;
+export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Expression = typeof expressions.$inferSelect;
