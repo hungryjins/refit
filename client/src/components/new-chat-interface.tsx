@@ -110,6 +110,7 @@ export default function NewChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [usedExpressions, setUsedExpressions] = useState<Set<number>>(new Set());
+  const [expressionResults, setExpressionResults] = useState<Map<number, boolean>>(new Map());
   const [sessionComplete, setSessionComplete] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -215,7 +216,18 @@ export default function NewChatInterface() {
       if (data.progress && Array.isArray(data.progress.completedExpressions)) {
         // Update used expressions based on server's completed list
         setUsedExpressions(new Set(data.progress.completedExpressions));
+        
+        // Update expression results (correct/incorrect)
+        if (data.progress.expressionResults) {
+          const resultsMap = new Map();
+          data.progress.expressionResults.forEach((result: {id: number, isCorrect: boolean}) => {
+            resultsMap.set(result.id, result.isCorrect);
+          });
+          setExpressionResults(resultsMap);
+        }
+        
         console.log('Updated used expressions:', data.progress.completedExpressions);
+        console.log('Updated expression results:', data.progress.expressionResults);
       } else {
         console.log('No valid progress data received');
       }
@@ -298,6 +310,7 @@ export default function NewChatInterface() {
     setSelectedCategory(null);
     setSelectedExpressions([]);
     setUsedExpressions(new Set());
+    setExpressionResults(new Map());
     setCurrentInput("");
   };
 
@@ -404,31 +417,41 @@ export default function NewChatInterface() {
             <CardContent className="space-y-3">
               {selectedExpressions.map((expr) => {
                 const isUsed = usedExpressions.has(expr.id);
+                const isCorrect = expressionResults.get(expr.id);
                 // Check if this expression is currently being practiced
                 const isCurrentTarget = currentSession && messages.length > 0;
                 const lastMessage = messages[messages.length - 1];
                 const isCurrentExpression = lastMessage && !lastMessage.isUser && 
                   (lastMessage.content.includes('새로운 표현') || lastMessage.content.includes(expr.text));
                 
-                console.log(`Expression ${expr.id} (${expr.text}): isUsed=${isUsed}, usedExpressions=${Array.from(usedExpressions)}`);
+                console.log(`Expression ${expr.id} (${expr.text}): isUsed=${isUsed}, isCorrect=${isCorrect}, usedExpressions=${Array.from(usedExpressions)}`);
                 
                 return (
                   <div key={expr.id} className={`p-3 rounded-lg border transition-all duration-300 ${
                     isUsed 
-                      ? 'bg-green-100 border-green-300 shadow-sm' 
+                      ? isCorrect 
+                        ? 'bg-green-100 border-green-300 shadow-sm' 
+                        : 'bg-red-100 border-red-300 shadow-sm'
                       : isCurrentExpression
                       ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-200'
                       : 'bg-gray-50 border-gray-200'
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className={`text-sm font-medium ${
-                        isUsed ? 'text-green-800' : 
-                        isCurrentExpression ? 'text-blue-800' : 'text-gray-700'
+                        isUsed 
+                          ? isCorrect 
+                            ? 'text-green-800' 
+                            : 'text-red-800'
+                          : isCurrentExpression ? 'text-blue-800' : 'text-gray-700'
                       }`}>
                         {expr.text}
                       </span>
                       {isUsed ? (
-                        <CheckCircle2 size={18} className="text-green-600" />
+                        isCorrect ? (
+                          <CheckCircle2 size={18} className="text-green-600" />
+                        ) : (
+                          <X size={18} className="text-red-600" />
+                        )
                       ) : isCurrentExpression ? (
                         <Play size={16} className="text-blue-600" />
                       ) : (
@@ -436,10 +459,17 @@ export default function NewChatInterface() {
                       )}
                     </div>
                     <div className={`text-xs mt-1 ${
-                      isUsed ? 'text-green-600' : 
-                      isCurrentExpression ? 'text-blue-600' : 'text-gray-500'
+                      isUsed 
+                        ? isCorrect 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                        : isCurrentExpression ? 'text-blue-600' : 'text-gray-500'
                     }`}>
-                      {isUsed ? '✨ 완료!' : isCurrentExpression ? '🎯 연습 중...' : '대기 중...'}
+                      {isUsed 
+                        ? isCorrect 
+                          ? '✅ 정답!' 
+                          : '❌ 오답'
+                        : isCurrentExpression ? '🎯 연습 중...' : '대기 중...'}
                     </div>
                   </div>
                 );

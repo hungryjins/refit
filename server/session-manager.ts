@@ -7,6 +7,7 @@ export interface SessionState {
   expressions: Expression[];
   currentExpressionIndex: number;
   completedExpressions: Set<number>;
+  expressionResults: Map<number, boolean>; // expressionId -> isCorrect
   isComplete: boolean;
 }
 
@@ -46,6 +47,7 @@ class SessionManager {
       expressions: selectedExpressions,
       currentExpressionIndex: 0,
       completedExpressions: new Set(),
+      expressionResults: new Map(),
       isComplete: false
     };
 
@@ -65,10 +67,10 @@ class SessionManager {
       throw new Error("Session not found");
     }
 
-    // 정답인 경우에만 완료된 표현으로 추가
-    if (isCorrect) {
-      sessionState.completedExpressions.add(expressionId);
-    }
+    // 정답/오답 관계없이 완료된 표현으로 추가 (진행률 업데이트)
+    sessionState.completedExpressions.add(expressionId);
+    // 정답/오답 결과 저장
+    sessionState.expressionResults.set(expressionId, isCorrect);
     sessionState.currentExpressionIndex++;
 
     // 모든 표현이 완료되었는지 확인
@@ -116,6 +118,7 @@ class SessionManager {
     completed: number;
     total: number;
     completedExpressions: number[];
+    expressionResults: Array<{id: number, isCorrect: boolean}>;
   } | null {
     const sessionState = this.sessions.get(sessionId);
     if (!sessionState) {
@@ -125,7 +128,8 @@ class SessionManager {
     return {
       completed: sessionState.completedExpressions.size,
       total: sessionState.expressions.length,
-      completedExpressions: Array.from(sessionState.completedExpressions)
+      completedExpressions: Array.from(sessionState.completedExpressions),
+      expressionResults: Array.from(sessionState.expressionResults.entries()).map(([id, isCorrect]) => ({id, isCorrect}))
     };
   }
 
