@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { signInWithGoogle, signOutUser } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
+import SimpleChatInterface from "@/components/SimpleChatInterface";
+import SimpleExpressionsManager from "@/components/SimpleExpressionsManager";
+import SimpleProgressRepository from "@/components/SimpleProgressRepository";
 
 type Tab = "chat" | "expressions" | "repository";
 
@@ -77,35 +80,9 @@ export default function Home() {
           transition={{ duration: 0.3 }}
           className="relative"
         >
-          {activeTab === "chat" && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">영어 회화 연습</h2>
-              <p className="text-gray-600">
-                AI와 함께 영어 표현을 연습하세요!
-                {!isAuthenticated && " (게스트 모드: 데이터가 저장되지 않습니다)"}
-              </p>
-            </div>
-          )}
-          {activeTab === "expressions" && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">나의 표현</h2>
-              <p className="text-gray-600">
-                {isAuthenticated 
-                  ? "저장된 영어 표현들을 관리하세요." 
-                  : "로그인하면 표현을 데이터베이스에 저장할 수 있습니다."}
-              </p>
-            </div>
-          )}
-          {activeTab === "repository" && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">학습 진도</h2>
-              <p className="text-gray-600">
-                {isAuthenticated 
-                  ? "학습 진행상황을 확인하세요." 
-                  : "로그인하면 진도를 추적할 수 있습니다."}
-              </p>
-            </div>
-          )}
+          {activeTab === "chat" && <SimpleChatInterface />}
+          {activeTab === "expressions" && <SimpleExpressionsManager />}
+          {activeTab === "repository" && <SimpleProgressRepository />}
 
         </motion.div>
       </div>
