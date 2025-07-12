@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
 import { openaiService } from "./openai-service";
+import { sessionManager } from "./session-manager";
 import { tutoringEngine } from "./tutoring-engine";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -195,48 +196,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New OpenAI-based conversation system
+  // New session-based conversation system  
   app.post("/api/chat/start-session", async (req, res) => {
     try {
       const { selectedExpressions } = req.body;
       
-      // Get available expressions
-      const expressions = await storage.getExpressions();
-      const targetExpressions = selectedExpressions && selectedExpressions.length > 0
-        ? expressions.filter(expr => selectedExpressions.includes(expr.id))
-        : expressions;
-        
-      if (targetExpressions.length === 0) {
-        return res.status(400).json({ message: "No expressions available for practice" });
+      if (!selectedExpressions || selectedExpressions.length === 0) {
+        return res.status(400).json({ message: "No expressions selected" });
       }
       
-      // Randomly select one expression for this session
-      const randomExpression = targetExpressions[Math.floor(Math.random() * targetExpressions.length)];
+      // SessionManager로 세션 생성
+      const sessionState = await sessionManager.createSession(selectedExpressions);
+      const currentExpression = sessionState.expressions[0];
       
-      // Generate scenario using OpenAI
-      const scenarioResponse = await openaiService.generateScenario(randomExpression);
-      
-      // Create new chat session
-      const session = await storage.createChatSession({
-        scenario: scenarioResponse.scenario,
-        isActive: true
-      });
-      
-      // Create initial bot message
-      const initialMessage = await storage.createChatMessage({
-        sessionId: session.id,
-        content: scenarioResponse.initialMessage,
-        isUser: false,
-        expressionUsed: null,
-        isCorrect: null,
-      });
+      // 초기 메시지 가져오기
+      const messages = await storage.getChatMessages(sessionState.sessionId);
+      const initialMessage = messages[messages.length - 1];
       
       res.json({
-        sessionId: session.id,
-        targetExpression: randomExpression,
-        scenario: scenarioResponse.scenario,
-        initialMessage: scenarioResponse.initialMessage,
-        messageId: initialMessage.id
+        sessionId: sessionState.sessionId,
+        targetExpression: currentExpression,
+        scenario: initialMessage.content,
+        initialMessage: initialMessage.content,
+        messageId: initialMessage.id,
+        progress: {
+          completed: 0,
+          total: sessionState.expressions.length,
+          expressions: sessionState.expressions
+        }
       });
       
     } catch (error) {
@@ -290,29 +277,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: null,
       });
       
-      // Evaluate user response
-      const evaluation = await openaiService.evaluateResponse(message, targetExpression, context);
+      // 현재 타겟 표현 가져오기
+      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+      if (!currentTargetExpression) {
+        return res.status(400).json({ message: "No active expression for this session" });
+      }
       
-      // Update user message with evaluation results
+      // 평가 수행
+      const evaluation = await openaiService.evaluateResponse(message, currentTargetExpression, context);
+      
+      // 사용자 메시지 업데이트
       await storage.updateChatMessage(userMessage.id, {
-        expressionUsed: evaluation.usedTargetExpression,
+        expressionUsed: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
         isCorrect: evaluation.isCorrect
       });
       
-      // Update expression stats
+      // 표현 통계 업데이트
       if (evaluation.usedTargetExpression) {
-        await storage.updateExpressionStats(targetExpression.id, evaluation.isCorrect);
+        await storage.updateExpressionStats(currentTargetExpression.id, evaluation.isCorrect);
       }
       
-      let botResponse = evaluation.feedback;
+      let botResponse = "";
+      let sessionComplete = false;
+      let nextExpression = null;
       
-      // If session is complete (correct usage), end the session
-      if (evaluation.sessionComplete) {
-        await storage.endChatSession(sessionId);
-        botResponse += " Great job! Session completed.";
+      if (evaluation.usedTargetExpression && evaluation.isCorrect) {
+        // 정답! 다음 표현으로 진행 또는 세션 완료
+        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id);
+        
+        if (result.isSessionComplete) {
+          botResponse = `🎉 축하합니다! 모든 표현을 완벽하게 완료했습니다!`;
+          sessionComplete = true;
+        } else {
+          botResponse = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확하게 사용했습니다!\n\n${result.nextMessage}`;
+          nextExpression = result.nextExpression;
+        }
       } else {
-        // Continue conversation to encourage target expression usage
-        botResponse = await openaiService.continueConversation(message, context);
+        // 오답 또는 미사용 - 간단한 피드백
+        botResponse = evaluation.feedback || "다시 시도해보세요!";
       }
       
       // Create bot response message
@@ -328,7 +330,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response: botResponse,
         messageId: botMessage.id,
         evaluation: evaluation,
-        sessionComplete: evaluation.sessionComplete
+        sessionComplete: sessionComplete,
+        usedExpression: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
+        isCorrect: evaluation.isCorrect,
+        nextExpression: nextExpression,
+        progress: sessionManager.getSessionProgress(sessionId)
       });
       
     } catch (error) {

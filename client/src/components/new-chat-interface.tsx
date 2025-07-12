@@ -199,7 +199,7 @@ export default function NewChatInterface() {
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
         sessionId: currentSession!.id,
-        content: data.response || data.feedback || "응답을 받을 수 없습니다.",
+        content: data.response || "응답을 받을 수 없습니다.",
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
