@@ -33,7 +33,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           <CardContent className="space-y-4">
             <div className="text-center">
               <p className="text-sm text-gray-500 mb-4">
-                Sign in with Google to start practicing English expressions
+                Sign in with Google to access your personal English practice dashboard
               </p>
               <Button 
                 onClick={signIn}

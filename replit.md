@@ -82,13 +82,14 @@ This is a full-stack English conversation practice application built with React,
 ### Production Build
 - Frontend: Vite builds to `dist/public/`
 - Backend: ESBuild bundles server to `dist/index.js`
-- Database: Drizzle migrations applied via `db:push` command
+- Database: Firebase Firestore with authentication-based security
 - Static files served by Express in production
 
 ### Environment Configuration
-- Database connection via `DATABASE_URL` environment variable
+- Firebase configuration via VITE_* environment variables
 - Development/production mode detection via `NODE_ENV`
-- Replit-specific features conditionally loaded
+- AWS deployment ready with dailyconvo.com domain configuration
+- Google Authentication required for all app access
 
 ## New Tutoring Engine Architecture
 
@@ -131,6 +132,7 @@ Changelog:
 - July 12, 2025. Complete OpenAI integration replacing Gemini AI system
 - July 12, 2025. New conversation architecture: 1) Random expression selection 2) GPT-4o scenario generation 3) Conversation evaluation 4) Whisper voice transcription 5) Grammar correction feedback
 - July 12, 2025. Firebase Authentication and storage implementation with Google sign-in and auth-based security rules
+- July 12, 2025. AWS deployment configuration for dailyconvo.com domain (non-Replit deployment)
 ```
 
 ## User Preferences
@@ -138,8 +140,9 @@ Changelog:
 ```
 Preferred communication style: Simple, everyday language.
 App branding: "Daily Convo" for English conversation practice
-Deployment goal: Google AdSense integration for monetization
+Deployment goal: AWS deployment with dailyconvo.com domain (not Replit deployment)
 Design priority: Clean, creative design that attracts users
+Firebase: Authentication required for all users, Google sign-in only
 ```
 
 ## AdSense Integration
