@@ -130,16 +130,27 @@ export default function NewChatInterface() {
       const response = await fetch('/api/chat/start-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expressionIds }),
+        body: JSON.stringify({ selectedExpressions: expressionIds }),
       });
       if (!response.ok) throw new Error('Failed to start session');
       return response.json();
     },
     onSuccess: (data) => {
-      setCurrentSession(data.session);
+      console.log('Session started:', data);
+      
+      // Create session object from response
+      const session = {
+        id: data.sessionId,
+        scenario: data.scenario,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        endedAt: null,
+      };
+      
+      setCurrentSession(session);
       setMessages([{
-        id: Date.now(),
-        sessionId: data.session.id,
+        id: data.messageId || Date.now(),
+        sessionId: data.sessionId,
         content: data.initialMessage,
         isUser: false,
         expressionUsed: null,
@@ -153,24 +164,34 @@ export default function NewChatInterface() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ message, sessionId }: { message: string; sessionId: number }) => {
+    mutationFn: async ({ message, sessionId, targetExpressionId }: { 
+      message: string; 
+      sessionId: number;
+      targetExpressionId?: number;
+    }) => {
       const response = await fetch('/api/chat/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, sessionId }),
+        body: JSON.stringify({ 
+          message, 
+          sessionId,
+          targetExpressionId: targetExpressionId || selectedExpressions[0]?.id
+        }),
       });
       if (!response.ok) throw new Error('Failed to send message');
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('Message response:', data);
+      
       // Add user message
       const userMessage: ChatMessage = {
         id: Date.now(),
         sessionId: currentSession!.id,
         content: currentInput,
         isUser: true,
-        expressionUsed: data.usedExpression,
-        isCorrect: data.isCorrect,
+        expressionUsed: data.usedExpression || null,
+        isCorrect: data.isCorrect || null,
         createdAt: new Date().toISOString(),
       };
 
@@ -178,7 +199,7 @@ export default function NewChatInterface() {
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
         sessionId: currentSession!.id,
-        content: data.response,
+        content: data.response || data.feedback || "응답을 받을 수 없습니다.",
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
@@ -218,6 +239,7 @@ export default function NewChatInterface() {
     sendMessageMutation.mutate({
       message: currentInput.trim(),
       sessionId: currentSession.id,
+      targetExpressionId: selectedExpressions[0]?.id,
     });
   };
 
