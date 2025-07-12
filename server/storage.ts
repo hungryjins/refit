@@ -353,9 +353,9 @@ export class MemStorage implements IStorage {
 // import { FirebaseStorage } from "./firebase-storage";
 // export const storage = new FirebaseStorage();
 
-// Firebase storage - waiting for security rules setup
+// Firebase storage with Authentication (waiting for rules setup)
 // import { FirebaseStorage } from "./firebase-storage";
 // export const storage = new FirebaseStorage();
 
-// Using memory storage until Firebase rules are configured
+// Memory storage until Firebase auth rules are configured
 export const storage = new MemStorage();

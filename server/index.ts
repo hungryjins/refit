@@ -38,13 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize default data (Firebase pending security rules)
+  // Initialize default data (memory storage while Firebase setup in progress)
   // if (storage.initializeDefaultData) {
   //   try {
   //     await storage.initializeDefaultData();
   //     log("Firebase default data initialized", "express");
   //   } catch (error) {
   //     log(`Failed to initialize Firebase data: ${error}`, "express");
+  //     log("Using memory storage as fallback", "express");
   //   }
   // }
 
