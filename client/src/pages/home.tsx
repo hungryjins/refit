@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { signInWithGoogle, signOutUser } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import SimpleChatInterface from "@/components/SimpleChatInterface";
-import SimpleExpressionsManager from "@/components/SimpleExpressionsManager";
-import SimpleProgressRepository from "@/components/SimpleProgressRepository";
+import NewChatInterface from "@/components/new-chat-interface";
+import ExpressionManager from "@/components/expression-manager";
+import ProgressRepository from "@/components/progress-repository";
 
 type Tab = "chat" | "expressions" | "repository";
 
@@ -80,9 +80,9 @@ export default function Home() {
           transition={{ duration: 0.3 }}
           className="relative"
         >
-          {activeTab === "chat" && <SimpleChatInterface />}
-          {activeTab === "expressions" && <SimpleExpressionsManager />}
-          {activeTab === "repository" && <SimpleProgressRepository />}
+          {activeTab === "chat" && <NewChatInterface />}
+          {activeTab === "expressions" && <ExpressionManager />}
+          {activeTab === "repository" && <ProgressRepository />}
 
         </motion.div>
       </div>

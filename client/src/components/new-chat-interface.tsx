@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock, Trophy, Star, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useLanguage } from "@/contexts/language-context";
+// import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Expression, Category, ChatMessage, ChatSession } from "@shared/schema";
 
@@ -115,7 +115,8 @@ export default function NewChatInterface() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { t } = useLanguage();
+  // const { t } = useLanguage();
+  const t = (key: string) => key; // Simplified translation function
   const queryClient = useQueryClient();
 
   // Fetch expressions and categories
