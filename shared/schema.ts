@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -52,6 +53,34 @@ export const achievements = pgTable("achievements", {
   description: text("description").notNull(),
   unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
 });
+
+// Relations
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  expressions: many(expressions),
+}));
+
+export const expressionsRelations = relations(expressions, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [expressions.categoryId],
+    references: [categories.id],
+  }),
+  chatMessages: many(chatMessages),
+}));
+
+export const chatSessionsRelations = relations(chatSessions, ({ many }) => ({
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  session: one(chatSessions, {
+    fields: [chatMessages.sessionId],
+    references: [chatSessions.id],
+  }),
+  expression: one(expressions, {
+    fields: [chatMessages.expressionUsed],
+    references: [expressions.id],
+  }),
+}));
 
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,

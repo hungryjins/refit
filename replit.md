@@ -19,7 +19,8 @@ This is a full-stack English conversation practice application built with React,
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
-- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Database Provider**: Neon Database (serverless PostgreSQL) - **ACTIVE**
+- **Storage Layer**: DatabaseStorage class implementing IStorage interface
 - **Session Management**: Express sessions with PostgreSQL store
 - **API Design**: RESTful API with JSON responses
 - **Development**: Hot module replacement with Vite integration
@@ -46,9 +47,10 @@ This is a full-stack English conversation practice application built with React,
 - **Navigation Header**: App navigation with user stats display
 
 ### Backend Services
-- **Storage Layer**: Abstract interface with in-memory implementation for data persistence
+- **Storage Layer**: DatabaseStorage class with PostgreSQL persistence via Drizzle ORM
 - **API Routes**: RESTful endpoints for expressions, chat sessions, messages, and user stats
 - **Middleware**: Request logging, error handling, and static file serving
+- **Database Relations**: Fully modeled relationships between categories, expressions, and chat data
 
 ## Data Flow
 
@@ -133,6 +135,7 @@ Changelog:
 - July 12, 2025. New conversation architecture: 1) Random expression selection 2) GPT-4o scenario generation 3) Conversation evaluation 4) Whisper voice transcription 5) Grammar correction feedback
 - July 12, 2025. Firebase Authentication and storage implementation with Google sign-in and auth-based security rules
 - July 12, 2025. AWS deployment configuration for dailyconvo.com domain (non-Replit deployment)
+- July 12, 2025. PostgreSQL database integration with Neon Database - replaced in-memory storage with DatabaseStorage class implementing full CRUD operations and relational data modeling
 ```
 
 ## User Preferences

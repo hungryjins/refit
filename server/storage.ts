@@ -18,6 +18,8 @@ import {
   type Achievement,
   type InsertAchievement
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Categories
@@ -348,14 +350,224 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Firebase는 권한 설정이 필요합니다. 
-// Firestore 보안 규칙을 설정한 후 다시 활성화할 수 있습니다.
-// import { FirebaseStorage } from "./firebase-storage";
-// export const storage = new FirebaseStorage();
+export class DatabaseStorage implements IStorage {
+  // Categories
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories).orderBy(desc(categories.createdAt));
+  }
 
-// Firebase storage with Authentication (waiting for rules setup)
-// import { FirebaseStorage } from "./firebase-storage";
-// export const storage = new FirebaseStorage();
+  async getCategoryById(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category || undefined;
+  }
 
-// Memory storage until Firebase auth rules are configured
-export const storage = new MemStorage();
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+
+  async updateCategory(id: number, updateData: Partial<InsertCategory>): Promise<Category> {
+    const [category] = await db
+      .update(categories)
+      .set(updateData)
+      .where(eq(categories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
+  }
+
+  // Expressions
+  async getExpressions(): Promise<Expression[]> {
+    return await db.select().from(expressions).orderBy(desc(expressions.createdAt));
+  }
+
+  async getExpressionById(id: number): Promise<Expression | undefined> {
+    const [expression] = await db.select().from(expressions).where(eq(expressions.id, id));
+    return expression || undefined;
+  }
+
+  async createExpression(insertExpression: InsertExpression): Promise<Expression> {
+    const [expression] = await db
+      .insert(expressions)
+      .values(insertExpression)
+      .returning();
+    return expression;
+  }
+
+  async updateExpression(id: number, updateData: Partial<InsertExpression>): Promise<Expression> {
+    const [expression] = await db
+      .update(expressions)
+      .set(updateData)
+      .where(eq(expressions.id, id))
+      .returning();
+    return expression;
+  }
+
+  async deleteExpression(id: number): Promise<void> {
+    await db.delete(expressions).where(eq(expressions.id, id));
+  }
+
+  async updateExpressionStats(id: number, isCorrect: boolean): Promise<Expression> {
+    const expression = await this.getExpressionById(id);
+    if (!expression) {
+      throw new Error(`Expression with id ${id} not found`);
+    }
+
+    const newCorrectCount = isCorrect ? expression.correctCount + 1 : expression.correctCount;
+    const newTotalCount = expression.totalCount + 1;
+
+    const [updated] = await db
+      .update(expressions)
+      .set({
+        correctCount: newCorrectCount,
+        totalCount: newTotalCount,
+        lastUsed: new Date(),
+      })
+      .where(eq(expressions.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  // Chat Sessions
+  async getChatSessions(): Promise<ChatSession[]> {
+    return await db.select().from(chatSessions).orderBy(desc(chatSessions.createdAt));
+  }
+
+  async getActiveChatSession(): Promise<ChatSession | undefined> {
+    const [session] = await db.select().from(chatSessions).where(eq(chatSessions.isActive, true));
+    return session || undefined;
+  }
+
+  async createChatSession(insertSession: InsertChatSession): Promise<ChatSession> {
+    const [session] = await db
+      .insert(chatSessions)
+      .values(insertSession)
+      .returning();
+    return session;
+  }
+
+  async endChatSession(id: number): Promise<void> {
+    await db
+      .update(chatSessions)
+      .set({ isActive: false })
+      .where(eq(chatSessions.id, id));
+  }
+
+  // Chat Messages
+  async getChatMessages(sessionId: number): Promise<ChatMessage[]> {
+    return await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.sessionId, sessionId))
+      .orderBy(chatMessages.createdAt);
+  }
+
+  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await db
+      .insert(chatMessages)
+      .values(insertMessage)
+      .returning();
+    return message;
+  }
+
+  async updateChatMessage(id: number, updates: Partial<InsertChatMessage>): Promise<ChatMessage> {
+    const [message] = await db
+      .update(chatMessages)
+      .set(updates)
+      .where(eq(chatMessages.id, id))
+      .returning();
+    return message;
+  }
+
+  // User Stats
+  async getUserStats(): Promise<UserStats> {
+    const [stats] = await db.select().from(userStats);
+    if (!stats) {
+      // Create default user stats if none exist
+      const defaultStats = {
+        totalSessions: 0,
+        currentStreak: 0,
+        lastPracticeDate: null,
+        overallAccuracy: 0,
+      };
+      const [newStats] = await db.insert(userStats).values(defaultStats).returning();
+      return newStats;
+    }
+    return stats;
+  }
+
+  async updateUserStats(stats: Partial<InsertUserStats>): Promise<UserStats> {
+    const currentStats = await this.getUserStats();
+    const [updated] = await db
+      .update(userStats)
+      .set(stats)
+      .where(eq(userStats.id, currentStats.id))
+      .returning();
+    return updated;
+  }
+
+  // Achievements
+  async getAchievements(): Promise<Achievement[]> {
+    return await db.select().from(achievements).orderBy(desc(achievements.unlockedAt));
+  }
+
+  async createAchievement(insertAchievement: InsertAchievement): Promise<Achievement> {
+    const [achievement] = await db
+      .insert(achievements)
+      .values(insertAchievement)
+      .returning();
+    return achievement;
+  }
+
+  async initializeDefaultData(): Promise<void> {
+    // Check if default data already exists
+    const existingCategories = await this.getCategories();
+    if (existingCategories.length > 0) {
+      return; // Default data already exists
+    }
+
+    // Add default categories
+    const defaultCategories = [
+      { name: "Greetings & Introductions", icon: "👋", color: "from-blue-500 to-purple-500" },
+      { name: "Restaurant & Food", icon: "🍽️", color: "from-green-500 to-teal-500" },
+      { name: "Questions & Requests", icon: "❓", color: "from-purple-500 to-pink-500" },
+      { name: "Compliments & Praise", icon: "🌟", color: "from-yellow-500 to-orange-500" },
+      { name: "Business & Work", icon: "💼", color: "from-gray-500 to-slate-500" },
+      { name: "Travel & Directions", icon: "🗺️", color: "from-indigo-500 to-blue-500" },
+    ];
+
+    const createdCategories = [];
+    for (const cat of defaultCategories) {
+      const category = await this.createCategory(cat);
+      createdCategories.push(category);
+    }
+
+    // Add sample expressions
+    const sampleExpressions = [
+      { text: "Could you please help me with this?", categoryName: "Questions & Requests" },
+      { text: "Thank you so much for your assistance", categoryName: "Compliments & Praise" },
+      { text: "I'd like to order a coffee, please", categoryName: "Restaurant & Food" },
+      { text: "Excuse me, where is the nearest station?", categoryName: "Travel & Directions" },
+      { text: "Nice to meet you", categoryName: "Greetings & Introductions" },
+      { text: "Have a wonderful day", categoryName: "Greetings & Introductions" },
+    ];
+
+    for (const expr of sampleExpressions) {
+      const category = createdCategories.find(cat => cat.name === expr.categoryName);
+      await this.createExpression({
+        text: expr.text,
+        categoryId: category?.id || null,
+      });
+    }
+  }
+}
+
+// Database storage with PostgreSQL
+export const storage = new DatabaseStorage();

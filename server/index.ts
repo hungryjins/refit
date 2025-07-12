@@ -38,16 +38,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize default data (memory storage while Firebase setup in progress)
-  // if (storage.initializeDefaultData) {
-  //   try {
-  //     await storage.initializeDefaultData();
-  //     log("Firebase default data initialized", "express");
-  //   } catch (error) {
-  //     log(`Failed to initialize Firebase data: ${error}`, "express");
-  //     log("Using memory storage as fallback", "express");
-  //   }
-  // }
+  // Initialize default data for database storage
+  if (storage.initializeDefaultData) {
+    try {
+      await storage.initializeDefaultData();
+      log("Database default data initialized", "express");
+    } catch (error) {
+      log(`Failed to initialize database data: ${error}`, "express");
+    }
+  }
 
   const server = await registerRoutes(app);
 
