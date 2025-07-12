@@ -210,14 +210,15 @@ export default function NewChatInterface() {
 
       setMessages(prev => [...prev, userMessage, botMessage]);
 
-      // Update used expressions if successful
-      if (data.usedExpression && data.isCorrect) {
-        setUsedExpressions(prev => new Set([...prev, data.usedExpression]));
-      }
-      
-      // Show visual feedback for incorrect attempts (but don't disable input)
-      if (!data.isCorrect && data.evaluation) {
-        console.log('Incorrect attempt, user can try again');
+      // Update used expressions if attempted (correct or incorrect)
+      if (data.usedExpression || data.evaluation) {
+        // If correct, mark as used; if incorrect, still mark as attempted but track differently
+        if (data.isCorrect && data.usedExpression) {
+          setUsedExpressions(prev => new Set([...prev, data.usedExpression]));
+        } else if (!data.isCorrect) {
+          // For incorrect attempts, we can track them differently if needed
+          console.log('Incorrect attempt, moving to next expression');
+        }
       }
 
       // Check if session is complete

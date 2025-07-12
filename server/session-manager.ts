@@ -54,7 +54,7 @@ class SessionManager {
     return sessionState;
   }
 
-  async completeExpression(sessionId: number, expressionId: number): Promise<{
+  async completeExpression(sessionId: number, expressionId: number, isCorrect: boolean = true): Promise<{
     nextExpression?: Expression;
     nextScenario?: string;
     nextMessage?: string;

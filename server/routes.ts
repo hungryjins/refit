@@ -302,10 +302,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: evaluation.isCorrect
       });
       
-      // 표현 통계 업데이트 (정답이나 유사한 표현 사용 시)
+      // 표현 통계 업데이트 (모든 시도에 대해 기록)
       if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
         await storage.updateExpressionStats(currentTargetExpression.id, true);
-      } else if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
+      } else {
+        // 오답인 경우에도 통계 업데이트 (시도했으나 실패)
         await storage.updateExpressionStats(currentTargetExpression.id, false);
       }
       
@@ -333,11 +334,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nextExpression = result.nextExpression;
         }
       } else {
-        // 오답 또는 미사용 - 구체적인 피드백
-        if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
-          botResponse = `아쉬워요! 문맥상 같은 의미지만 저장된 표현을 쓰지 않았어요. "${currentTargetExpression.text}"를 사용해보세요!`;
+        // 오답 또는 미사용 - 오답으로 처리하고 다음 표현으로 진행
+        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id, false); // false = 오답 처리
+        
+        if (result.isSessionComplete) {
+          botResponse = `🎉 모든 표현 연습이 완료되었습니다!`;
+          sessionComplete = true;
         } else {
-          botResponse = evaluation.feedback || "다시 시도해보세요!";
+          let wrongMessage = "";
+          if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
+            wrongMessage = `❌ 아쉬워요! 문맥상 같은 의미지만 저장된 표현을 쓰지 않았어요. 정답은 "${currentTargetExpression.text}"였습니다.`;
+          } else {
+            wrongMessage = `❌ ${evaluation.feedback || "다시 시도해보세요!"} 정답은 "${currentTargetExpression.text}"였습니다.`;
+          }
+          
+          botResponse = `${wrongMessage}\n\n🎯 새로운 표현 연습!\n\n${result.nextMessage}`;
+          nextExpression = result.nextExpression;
         }
       }
       
