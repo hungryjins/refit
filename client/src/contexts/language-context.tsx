@@ -74,6 +74,7 @@ const translations = {
     'chat.target': 'Target',
     'chat.new.session': 'New Session',
     'chat.session.complete': 'Session completed! Great job!',
+    'chat.start.session': 'Start Session',
     
     // Expression Manager
     'expressions.title': 'Expression Manager',
@@ -212,6 +213,7 @@ const translations = {
     'chat.target': '목표',
     'chat.new.session': '새 세션',
     'chat.session.complete': '세션 완료! 잘했어요!',
+    'chat.start.session': '세션 시작',
     'expressions.completed': '완료됨',
     'expressions.click.to.use': '클릭해서 사용하기',
     
