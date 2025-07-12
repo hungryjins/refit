@@ -590,42 +590,47 @@ export default function NewChatInterface() {
                 <p className="text-lg font-semibold text-gray-800">
                   🎉 세션 완료!
                 </p>
-                <p className="text-gray-600 mt-2">
-                  {usedExpressions.size}개의 표현을 연습했습니다!
-                  {Array.from(expressionResults.values()).filter(Boolean).length > 0 && 
-                    ` (정답: ${Array.from(expressionResults.values()).filter(Boolean).length}개)`
-                  }
-                </p>
-              </div>
-
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h4 className="font-semibold text-green-800 mb-2">완료된 표현:</h4>
-                <div className="space-y-1">
-                  {selectedExpressions.filter(expr => usedExpressions.has(expr.id)).map(expr => {
-                    const isCorrect = expressionResults.get(expr.id);
-                    return (
-                      <div key={expr.id} className={`flex items-center gap-2 text-sm ${
-                        isCorrect ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {isCorrect ? (
-                          <CheckCircle2 size={16} className="text-green-600" />
-                        ) : (
-                          <XCircle size={16} className="text-red-600" />
-                        )}
-                        {expr.text}
-                        <span className="ml-auto text-xs">
-                          {isCorrect ? '✅ 정답' : '❌ 오답'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {usedExpressions.size === 0 && (
-                    <div className="text-gray-500 text-sm text-center py-2">
-                      완료된 표현이 없습니다. 다시 시도해보세요!
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-center mb-3">
+                    <div className="text-2xl font-bold text-blue-800">
+                      {Array.from(expressionResults.values()).filter(Boolean).length} / {usedExpressions.size}
                     </div>
-                  )}
+                    <div className="text-sm text-blue-600">
+                      정답률: {usedExpressions.size > 0 ? Math.round((Array.from(expressionResults.values()).filter(Boolean).length / usedExpressions.size) * 100) : 0}%
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* 정답 표현 */}
+              {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">✅ 정답 표현:</h4>
+                  <div className="space-y-1">
+                    {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).map(expr => (
+                      <div key={expr.id} className="flex items-center gap-2 text-sm text-green-700">
+                        <CheckCircle2 size={16} className="text-green-600" />
+                        {expr.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 오답 표현 */}
+              {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-red-800 mb-2">❌ 틀린 표현:</h4>
+                  <div className="space-y-1">
+                    {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).map(expr => (
+                      <div key={expr.id} className="flex items-center gap-2 text-sm text-red-700">
+                        <XCircle size={16} className="text-red-600" />
+                        {expr.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Button 
                 onClick={handleCloseModal}

@@ -77,7 +77,6 @@ class SessionManager {
     if (sessionState.currentExpressionIndex >= sessionState.expressions.length) {
       sessionState.isComplete = true;
       await storage.endChatSession(sessionId);
-      this.sessions.delete(sessionId);
       
       return {
         isSessionComplete: true
@@ -131,6 +130,43 @@ class SessionManager {
       completedExpressions: Array.from(sessionState.completedExpressions),
       expressionResults: Array.from(sessionState.expressionResults.entries()).map(([id, isCorrect]) => ({id, isCorrect}))
     };
+  }
+
+  getFinalSessionResults(sessionId: number): {
+    completed: number;
+    total: number;
+    completedExpressions: number[];
+    expressionResults: Array<{id: number, isCorrect: boolean}>;
+    correctCount: number;
+    incorrectExpressions: Array<{id: number, text: string}>;
+  } | null {
+    const sessionState = this.sessions.get(sessionId);
+    if (!sessionState) {
+      return null;
+    }
+
+    const expressionResults = Array.from(sessionState.expressionResults.entries()).map(([id, isCorrect]) => ({id, isCorrect}));
+    const correctCount = expressionResults.filter(result => result.isCorrect).length;
+    const incorrectExpressions = expressionResults
+      .filter(result => !result.isCorrect)
+      .map(result => {
+        const expr = sessionState.expressions.find(e => e.id === result.id);
+        return { id: result.id, text: expr?.text || '' };
+      });
+
+    const finalResults = {
+      completed: sessionState.completedExpressions.size,
+      total: sessionState.expressions.length,
+      completedExpressions: Array.from(sessionState.completedExpressions),
+      expressionResults: expressionResults,
+      correctCount: correctCount,
+      incorrectExpressions: incorrectExpressions
+    };
+
+    // 세션 완료 후 삭제
+    this.sessions.delete(sessionId);
+    
+    return finalResults;
   }
 
   deleteSession(sessionId: number): void {

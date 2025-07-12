@@ -362,7 +362,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: null,
       });
       
-      const progressData = sessionManager.getSessionProgress(sessionId);
+      const progressData = sessionComplete ? 
+        sessionManager.getFinalSessionResults(sessionId) : 
+        sessionManager.getSessionProgress(sessionId);
       console.log('Sending progress data:', progressData);
       
       res.json({
