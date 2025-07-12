@@ -410,6 +410,8 @@ export default function NewChatInterface() {
                 const isCurrentExpression = lastMessage && !lastMessage.isUser && 
                   (lastMessage.content.includes('새로운 표현') || lastMessage.content.includes(expr.text));
                 
+                console.log(`Expression ${expr.id} (${expr.text}): isUsed=${isUsed}, usedExpressions=${Array.from(usedExpressions)}`);
+                
                 return (
                   <div key={expr.id} className={`p-3 rounded-lg border transition-all duration-300 ${
                     isUsed 
