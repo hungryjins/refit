@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock, Trophy, Star } from "lucide-react";
+import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock, Trophy, Star, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -450,7 +450,7 @@ export default function NewChatInterface() {
                         isCorrect ? (
                           <CheckCircle2 size={18} className="text-green-600" />
                         ) : (
-                          <X size={18} className="text-red-600" />
+                          <XCircle size={18} className="text-red-600" />
                         )
                       ) : isCurrentExpression ? (
                         <Play size={16} className="text-blue-600" />
@@ -588,12 +588,12 @@ export default function NewChatInterface() {
                   ))}
                 </div>
                 <p className="text-lg font-semibold text-gray-800">
-                  🎉 {usedExpressions.size > 0 ? '축하합니다!' : '연습 완료!'}
+                  🎉 세션 완료!
                 </p>
                 <p className="text-gray-600 mt-2">
-                  {usedExpressions.size > 0 
-                    ? `${usedExpressions.size}개의 표현을 성공적으로 완료했습니다!`
-                    : "모든 표현을 연습했습니다. 다시 도전해보세요!"
+                  {usedExpressions.size}개의 표현을 연습했습니다!
+                  {Array.from(expressionResults.values()).filter(Boolean).length > 0 && 
+                    ` (정답: ${Array.from(expressionResults.values()).filter(Boolean).length}개)`
                   }
                 </p>
               </div>
@@ -601,12 +601,24 @@ export default function NewChatInterface() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-800 mb-2">완료된 표현:</h4>
                 <div className="space-y-1">
-                  {selectedExpressions.filter(expr => usedExpressions.has(expr.id)).map(expr => (
-                    <div key={expr.id} className="flex items-center gap-2 text-sm text-green-700">
-                      <CheckCircle2 size={16} className="text-green-600" />
-                      {expr.text}
-                    </div>
-                  ))}
+                  {selectedExpressions.filter(expr => usedExpressions.has(expr.id)).map(expr => {
+                    const isCorrect = expressionResults.get(expr.id);
+                    return (
+                      <div key={expr.id} className={`flex items-center gap-2 text-sm ${
+                        isCorrect ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        {isCorrect ? (
+                          <CheckCircle2 size={16} className="text-green-600" />
+                        ) : (
+                          <XCircle size={16} className="text-red-600" />
+                        )}
+                        {expr.text}
+                        <span className="ml-auto text-xs">
+                          {isCorrect ? '✅ 정답' : '❌ 오답'}
+                        </span>
+                      </div>
+                    );
+                  })}
                   {usedExpressions.size === 0 && (
                     <div className="text-gray-500 text-sm text-center py-2">
                       완료된 표현이 없습니다. 다시 시도해보세요!
