@@ -211,9 +211,13 @@ export default function NewChatInterface() {
       setMessages(prev => [...prev, userMessage, botMessage]);
 
       // Update progress based on actual server response
-      if (data.progress && data.progress.completedExpressions) {
+      console.log('Server progress data:', data.progress);
+      if (data.progress && Array.isArray(data.progress.completedExpressions)) {
         // Update used expressions based on server's completed list
         setUsedExpressions(new Set(data.progress.completedExpressions));
+        console.log('Updated used expressions:', data.progress.completedExpressions);
+      } else {
+        console.log('No valid progress data received');
       }
 
       // Check if session is complete

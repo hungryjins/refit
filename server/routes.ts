@@ -362,6 +362,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: null,
       });
       
+      const progressData = sessionManager.getSessionProgress(sessionId);
+      console.log('Sending progress data:', progressData);
+      
       res.json({
         response: botResponse,
         messageId: botMessage.id,
@@ -370,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usedExpression: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
         isCorrect: evaluation.isCorrect,
         nextExpression: nextExpression,
-        progress: sessionManager.getSessionProgress(sessionId)
+        progress: progressData
       });
       
     } catch (error) {
