@@ -210,15 +210,10 @@ export default function NewChatInterface() {
 
       setMessages(prev => [...prev, userMessage, botMessage]);
 
-      // Update used expressions if attempted (correct or incorrect)
-      if (data.usedExpression || data.evaluation) {
-        // If correct, mark as used; if incorrect, still mark as attempted but track differently
-        if (data.isCorrect && data.usedExpression) {
-          setUsedExpressions(prev => new Set([...prev, data.usedExpression]));
-        } else if (!data.isCorrect) {
-          // For incorrect attempts, we can track them differently if needed
-          console.log('Incorrect attempt, moving to next expression');
-        }
+      // Update progress based on actual server response
+      if (data.progress && data.progress.completedExpressions) {
+        // Update used expressions based on server's completed list
+        setUsedExpressions(new Set(data.progress.completedExpressions));
       }
 
       // Check if session is complete

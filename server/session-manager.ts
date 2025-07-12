@@ -65,8 +65,10 @@ class SessionManager {
       throw new Error("Session not found");
     }
 
-    // 완료된 표현 추가
-    sessionState.completedExpressions.add(expressionId);
+    // 정답인 경우에만 완료된 표현으로 추가
+    if (isCorrect) {
+      sessionState.completedExpressions.add(expressionId);
+    }
     sessionState.currentExpressionIndex++;
 
     // 모든 표현이 완료되었는지 확인
