@@ -130,7 +130,7 @@ Changelog:
 - July 10, 2025. Enhanced session completion modal with success/failure visual indicators
 - July 12, 2025. Complete OpenAI integration replacing Gemini AI system
 - July 12, 2025. New conversation architecture: 1) Random expression selection 2) GPT-4o scenario generation 3) Conversation evaluation 4) Whisper voice transcription 5) Grammar correction feedback
-- July 12, 2025. Firebase storage implementation prepared (temporarily using memory storage due to Firestore permissions)
+- July 12, 2025. Firebase storage implementation prepared and activated with Firestore security rules
 ```
 
 ## User Preferences

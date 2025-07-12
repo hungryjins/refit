@@ -38,15 +38,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize default data (Firebase temporarily disabled)
-  // if (storage.initializeDefaultData) {
-  //   try {
-  //     await storage.initializeDefaultData();
-  //     log("Firebase default data initialized", "express");
-  //   } catch (error) {
-  //     log(`Failed to initialize Firebase data: ${error}`, "express");
-  //   }
-  // }
+  // Initialize Firebase with default data
+  if (storage.initializeDefaultData) {
+    try {
+      await storage.initializeDefaultData();
+      log("Firebase default data initialized", "express");
+    } catch (error) {
+      log(`Failed to initialize Firebase data: ${error}`, "express");
+    }
+  }
 
   const server = await registerRoutes(app);
 
