@@ -53,26 +53,7 @@ function AppContent() {
 
   return (
     <div>
-      {isAuthenticated && (
-        <div className="p-4 bg-blue-50 text-blue-800 flex justify-between items-center">
-          <span>Welcome, {user?.email}!</span>
-          <Button variant="outline" size="sm" onClick={signOutUser}>
-            Sign Out
-          </Button>
-        </div>
-      )}
-      
-      {!isAuthenticated && (
-        <div className="p-4 bg-yellow-50 text-yellow-800 text-center">
-          You're using the app as a guest. Your data won't be saved. 
-          <Button variant="link" onClick={signInWithGoogle} className="ml-2">
-            Sign in with Google to save your progress
-          </Button>
-          <div className="text-xs mt-2 text-gray-600">
-            Note: Google sign-in requires Firebase Authentication to be enabled in the console
-          </div>
-        </div>
-      )}
+
       
       <AuthenticatedApp />
     </div>

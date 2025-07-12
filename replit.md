@@ -137,6 +137,7 @@ Changelog:
 - July 12, 2025. Firebase Authentication and storage implementation with Google sign-in and auth-based security rules
 - July 12, 2025. Firebase Hosting configuration for dailyconvo.com domain with DNS records
 - July 12, 2025. PostgreSQL database integration with Neon Database - replaced in-memory storage with DatabaseStorage class implementing full CRUD operations and relational data modeling
+- July 12, 2025. Simplified UI design - removed complex adaptive difficulty interface, restored clean 3-tab layout (Practice/Expressions/Progress) with simple top-right login functionality
 ```
 
 ## User Preferences
@@ -145,8 +146,10 @@ Changelog:
 Preferred communication style: Simple, everyday language.
 App branding: "Daily Convo" for English conversation practice
 Deployment goal: Firebase Hosting with dailyconvo.com domain (not Replit deployment)
-Design priority: Clean, creative design that attracts users
-Firebase: Authentication required for all users, Google sign-in only
+Design priority: Clean, simple interface - avoid complex features
+UI Layout: Simple 3-tab navigation (Practice/Expressions/Progress) with top-right login
+Firebase: Google authentication for data persistence, guest mode for temporary use
+Database Storage: Expressions saved to PostgreSQL only when authenticated
 ```
 
 ## AdSense Integration

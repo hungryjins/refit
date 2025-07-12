@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-import AdaptiveDifficulty from "@/components/AdaptiveDifficulty";
+import { signInWithGoogle, signOutUser } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
 
-type Tab = "chat" | "expressions" | "repository" | "adaptive";
+type Tab = "chat" | "expressions" | "repository";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
@@ -21,7 +22,6 @@ export default function Home() {
     { id: "chat", label: "Practice", icon: "💬" },
     { id: "expressions", label: "Expressions", icon: "📚" },
     { id: "repository", label: "Progress", icon: "📊" },
-    { id: "adaptive", label: "AI Adaptive", icon: "🤖" },
   ] as const;
 
   return (
@@ -29,11 +29,20 @@ export default function Home() {
       <div className="bg-white shadow-sm border-b p-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Daily Convo</h1>
-          {isAuthenticated && (
-            <div className="text-sm text-gray-600">
-              Welcome, {user?.email}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">{user?.email}</span>
+                <Button variant="outline" size="sm" onClick={signOutUser}>
+                  로그아웃
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={signInWithGoogle} size="sm">
+                구글 로그인
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -70,39 +79,34 @@ export default function Home() {
         >
           {activeTab === "chat" && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Practice Chat</h2>
+              <h2 className="text-xl font-semibold mb-4">영어 회화 연습</h2>
               <p className="text-gray-600">
-                {isAuthenticated 
-                  ? "Start practicing English expressions with AI chat!" 
-                  : "Sign in to save your progress, or continue as a guest."}
+                AI와 함께 영어 표현을 연습하세요!
+                {!isAuthenticated && " (게스트 모드: 데이터가 저장되지 않습니다)"}
               </p>
             </div>
           )}
           {activeTab === "expressions" && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Your Expressions</h2>
+              <h2 className="text-xl font-semibold mb-4">나의 표현</h2>
               <p className="text-gray-600">
                 {isAuthenticated 
-                  ? "Manage your saved expressions here." 
-                  : "Sign in to save and manage expressions."}
+                  ? "저장된 영어 표현들을 관리하세요." 
+                  : "로그인하면 표현을 데이터베이스에 저장할 수 있습니다."}
               </p>
             </div>
           )}
           {activeTab === "repository" && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Progress</h2>
+              <h2 className="text-xl font-semibold mb-4">학습 진도</h2>
               <p className="text-gray-600">
                 {isAuthenticated 
-                  ? "Track your learning progress." 
-                  : "Sign in to see your progress and statistics."}
+                  ? "학습 진행상황을 확인하세요." 
+                  : "로그인하면 진도를 추적할 수 있습니다."}
               </p>
             </div>
           )}
-          {activeTab === "adaptive" && (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <AdaptiveDifficulty />
-            </div>
-          )}
+
         </motion.div>
       </div>
     </div>
