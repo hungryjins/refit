@@ -34,23 +34,23 @@ export class OpenAIService {
   async generateScenario(expression: Expression): Promise<ScenarioResponse> {
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `영어 회화 연습을 위한 시나리오를 생성하세요. 타겟 표현 "${expression.text}"이 자연스럽게 사용될 수 있는 상황을 만드세요.
+            content: `You are a conversation scenario generator. Create a realistic scenario where someone would naturally use the expression "${expression.text}". 
             
-            JSON 형식으로 응답하세요:
+            Respond with JSON in this format:
             {
-              "scenario": "상황을 한 문장으로 간단하게 설명 (한국어)",
-              "initialMessage": "역할과 함께 상대방의 첫 번째 대화 (예: '카페 직원: Hello, what can I get for you?')"
+              "scenario": "Brief one-sentence description of the situation",
+              "initialMessage": "What the other person (like staff, friend, etc.) would say to start the conversation"
             }
             
-            자연스럽고 현실적으로 만드세요.`
+            Make it natural and conversational in English.`
           },
           {
             role: "user", 
-            content: `타겟 표현: "${expression.text}"`
+            content: `Create a scenario for the expression: "${expression.text}"`
           }
         ],
         response_format: { type: "json_object" },
@@ -59,13 +59,13 @@ export class OpenAIService {
 
       const result = JSON.parse(response.choices[0].message.content || '{}');
       return {
-        scenario: result.scenario || `"${expression.text}" 표현을 연습하는 상황`,
-        initialMessage: result.initialMessage || "Hello! How can I help you today?"
+        scenario: result.scenario || `Situation where you might say "${expression.text}"`,
+        initialMessage: result.initialMessage || "Hello, how can I help you?"
       };
     } catch (error) {
       console.error('OpenAI Scenario Generation Error:', error);
       return {
-        scenario: `"${expression.text}" 표현을 연습하는 상황`,
+        scenario: `Practice using: "${expression.text}"`,
         initialMessage: "Hello! How can I help you today?"
       };
     }
@@ -85,26 +85,38 @@ export class OpenAIService {
         messages: [
           {
             role: "system",
-            content: `당신은 영어 회화 평가 전문가입니다. 사용자가 타겟 표현을 사용했는지 평가하고, 문법이나 표현의 오류가 있으면 정정해주세요.
+            content: `You are a very encouraging English conversation tutor who focuses on successful communication rather than perfect grammar. Be lenient with minor errors and emphasize positive achievements.
 
-            타겟 표현: "${targetExpression.text}"
-            상황: ${context.scenario}
+            Target expression: "${targetExpression.text}"
+            Scenario: ${context.scenario}
             
-            평가 기준:
-            1. 타겟 표현 정확히 사용 → 정답
-            2. 타겟 표현과 의미상 동등한 표현 사용 → 정답
-            3. 타겟 표현을 사용하지 않음 → 오답
-            4. 문법 오류나 어색한 표현이 있음 → 오답 + 정정
+            Evaluate with these SPECIFIC criteria:
+            1. EXACT MATCH: Did they use the exact target expression? (Mark as "exact")
+            2. SEMANTIC EQUIVALENT: Did they use a semantically equivalent phrase with same structure?
+               - "Have a wonderful day" ≈ "Have a good/great/nice day" (CORRECT as "equivalent")
+               - "Nice to meet you" ≈ "Good to meet you" / "Pleased to meet you" (CORRECT as "equivalent") 
+               - "Could you please help me" ≈ "Can you please help me" (CORRECT as "equivalent")
+            3. DIFFERENT STRUCTURE: Did they express same meaning but different grammar structure?
+               - "Can I get something?" vs "I would like to get something" (INCORRECT - different structure)
+               - "How are you?" vs "How do you do?" (INCORRECT - different structure)
+            4. Focus on phrase structure similarity, not just meaning
 
-            JSON 형식으로 응답하세요:
+            Response categories:
+            - "exact": Used exact target expression
+            - "equivalent": Used semantically equivalent phrase with same structure  
+            - "incorrect": Wrong structure or didn't use target expression
+
+            Respond with JSON:
             {
-              "usedTargetExpression": boolean (타겟 표현 사용 여부),
-              "isCorrect": boolean (정답 여부),
+              "usedTargetExpression": boolean (true if exact or equivalent match),
+              "isCorrect": boolean (true if exact or equivalent match),
               "matchType": "exact" | "equivalent" | "incorrect",
-              "feedback": "한국어로 피드백 메시지",
-              "corrections": "오류가 있을 경우 정정된 표현",
-              "sessionComplete": boolean (타겟 표현을 올바르게 사용했으면 true)
-            }`
+              "feedback": "Korean feedback message based on match type",
+              "corrections": "corrections if needed",
+              "sessionComplete": boolean (true if exact or equivalent match)
+            }
+
+            Important: For "equivalent" matches, set both usedTargetExpression=true AND isCorrect=true`
           },
           {
             role: "user",

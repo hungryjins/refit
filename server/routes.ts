@@ -5,25 +5,8 @@ import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, 
 import { openaiService } from "./openai-service";
 import { sessionManager } from "./session-manager";
 import { tutoringEngine } from "./tutoring-engine";
-import { verifyFirebaseToken, getSessionId } from "./firebase-auth";
-import { createAdaptiveDifficultyEngine } from "./adaptive-difficulty";
-import session from "express-session";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Add session management for guest users
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'development-secret',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // Set to true in production with HTTPS
-  }));
-
-  // Add Firebase token verification to all routes
-  app.use(verifyFirebaseToken);
-
-  // Initialize adaptive difficulty engine
-  const adaptiveDifficultyEngine = createAdaptiveDifficultyEngine(storage);
-
   // Category routes
   app.get("/api/categories", async (req, res) => {
     try {
@@ -65,12 +48,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Expression routes (user-aware)
+  // Expression routes
   app.get("/api/expressions", async (req, res) => {
     try {
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const expressions = await storage.getExpressions(userId, sessionId);
+      const expressions = await storage.getExpressions();
       res.json(expressions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch expressions" });
@@ -80,9 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/expressions", async (req, res) => {
     try {
       const validatedData = insertExpressionSchema.parse(req.body);
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const expression = await storage.createExpression(validatedData, userId, sessionId);
+      const expression = await storage.createExpression(validatedData);
       res.json(expression);
     } catch (error) {
       res.status(400).json({ message: "Invalid expression data" });
@@ -121,12 +100,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat session routes (user-aware)
+  // Chat session routes
   app.get("/api/chat/sessions", async (req, res) => {
     try {
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const sessions = await storage.getChatSessions(userId, sessionId);
+      const sessions = await storage.getChatSessions();
       res.json(sessions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch chat sessions" });
@@ -135,9 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/chat/active", async (req, res) => {
     try {
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const session = await storage.getActiveChatSession(userId, sessionId);
+      const session = await storage.getActiveChatSession();
       res.json(session || null);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch active session" });
@@ -147,9 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat/sessions", async (req, res) => {
     try {
       const validatedData = insertChatSessionSchema.parse(req.body);
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const session = await storage.createChatSession(validatedData, userId, sessionId);
+      const session = await storage.createChatSession(validatedData);
       res.json(session);
     } catch (error) {
       res.status(400).json({ message: "Invalid session data" });
@@ -203,12 +176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User stats routes (user-aware)
+  // User stats routes
   app.get("/api/stats", async (req, res) => {
     try {
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const stats = await storage.getUserStats(userId, sessionId);
+      const stats = await storage.getUserStats();
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user stats" });
@@ -218,36 +189,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/stats", async (req, res) => {
     try {
       const updates = req.body;
-      const userId = req.user?.uid;
-      const sessionId = getSessionId(req);
-      const stats = await storage.updateUserStats(updates, userId, sessionId);
+      const stats = await storage.updateUserStats(updates);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user stats" });
-    }
-  });
-
-  // Authentication routes
-  app.get("/api/auth/user", async (req, res) => {
-    try {
-      if (req.user) {
-        // User is authenticated with Firebase
-        res.json({
-          uid: req.user.uid,
-          email: req.user.email,
-          name: req.user.name,
-          picture: req.user.picture,
-          isAuthenticated: true
-        });
-      } else {
-        // User is not authenticated (guest)
-        res.json({
-          isAuthenticated: false,
-          isGuest: true
-        });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch user info" });
     }
   });
 
@@ -270,20 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No expressions selected" });
       }
       
-      // Extract expression IDs if full objects are passed
-      const expressionIds = Array.isArray(selectedExpressions) 
-        ? selectedExpressions.map(expr => typeof expr === 'object' ? expr.id : expr)
-        : selectedExpressions;
-      
-      console.log('Selected expressions:', selectedExpressions);
-      console.log('Expression IDs:', expressionIds);
-      
-      // Get user info for hybrid storage
-      const userId = req.user?.claims?.sub;
-      const sessionId = req.sessionID;
-      
       // SessionManager로 세션 생성
-      const sessionState = await sessionManager.createSession(expressionIds, userId, sessionId);
+      const sessionState = await sessionManager.createSession(selectedExpressions);
       const currentExpression = sessionState.expressions[0];
       
       // 초기 메시지 가져오기
@@ -309,99 +242,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Handle user responses and evaluation (4단계: 사용자 응답, 5단계: 평가)
+  // Handle user responses and evaluation
   app.post("/api/chat/respond", async (req, res) => {
     try {
       const { message, sessionId, targetExpressionId } = req.body;
       
-      if (!message || !sessionId) {
-        return res.status(400).json({ message: "Missing required fields" });
+      if (!message || !sessionId || !targetExpressionId) {
+        return res.status(400).json({ 
+          message: "Message, sessionId, and targetExpressionId are required"
+        });
       }
-
-      // Get session state
-      const sessionState = sessionManager.getCurrentSession(sessionId);
-      if (!sessionState) {
-        return res.status(404).json({ message: "Session not found" });
+      
+      // Get target expression
+      const targetExpression = await storage.getExpressionById(targetExpressionId);
+      if (!targetExpression) {
+        return res.status(404).json({ message: "Target expression not found" });
       }
-
-      // Get the current target expression (랜덤으로 선택된 표현)
-      const currentExpression = sessionState.expressions[sessionState.currentExpressionIndex];
-      if (!currentExpression) {
-        return res.status(404).json({ message: "No current expression found" });
-      }
-
-      console.log(`Evaluating user response: "${message}" for target: "${currentExpression.text}"`);
-
-      // Get session and conversation history for context
+      
+      // Get session and conversation history
       const session = await storage.getChatSessions();
       const activeSession = session.find(s => s.id === sessionId && s.isActive);
       if (!activeSession) {
         return res.status(404).json({ message: "Active session not found" });
       }
       
-      // Get user info for hybrid storage
-      const userId = req.user?.claims?.sub;
-      const requestSessionId = req.sessionID;
+      const conversationHistory = await storage.getChatMessages(sessionId);
       
-      // Create user message
-      const userMessage = await storage.createChatMessage({
-        sessionId,
-        content: message,
-        isUser: true,
-        expressionUsed: null, // Will be determined by evaluation
-        isCorrect: null,
-      }, userId, requestSessionId);
-
-      // Evaluate response using OpenAI (5단계: GPT-4o 평가)
+      // Create conversation context
       const context = {
-        targetExpression: currentExpression,
+        targetExpression,
         scenario: activeSession.scenario || "Conversation practice",
-        conversationHistory: []
+        conversationHistory: conversationHistory.map(msg => ({
+          role: msg.isUser ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        }))
       };
       
-      const evaluation = await openaiService.evaluateResponse(message, currentExpression, context);
-      console.log('OpenAI evaluation result:', evaluation);
-      
-      // Update user message with evaluation
-      await storage.updateChatMessage(userMessage.id, {
-        expressionUsed: evaluation.usedTargetExpression ? currentExpression.text : null,
-        isCorrect: evaluation.isCorrect,
+      // Save user message first
+      const userMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: message,
+        isUser: true,
+        expressionUsed: null,
+        isCorrect: null,
       });
-
-      // Create AI response with feedback and corrections
-      let aiResponseContent = evaluation.feedback;
-      if (evaluation.corrections) {
-        aiResponseContent += `\n\n📝 정정: ${evaluation.corrections}`;
+      
+      // 현재 타겟 표현 가져오기
+      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+      if (!currentTargetExpression) {
+        return res.status(400).json({ message: "No active expression for this session" });
       }
       
-      // Add success message if correct
-      if (evaluation.isCorrect) {
-        aiResponseContent += `\n\n✅ 완벽합니다! "${currentExpression.text}" 표현을 성공적으로 사용했습니다!`;
-        // Update session state if expression was used correctly
-        await sessionManager.completeExpression(sessionId, currentExpression.id, true);
+      // 평가 수행
+      const evaluation = await openaiService.evaluateResponse(message, currentTargetExpression, context);
+      
+      // 사용자 메시지 업데이트
+      await storage.updateChatMessage(userMessage.id, {
+        expressionUsed: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
+        isCorrect: evaluation.isCorrect
+      });
+      
+      // 표현 통계 업데이트 (모든 시도에 대해 기록)
+      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
+        await storage.updateExpressionStats(currentTargetExpression.id, true);
+      } else {
+        // 오답인 경우에도 통계 업데이트 (시도했으나 실패)
+        await storage.updateExpressionStats(currentTargetExpression.id, false);
       }
-
-      const aiMessage = await storage.createChatMessage({
-        sessionId,
-        content: aiResponseContent,
+      
+      let botResponse = "";
+      let sessionComplete = false;
+      let nextExpression = null;
+      
+      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
+        // 정답! (정확한 표현 또는 의미상 유사한 표현) - 다음 표현으로 진행 또는 세션 완료
+        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id);
+        
+        if (result.isSessionComplete) {
+          botResponse = `🎉 축하합니다! 모든 표현을 완벽하게 완료했습니다!`;
+          sessionComplete = true;
+        } else {
+          // 정확도에 따른 피드백 분기
+          let successMessage = "";
+          if (evaluation.matchType === "exact") {
+            successMessage = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확히 사용하셨어요!`;
+          } else if (evaluation.matchType === "equivalent") {
+            successMessage = `👍 적절한 표현을 사용했어요! 저장하신 표현은 "${currentTargetExpression.text}"입니다.`;
+          }
+          
+          botResponse = `${successMessage}\n\n${result.nextMessage}`;
+          nextExpression = result.nextExpression;
+        }
+      } else {
+        // 오답 또는 미사용 - 오답으로 처리하고 다음 표현으로 진행
+        const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id, false); // false = 오답 처리
+        
+        if (result.isSessionComplete) {
+          botResponse = `🎉 모든 표현 연습이 완료되었습니다!`;
+          sessionComplete = true;
+        } else {
+          let wrongMessage = "";
+          if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
+            wrongMessage = `❌ 아쉬워요! 문맥상 같은 의미지만 저장된 표현을 쓰지 않았어요. 정답은 "${currentTargetExpression.text}"였습니다.`;
+          } else {
+            wrongMessage = `❌ ${evaluation.feedback || "다시 시도해보세요!"} 정답은 "${currentTargetExpression.text}"였습니다.`;
+          }
+          
+          botResponse = `${wrongMessage}\n\n🎯 새로운 표현 연습!\n\n${result.nextMessage}`;
+          nextExpression = result.nextExpression;
+        }
+      }
+      
+      // Create bot response message
+      const botMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: botResponse,
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
-      }, userId, requestSessionId);
-
-      // Update expression stats
-      await storage.updateExpressionStats(currentExpression.id, evaluation.isCorrect);
-
-      res.json({
-        evaluation,
-        aiMessage,
-        sessionComplete: evaluation.sessionComplete || evaluation.isCorrect,
-        targetExpression: currentExpression
       });
-
+      
+      const progressData = sessionComplete ? 
+        sessionManager.getFinalSessionResults(sessionId) : 
+        sessionManager.getSessionProgress(sessionId);
+      console.log('Sending progress data:', progressData);
+      
+      res.json({
+        response: botResponse,
+        messageId: botMessage.id,
+        evaluation: evaluation,
+        sessionComplete: sessionComplete,
+        usedExpression: evaluation.usedTargetExpression ? currentTargetExpression.id : null,
+        isCorrect: evaluation.isCorrect,
+        nextExpression: nextExpression,
+        progress: progressData
+      });
+      
     } catch (error) {
-      console.error("Response evaluation error:", error);
-      res.status(500).json({ message: "Failed to evaluate response" });
+      console.error("Chat respond error:", error);
+      res.status(500).json({ message: "Failed to process response" });
     }
   });
 
@@ -421,115 +400,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Transcription error:", error);
       res.status(500).json({ message: "Failed to transcribe audio" });
-    }
-  });
-
-  // Adaptive Difficulty API Routes
-  app.get("/api/adaptive/analysis/:userId", async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const analysis = await adaptiveDifficultyEngine.analyzeUserPerformance(userId);
-      res.json(analysis);
-    } catch (error) {
-      console.error("Adaptive analysis error:", error);
-      res.status(500).json({ message: "Failed to analyze user performance" });
-    }
-  });
-
-  app.get("/api/adaptive/challenges/:userId", async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const challenges = await adaptiveDifficultyEngine.generatePersonalizedChallenges(userId);
-      res.json(challenges);
-    } catch (error) {
-      console.error("Adaptive challenges error:", error);
-      res.status(500).json({ message: "Failed to generate challenges" });
-    }
-  });
-
-  app.post("/api/adaptive/expressions", async (req, res) => {
-    try {
-      const { userId, sessionConfig } = req.body;
-      const expressions = await adaptiveDifficultyEngine.selectAdaptiveExpressions(userId, sessionConfig);
-      res.json(expressions);
-    } catch (error) {
-      console.error("Adaptive expressions error:", error);
-      res.status(500).json({ message: "Failed to select adaptive expressions" });
-    }
-  });
-
-  app.post("/api/adaptive/analytics", async (req, res) => {
-    try {
-      const { userId, sessionId, expressionId, responseTime, accuracy, difficultyLevel, aiResponse } = req.body;
-      
-      await adaptiveDifficultyEngine.recordPerformanceAnalytics(
-        userId, sessionId, expressionId, responseTime, accuracy, difficultyLevel, aiResponse
-      );
-      
-      res.json({ message: "Analytics recorded successfully" });
-    } catch (error) {
-      console.error("Analytics recording error:", error);
-      res.status(500).json({ message: "Failed to record analytics" });
-    }
-  });
-
-  app.post("/api/adaptive/challenge", async (req, res) => {
-    try {
-      const { userId, challenge } = req.body;
-      await adaptiveDifficultyEngine.createAdaptiveChallenge(userId, challenge);
-      res.json({ message: "Challenge created successfully" });
-    } catch (error) {
-      console.error("Challenge creation error:", error);
-      res.status(500).json({ message: "Failed to create challenge" });
-    }
-  });
-
-  app.patch("/api/adaptive/difficulty/:userId", async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const analysis = req.body;
-      await adaptiveDifficultyEngine.updateAdaptiveDifficulty(userId, analysis);
-      res.json({ message: "Difficulty updated successfully" });
-    } catch (error) {
-      console.error("Difficulty update error:", error);
-      res.status(500).json({ message: "Failed to update difficulty" });
-    }
-  });
-
-  // Get user's adaptive challenges
-  app.get("/api/challenges/:userId", async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const challenges = await storage.getAdaptiveChallenges(userId);
-      res.json(challenges);
-    } catch (error) {
-      console.error("Challenges fetch error:", error);
-      res.status(500).json({ message: "Failed to fetch challenges" });
-    }
-  });
-
-  // Complete an adaptive challenge
-  app.patch("/api/challenges/:id/complete", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const challenge = await storage.completeAdaptiveChallenge(id);
-      res.json(challenge);
-    } catch (error) {
-      console.error("Challenge completion error:", error);
-      res.status(500).json({ message: "Failed to complete challenge" });
-    }
-  });
-
-  // Get performance analytics
-  app.get("/api/analytics/:userId", async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const analytics = await storage.getPerformanceAnalytics(userId, limit);
-      res.json(analytics);
-    } catch (error) {
-      console.error("Analytics fetch error:", error);
-      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 

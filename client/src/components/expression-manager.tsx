@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
-// import { useLanguage } from "@/contexts/language-context";
+import { useLanguage } from "@/contexts/language-context";
 import type { InsertExpression, InsertCategory, Expression, Category } from "@shared/schema";
 
 export default function ExpressionManager() {
@@ -31,8 +31,7 @@ export default function ExpressionManager() {
   const { toast } = useToast();
   const { expressions, refetch, updateExpression, deleteExpression } = useExpressions();
   const { categories, createCategory, updateCategory, deleteCategory, isCreating } = useCategories();
-  // const { t } = useLanguage();
-  const t = (key: string) => key; // Simplified translation function
+  const { t } = useLanguage();
 
   const addExpressionMutation = useMutation({
     mutationFn: async (data: InsertExpression) => {

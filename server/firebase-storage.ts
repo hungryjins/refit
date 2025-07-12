@@ -72,7 +72,7 @@ export class FirebaseStorage implements IStorage {
   async createExpression(expression: InsertExpression): Promise<Expression> {
     const docRef = await addDoc(collection(db, "expressions"), {
       text: expression.text,
-      categoryId: expression.categoryId,
+      category: expression.category || null,
       correctCount: 0,
       totalCount: 0,
       lastUsed: null,
@@ -84,7 +84,7 @@ export class FirebaseStorage implements IStorage {
     return {
       id: Math.floor(Math.random() * 1000000), // Generate random ID for compatibility
       text: data?.text || expression.text,
-      categoryId: data?.categoryId || expression.categoryId,
+      category: data?.category || null,
       correctCount: 0,
       totalCount: 0,
       lastUsed: null,
@@ -288,150 +288,5 @@ export class FirebaseStorage implements IStorage {
       ...docSnap.data(),
       unlockedAt: docSnap.data()?.unlockedAt?.toDate() || new Date(),
     } as Achievement;
-  }
-
-  async updateChatMessage(id: number, updates: Partial<InsertChatMessage>): Promise<ChatMessage> {
-    const docRef = doc(db, "chatMessages", id.toString());
-    await updateDoc(docRef, updates);
-    
-    const updatedSnap = await getDoc(docRef);
-    return {
-      id: parseInt(updatedSnap.id),
-      ...updatedSnap.data(),
-      createdAt: updatedSnap.data()?.createdAt?.toDate() || new Date(),
-    } as ChatMessage;
-  }
-
-  // Categories
-  async getCategories(): Promise<any[]> {
-    const q = query(collection(db, "categories"), orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc, index) => ({
-      id: index + 1,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    }));
-  }
-
-  async getCategoryById(id: number): Promise<any | undefined> {
-    const docRef = doc(db, "categories", id.toString());
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      return {
-        id: parseInt(docSnap.id),
-        ...docSnap.data(),
-        createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-      };
-    }
-    
-    return undefined;
-  }
-
-  async createCategory(category: any): Promise<any> {
-    const docRef = await addDoc(collection(db, "categories"), {
-      name: category.name,
-      description: category.description || "",
-      createdAt: serverTimestamp(),
-    });
-    
-    const docSnap = await getDoc(docRef);
-    const data = docSnap.data();
-    return {
-      id: Math.floor(Math.random() * 1000000),
-      name: data?.name || category.name,
-      description: data?.description || "",
-      createdAt: data?.createdAt?.toDate() || new Date(),
-    };
-  }
-
-  async updateCategory(id: number, category: any): Promise<any> {
-    const docRef = doc(db, "categories", id.toString());
-    await updateDoc(docRef, category);
-    
-    const updatedSnap = await getDoc(docRef);
-    return {
-      id: parseInt(updatedSnap.id),
-      ...updatedSnap.data(),
-      createdAt: updatedSnap.data()?.createdAt?.toDate() || new Date(),
-    };
-  }
-
-  async deleteCategory(id: number): Promise<void> {
-    const docRef = doc(db, "categories", id.toString());
-    await updateDoc(docRef, { deleted: true });
-  }
-
-  async updateExpression(id: number, expression: Partial<InsertExpression>): Promise<Expression> {
-    const docRef = doc(db, "expressions", id.toString());
-    await updateDoc(docRef, expression);
-    
-    const updatedSnap = await getDoc(docRef);
-    return {
-      id: parseInt(updatedSnap.id),
-      ...updatedSnap.data(),
-      createdAt: updatedSnap.data()?.createdAt?.toDate() || new Date(),
-      lastUsed: updatedSnap.data()?.lastUsed?.toDate() || null,
-    } as Expression;
-  }
-
-  async deleteExpression(id: number): Promise<void> {
-    const docRef = doc(db, "expressions", id.toString());
-    await updateDoc(docRef, { deleted: true });
-  }
-
-  // Initialize with default data
-  async initializeDefaultData(): Promise<void> {
-    const categoriesSnapshot = await getDocs(collection(db, "categories"));
-    if (categoriesSnapshot.empty) {
-      const defaultCategories = [
-        { name: "Greetings & Introductions", description: "Basic greeting expressions" },
-        { name: "Daily Conversations", description: "Common daily conversation phrases" },
-        { name: "Business English", description: "Professional communication expressions" },
-        { name: "Social Interactions", description: "Social situation phrases" }
-      ];
-
-      for (const category of defaultCategories) {
-        await addDoc(collection(db, "categories"), {
-          ...category,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    const expressionsSnapshot = await getDocs(collection(db, "expressions"));
-    if (expressionsSnapshot.empty) {
-      const defaultExpressions = [
-        { text: "Nice to meet you", categoryId: 1 },
-        { text: "Have a wonderful day", categoryId: 1 },
-        { text: "How are you doing?", categoryId: 1 },
-        { text: "Thank you so much for your help", categoryId: 2 },
-        { text: "I appreciate your time", categoryId: 2 },
-        { text: "Could you please help me with this?", categoryId: 3 },
-        { text: "I'd like to schedule a meeting", categoryId: 3 },
-        { text: "Looking forward to hearing from you", categoryId: 3 }
-      ];
-
-      for (const expression of defaultExpressions) {
-        await addDoc(collection(db, "expressions"), {
-          ...expression,
-          correctCount: 0,
-          totalCount: 0,
-          lastUsed: null,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    const userStatsRef = doc(db, "userStats", "main");
-    const userStatsSnap = await getDoc(userStatsRef);
-    if (!userStatsSnap.exists()) {
-      await setDoc(userStatsRef, {
-        totalSessions: 0,
-        currentStreak: 0,
-        lastPracticeDate: null,
-        overallAccuracy: 0,
-      });
-    }
   }
 }

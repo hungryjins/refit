@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { LogOut } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
-import { useAuth } from "@/contexts/auth-context";
-import { Button } from "@/components/ui/button";
 import type { UserStats } from "@shared/schema";
 import LanguageSelector from "@/components/language-selector";
 
@@ -12,7 +9,6 @@ export default function NavigationHeader() {
     queryKey: ["/api/stats"],
   });
   const { t } = useLanguage();
-  const { user, signOut } = useAuth();
 
   return (
     <header className="gradient-primary text-white sticky top-0 z-50 shadow-lg">
@@ -44,30 +40,12 @@ export default function NavigationHeader() {
                 {stats?.currentStreak || 0} {t('progress.days')} 🔥
               </motion.p>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="text-right">
-                <p className="text-xs opacity-90">{user?.displayName || user?.email}</p>
-              </div>
-              {user?.photoURL ? (
-                <img 
-                  src={user.photoURL} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full border-2 border-white border-opacity-30"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <span className="text-sm">👤</span>
-                </div>
-              )}
-              <Button
-                onClick={signOut}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white hover:bg-opacity-20"
-              >
-                <LogOut size={16} />
-              </Button>
-            </div>
+            <motion.div 
+              className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+              whileHover={{ scale: 1.05 }}
+            >
+              <span className="text-sm">👤</span>
+            </motion.div>
           </div>
         </div>
       </div>

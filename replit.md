@@ -19,8 +19,7 @@ This is a full-stack English conversation practice application built with React,
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
-- **Database Provider**: Neon Database (serverless PostgreSQL) - **ACTIVE**
-- **Storage Layer**: DatabaseStorage class implementing IStorage interface
+- **Database Provider**: Neon Database (serverless PostgreSQL)
 - **Session Management**: Express sessions with PostgreSQL store
 - **API Design**: RESTful API with JSON responses
 - **Development**: Hot module replacement with Vite integration
@@ -47,10 +46,9 @@ This is a full-stack English conversation practice application built with React,
 - **Navigation Header**: App navigation with user stats display
 
 ### Backend Services
-- **Storage Layer**: DatabaseStorage class with PostgreSQL persistence via Drizzle ORM
+- **Storage Layer**: Abstract interface with in-memory implementation for data persistence
 - **API Routes**: RESTful endpoints for expressions, chat sessions, messages, and user stats
 - **Middleware**: Request logging, error handling, and static file serving
-- **Database Relations**: Fully modeled relationships between categories, expressions, and chat data
 
 ## Data Flow
 
@@ -84,15 +82,13 @@ This is a full-stack English conversation practice application built with React,
 ### Production Build
 - Frontend: Vite builds to `dist/public/`
 - Backend: ESBuild bundles server to `dist/index.js`
-- Database: PostgreSQL via Neon Database with hybrid storage
+- Database: Drizzle migrations applied via `db:push` command
 - Static files served by Express in production
-- Deployment: Firebase Hosting at dailyconvo.com
 
 ### Environment Configuration
-- Firebase configuration via VITE_* environment variables
+- Database connection via `DATABASE_URL` environment variable
 - Development/production mode detection via `NODE_ENV`
-- AWS deployment ready with dailyconvo.com domain configuration
-- Google Authentication required for all app access
+- Replit-specific features conditionally loaded
 
 ## New Tutoring Engine Architecture
 
@@ -134,10 +130,6 @@ Changelog:
 - July 10, 2025. Enhanced session completion modal with success/failure visual indicators
 - July 12, 2025. Complete OpenAI integration replacing Gemini AI system
 - July 12, 2025. New conversation architecture: 1) Random expression selection 2) GPT-4o scenario generation 3) Conversation evaluation 4) Whisper voice transcription 5) Grammar correction feedback
-- July 12, 2025. Firebase Authentication and storage implementation with Google sign-in and auth-based security rules
-- July 12, 2025. Firebase Hosting configuration for dailyconvo.com domain with DNS records
-- July 12, 2025. PostgreSQL database integration with Neon Database - replaced in-memory storage with DatabaseStorage class implementing full CRUD operations and relational data modeling
-- July 12, 2025. Simplified UI design - removed complex adaptive difficulty interface, restored clean 3-tab layout (Practice/Expressions/Progress) with simple top-right login functionality
 ```
 
 ## User Preferences
@@ -145,11 +137,8 @@ Changelog:
 ```
 Preferred communication style: Simple, everyday language.
 App branding: "Daily Convo" for English conversation practice
-Deployment goal: Firebase Hosting with dailyconvo.com domain (not Replit deployment)
-Design priority: Clean, simple interface - avoid complex features
-UI Layout: Simple 3-tab navigation (Practice/Expressions/Progress) with top-right login
-Firebase: Google authentication for data persistence, guest mode for temporary use
-Database Storage: Expressions saved to PostgreSQL only when authenticated
+Deployment goal: Google AdSense integration for monetization
+Design priority: Clean, creative design that attracts users
 ```
 
 ## AdSense Integration

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useExpressions } from "@/hooks/use-expressions";
-// import { useLanguage } from "@/contexts/language-context";
+import { useLanguage } from "@/contexts/language-context";
 import type { UserStats, Achievement } from "@shared/schema";
 
 interface ProgressRingProps {
@@ -57,8 +57,7 @@ function ProgressRing({ percentage, size = 64 }: ProgressRingProps) {
 
 export default function ProgressRepository() {
   const { expressions } = useExpressions();
-  // const { t } = useLanguage();
-  const t = (key: string) => key; // Simplified translation function
+  const { t } = useLanguage();
   
   const { data: stats } = useQuery<UserStats>({
     queryKey: ["/api/stats"],

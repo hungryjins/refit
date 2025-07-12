@@ -1,144 +1,109 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
-import { signInWithGoogle, signOutUser } from "@/lib/firebase";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { LogOut, User } from "lucide-react";
+import NavigationHeader from "@/components/navigation-header";
 import NewChatInterface from "@/components/new-chat-interface";
 import ExpressionManager from "@/components/expression-manager";
 import ProgressRepository from "@/components/progress-repository";
+import FloatingActionButton from "@/components/floating-action-button";
+import AdSenseContainer from "@/components/adsense-container";
+import { useLanguage } from "@/contexts/language-context";
 
 type Tab = "chat" | "expressions" | "repository";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    );
-  }
+  const { t } = useLanguage();
 
   const tabs = [
-    { id: "chat", label: "Practice", icon: "💬" },
-    { id: "expressions", label: "Expressions", icon: "📚" },
-    { id: "repository", label: "Progress", icon: "📊" },
+    { id: "chat", label: t('nav.practice'), icon: "💬" },
+    { id: "expressions", label: t('nav.expressions'), icon: "📚" },
+    { id: "repository", label: t('nav.progress'), icon: "📊" },
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      {/* Modern Header */}
-      <div className="backdrop-blur-md bg-white/10 border-b border-white/20 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">DC</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
-              Daily Convo
-            </h1>
-            <span className="bg-gradient-to-r from-green-400 to-emerald-400 text-white text-xs font-semibold px-3 py-1 rounded-full border-0 ml-2">
-              AI Powered
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">{user?.email}</div>
-                  <div className="text-xs text-purple-300">Premium Member</div>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={signOutUser}
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  로그아웃
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                onClick={signInWithGoogle} 
-                size="sm"
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-lg"
-              >
-                <User className="w-4 h-4 mr-2" />
-                구글 로그인
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <NavigationHeader />
       
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Tab Navigation */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="backdrop-blur-lg bg-white/10 rounded-3xl shadow-2xl p-3 mb-8 border border-white/20"
-        >
-          <div className="flex space-x-3">
-            {tabs.map((tab, index) => (
-              <motion.button
+        <div className="bg-white rounded-2xl shadow-lg p-2 mb-6">
+          <div className="flex space-x-2">
+            {tabs.map((tab) => (
+              <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as Tab)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className={`flex-1 py-4 px-6 rounded-2xl font-semibold transition-all duration-300 relative overflow-hidden ${
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 relative ${
                   activeTab === tab.id
-                    ? "text-white shadow-xl"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
+                    ? "text-white shadow-md"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl"
+                    className="absolute inset-0 gradient-primary rounded-xl"
                     initial={false}
-                    transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
-                <span className="relative z-10 flex items-center justify-center gap-3 text-lg">
-                  <span className="text-2xl">{tab.icon}</span>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span>{tab.icon}</span>
                   {tab.label}
-                  {activeTab === tab.id && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-2 h-2 bg-white rounded-full"
-                    />
-                  )}
                 </span>
-              </motion.button>
+              </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Content */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="relative backdrop-blur-lg bg-white/5 rounded-3xl shadow-2xl border border-white/10 overflow-hidden"
-        >
-          <div className="p-6">
-            {activeTab === "chat" && <NewChatInterface />}
-            {activeTab === "expressions" && <ExpressionManager />}
-            {activeTab === "repository" && <ProgressRepository />}
+        {/* Main Content Area with Ads */}
+        <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {activeTab === "chat" && <NewChatInterface />}
+              {activeTab === "expressions" && <ExpressionManager />}
+              {activeTab === "repository" && <ProgressRepository />}
+            </motion.div>
           </div>
-        </motion.div>
+
+          {/* Sidebar with Ads */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Top Ad */}
+            <AdSenseContainer 
+              slot="1234567890"
+              format="auto"
+              style="minimal"
+              className="sticky top-20"
+            />
+            
+            {/* Middle Ad (only on larger screens) */}
+            <div className="hidden lg:block">
+              <AdSenseContainer 
+                slot="1234567891" 
+                format="vertical"
+                style="gradient"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Banner Ad (mobile friendly) */}
+        <div className="sticky bottom-0 bg-white border-t lg:hidden">
+          <AdSenseContainer 
+            slot="1234567892"
+            format="horizontal"
+            style="outlined"
+            className="mx-4 my-2"
+          />
+        </div>
       </div>
+
+      <FloatingActionButton onAdd={() => setActiveTab("expressions")} />
     </div>
   );
 }

@@ -14,38 +14,32 @@ export interface SessionState {
 class SessionManager {
   private sessions: Map<number, SessionState> = new Map();
 
-  async createSession(expressionIds: number[], userId?: string, sessionId?: string): Promise<SessionState> {
-    console.log('Creating session with expression IDs:', expressionIds);
-    const expressions = await storage.getExpressions(userId, sessionId);
-    console.log('Available expressions:', expressions.map(e => ({ id: e.id, text: e.text })));
+  async createSession(expressionIds: number[]): Promise<SessionState> {
+    const expressions = await storage.getExpressions();
     const selectedExpressions = expressions.filter(expr => expressionIds.includes(expr.id));
-    console.log('Selected expressions:', selectedExpressions.map(e => ({ id: e.id, text: e.text })));
     
     if (selectedExpressions.length === 0) {
-      throw new Error(`No valid expressions found. Available IDs: ${expressions.map(e => e.id).join(', ')}, Requested IDs: ${expressionIds.join(', ')}`);
+      throw new Error("No valid expressions found");
     }
 
-    // 랜덤으로 표현 선택 (1단계: 랜덤 선택)
-    const randomExpression = selectedExpressions[Math.floor(Math.random() * selectedExpressions.length)];
-    console.log('Random expression selected:', randomExpression.text);
-    const scenarioResponse = await openaiService.generateScenario(randomExpression);
+    // 첫 번째 표현으로 세션 시작
+    const firstExpression = selectedExpressions[0];
+    const scenarioResponse = await openaiService.generateScenario(firstExpression);
     
     // 세션 생성
     const session = await storage.createChatSession({
       scenario: scenarioResponse.scenario,
       isActive: true
-    }, userId, sessionId);
+    });
 
-    // 초기 메시지 생성 (2단계: 상황 설명 + 3단계: 대화 시작)
-    const fullInitialMessage = `📝 상황: ${scenarioResponse.scenario}\n\n${scenarioResponse.initialMessage}`;
-    
+    // 초기 메시지 생성
     await storage.createChatMessage({
       sessionId: session.id,
-      content: fullInitialMessage,
+      content: scenarioResponse.initialMessage,
       isUser: false,
       expressionUsed: null,
       isCorrect: null,
-    }, userId, sessionId);
+    });
 
     // 세션 상태 저장
     const sessionState: SessionState = {
@@ -108,10 +102,6 @@ class SessionManager {
       nextMessage: `\n🎯 새로운 표현 연습!\n\n${scenarioResponse.initialMessage}`,
       isSessionComplete: false
     };
-  }
-
-  getCurrentSession(sessionId: number): SessionState | null {
-    return this.sessions.get(sessionId) || null;
   }
 
   getCurrentExpression(sessionId: number): Expression | null {
