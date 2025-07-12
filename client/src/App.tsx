@@ -66,7 +66,7 @@ function AppContent() {
         <div className="p-4 bg-yellow-50 text-yellow-800 text-center">
           You're using the app as a guest. Your data won't be saved. 
           <Button variant="link" onClick={signInWithGoogle} className="ml-2">
-            Sign in to save your progress
+            Sign in with Google to save your progress
           </Button>
         </div>
       )}
