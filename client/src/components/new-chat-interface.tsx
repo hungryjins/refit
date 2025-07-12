@@ -323,15 +323,26 @@ export default function NewChatInterface() {
   if (!currentSession) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center gap-3 text-2xl">
-              <span className="text-blue-500 text-3xl">🎯</span>
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {t('chat.conversation')}
-              </span>
+        <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50 to-purple-50 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-t-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
+            <div className="absolute top-0 left-0 w-full h-full opacity-30">
+              <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_2px,transparent_2px)] bg-[length:20px_20px]"></div>
+            </div>
+            <CardTitle className="flex items-center justify-center gap-4 text-3xl relative z-10">
+              <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 border border-white/30">
+                <span className="text-4xl">🎯</span>
+              </div>
+              <div className="text-left">
+                <div className="text-2xl font-bold text-white drop-shadow-lg">
+                  {t('chat.conversation')}
+                </div>
+                <div className="text-sm text-white/90 font-normal">
+                  AI-Powered English Practice
+                </div>
+              </div>
             </CardTitle>
-            <p className="text-gray-600 mt-2">카테고리를 선택하고 영어 표현을 연습해보세요!</p>
+            <p className="text-white/90 mt-3 relative z-10 font-medium">카테고리를 선택하고 영어 표현을 연습해보세요! ✨</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
@@ -501,23 +512,29 @@ export default function NewChatInterface() {
 
         {/* Chat Interface */}
         <div className="lg:col-span-2">
-          <Card className="shadow-lg h-[700px] flex flex-col border-0 bg-gradient-to-br from-white to-purple-50">
-            <CardHeader className="flex-shrink-0 border-b bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🎭</span>
+          <Card className="shadow-2xl h-[700px] flex flex-col border-0 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 backdrop-blur-sm">
+            <CardHeader className="flex-shrink-0 border-b bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-t-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
+            <div className="absolute top-0 left-0 w-full h-full opacity-20">
+              <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[length:15px_15px]"></div>
+            </div>
+              <CardTitle className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 border border-white/30">
+                    <span className="text-3xl">🎭</span>
+                  </div>
                   <div>
-                    <div className="text-lg font-bold">영어 대화 연습</div>
-                    <div className="text-sm opacity-90">상황에 맞는 표현을 사용해보세요!</div>
+                    <div className="text-xl font-bold text-white drop-shadow-lg">영어 대화 연습</div>
+                    <div className="text-sm text-white/90 font-medium">상황에 맞는 표현을 사용해보세요! ✨</div>
                   </div>
                 </div>
                 <Button 
                   variant="secondary" 
                   size="sm"
                   onClick={handleNewSession}
-                  className="bg-white text-blue-600 hover:bg-gray-100"
+                  className="text-white border-white/30 hover:bg-white/20 backdrop-blur-sm bg-white/10 transition-all duration-200 hover:scale-105 relative z-10"
                 >
-                  새 세션
+                  🔄 새 세션
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -533,36 +550,40 @@ export default function NewChatInterface() {
               </div>
 
               {/* Input Area */}
-              <div className="flex-shrink-0 p-4 border-t bg-white">
-                <div className="flex gap-3">
+              <div className="flex-shrink-0 p-6 border-t bg-gradient-to-r from-gray-50 to-blue-50/50 backdrop-blur-sm">
+                <div className="flex gap-4">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setIsRecording(!isRecording)}
-                    className={isRecording ? "bg-red-100 border-red-300" : ""}
+                    className={`transition-all duration-300 hover:scale-110 border-2 ${
+                      isRecording 
+                        ? "bg-red-100 border-red-300 shadow-lg shadow-red-200/50" 
+                        : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg"
+                    }`}
                   >
-                    {isRecording ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4" />}
+                    {isRecording ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4 text-gray-600" />}
                   </Button>
                   <Input
                     value={currentInput}
                     onChange={(e) => setCurrentInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="상황에 맞는 영어 표현을 사용해서 대화해보세요..."
-                    className="flex-1 border-gray-300 focus:border-blue-500"
+                    placeholder="상황에 맞는 영어 표현을 사용해서 대화해보세요... ✨"
+                    className="flex-1 border-2 border-gray-200 focus:border-blue-400 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 focus:shadow-lg"
                     disabled={sendMessageMutation.isPending}
                   />
                   <Button 
                     onClick={handleSendMessage}
                     disabled={!currentInput.trim() || sendMessageMutation.isPending || sessionComplete}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-6"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
                 {sessionComplete && (
-                  <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg text-center">
-                    <span className="text-green-800 font-medium">
-                      🎉 모든 표현을 성공적으로 사용했습니다! 축하합니다!
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-xl text-center shadow-lg">
+                    <span className="text-green-800 font-bold text-lg">
+                      🎉 모든 표현을 성공적으로 사용했습니다! 축하합니다! ✨
                     </span>
                   </div>
                 )}
@@ -573,30 +594,32 @@ export default function NewChatInterface() {
 
         {/* Completion Modal */}
         <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-2xl">
-                <Trophy className="h-8 w-8 text-yellow-500" />
-                세션 완료!
+          <DialogContent className="max-w-lg bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 border-2 border-blue-200 shadow-2xl">
+            <DialogHeader className="text-center">
+              <div className="mx-auto mb-4 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                <Trophy className="h-12 w-12 text-white" />
+              </div>
+              <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                🎉 세션 완료! 🎉
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="text-center">
-                <div className="flex justify-center gap-1 mb-2">
+              <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
+                <div className="flex justify-center gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-6 w-6 text-yellow-500 fill-current" />
+                    <Star key={i} className="h-8 w-8 text-yellow-500 fill-current animate-pulse" style={{animationDelay: `${i * 0.1}s`}} />
                   ))}
                 </div>
-                <p className="text-lg font-semibold text-gray-800">
-                  🎉 세션 완료!
+                <p className="text-2xl font-bold text-gray-800 mb-3">
+                  축하합니다! 🎊
                 </p>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-md">
                   <div className="text-center mb-3">
-                    <div className="text-2xl font-bold text-blue-800">
+                    <div className="text-3xl font-bold text-blue-800">
                       {Array.from(expressionResults.values()).filter(Boolean).length} / {usedExpressions.size}
                     </div>
-                    <div className="text-sm text-blue-600">
-                      정답률: {usedExpressions.size > 0 ? Math.round((Array.from(expressionResults.values()).filter(Boolean).length / usedExpressions.size) * 100) : 0}%
+                    <div className="text-lg text-blue-600 font-medium">
+                      정답률: {usedExpressions.size > 0 ? Math.round((Array.from(expressionResults.values()).filter(Boolean).length / usedExpressions.size) * 100) : 0}% ✨
                     </div>
                   </div>
                 </div>
@@ -604,13 +627,19 @@ export default function NewChatInterface() {
 
               {/* 정답 표현 */}
               {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).length > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-2">✅ 정답 표현:</h4>
-                  <div className="space-y-1">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-lg">
+                  <h4 className="font-bold text-green-800 mb-3 text-lg flex items-center gap-2">
+                    <div className="bg-green-200 rounded-full p-1">
+                      <CheckCircle2 size={20} className="text-green-700" />
+                    </div>
+                    정답 표현
+                  </h4>
+                  <div className="space-y-2">
                     {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).map(expr => (
-                      <div key={expr.id} className="flex items-center gap-2 text-sm text-green-700">
-                        <CheckCircle2 size={16} className="text-green-600" />
+                      <div key={expr.id} className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-green-700 font-medium">
+                        <CheckCircle2 size={18} className="text-green-600" />
                         {expr.text}
+                        <span className="ml-auto text-xs text-green-600">✅</span>
                       </div>
                     ))}
                   </div>
@@ -619,13 +648,19 @@ export default function NewChatInterface() {
 
               {/* 오답 표현 */}
               {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-red-800 mb-2">❌ 틀린 표현:</h4>
-                  <div className="space-y-1">
+                <div className="bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
+                  <h4 className="font-bold text-red-800 mb-3 text-lg flex items-center gap-2">
+                    <div className="bg-red-200 rounded-full p-1">
+                      <XCircle size={20} className="text-red-700" />
+                    </div>
+                    다시 연습할 표현
+                  </h4>
+                  <div className="space-y-2">
                     {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).map(expr => (
-                      <div key={expr.id} className="flex items-center gap-2 text-sm text-red-700">
-                        <XCircle size={16} className="text-red-600" />
+                      <div key={expr.id} className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-red-700 font-medium">
+                        <XCircle size={18} className="text-red-600" />
                         {expr.text}
+                        <span className="ml-auto text-xs text-red-600">📚</span>
                       </div>
                     ))}
                   </div>
@@ -634,9 +669,9 @@ export default function NewChatInterface() {
 
               <Button 
                 onClick={handleCloseModal}
-                className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                className="w-full bg-gradient-to-r from-green-500 via-blue-500 to-purple-600 hover:from-green-600 hover:via-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 py-3 text-lg font-bold"
               >
-                확인
+                🎉 새 세션 시작하기
               </Button>
             </div>
           </DialogContent>
