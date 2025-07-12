@@ -302,17 +302,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCorrect: evaluation.isCorrect
       });
       
-      // 표현 통계 업데이트
-      if (evaluation.usedTargetExpression) {
-        await storage.updateExpressionStats(currentTargetExpression.id, evaluation.isCorrect);
+      // 표현 통계 업데이트 (정답이나 유사한 표현 사용 시)
+      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
+        await storage.updateExpressionStats(currentTargetExpression.id, true);
+      } else if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
+        await storage.updateExpressionStats(currentTargetExpression.id, false);
       }
       
       let botResponse = "";
       let sessionComplete = false;
       let nextExpression = null;
       
-      if (evaluation.usedTargetExpression && evaluation.isCorrect) {
-        // 정답! 다음 표현으로 진행 또는 세션 완료
+      if (evaluation.isCorrect && (evaluation.matchType === "exact" || evaluation.matchType === "equivalent")) {
+        // 정답! (정확한 표현 또는 의미상 유사한 표현) - 다음 표현으로 진행 또는 세션 완료
         const result = await sessionManager.completeExpression(sessionId, currentTargetExpression.id);
         
         if (result.isSessionComplete) {
@@ -325,8 +327,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             successMessage = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확히 사용하셨어요!`;
           } else if (evaluation.matchType === "equivalent") {
             successMessage = `👍 적절한 표현을 사용했어요! 저장하신 표현은 "${currentTargetExpression.text}"입니다.`;
-          } else {
-            successMessage = `✨ 좋습니다! "${currentTargetExpression.text}" 표현을 사용했습니다!`;
           }
           
           botResponse = `${successMessage}\n\n${result.nextMessage}`;

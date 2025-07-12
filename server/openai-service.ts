@@ -108,13 +108,15 @@ export class OpenAIService {
 
             Respond with JSON:
             {
-              "usedTargetExpression": boolean,
-              "isCorrect": boolean,
+              "usedTargetExpression": boolean (true if exact or equivalent match),
+              "isCorrect": boolean (true if exact or equivalent match),
               "matchType": "exact" | "equivalent" | "incorrect",
               "feedback": "Korean feedback message based on match type",
               "corrections": "corrections if needed",
               "sessionComplete": boolean (true if exact or equivalent match)
-            }`
+            }
+
+            Important: For "equivalent" matches, set both usedTargetExpression=true AND isCorrect=true`
           },
           {
             role: "user",
