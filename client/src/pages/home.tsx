@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import NavigationHeader from "@/components/navigation-header";
-import ChatInterface from "@/components/chat-interface";
+import NewChatInterface from "@/components/new-chat-interface";
 import ExpressionManager from "@/components/expression-manager";
 import ProgressRepository from "@/components/progress-repository";
 import FloatingActionButton from "@/components/floating-action-button";
@@ -65,7 +65,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {activeTab === "chat" && <ChatInterface />}
+              {activeTab === "chat" && <NewChatInterface />}
               {activeTab === "expressions" && <ExpressionManager />}
               {activeTab === "repository" && <ProgressRepository />}
             </motion.div>

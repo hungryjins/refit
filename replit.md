@@ -128,6 +128,8 @@ Changelog:
 - July 10, 2025. Fixed auto-reset issues and added comprehensive result summaries
 - July 10, 2025. Completed incorrect answer processing system with immediate failure handling
 - July 10, 2025. Enhanced session completion modal with success/failure visual indicators
+- July 12, 2025. Complete OpenAI integration replacing Gemini AI system
+- July 12, 2025. New conversation architecture: 1) Random expression selection 2) GPT-4o scenario generation 3) Conversation evaluation 4) Whisper voice transcription 5) Grammar correction feedback
 ```
 
 ## User Preferences

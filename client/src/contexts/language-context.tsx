@@ -67,6 +67,13 @@ const translations = {
     'expressions.practicing': 'Practicing expressions',
     'expressions.completed': 'Completed',
     'expressions.click.to.use': 'Click to use',
+    'chat.select.category': 'Select Category',
+    'chat.selected.expressions': 'Selected Expressions',
+    'chat.starting': 'Starting...',
+    'chat.conversation': 'Conversation Practice',
+    'chat.target': 'Target',
+    'chat.new.session': 'New Session',
+    'chat.session.complete': 'Session completed! Great job!',
     
     // Expression Manager
     'expressions.title': 'Expression Manager',
@@ -198,6 +205,13 @@ const translations = {
     'chat.never': 'Never',
     'chat.attempts': 'attempts',
     'expressions.practicing': '연습중인 표현들',
+    'chat.select.category': '카테고리 선택',
+    'chat.selected.expressions': '선택된 표현',
+    'chat.starting': '시작 중...',
+    'chat.conversation': '대화 연습',
+    'chat.target': '목표',
+    'chat.new.session': '새 세션',
+    'chat.session.complete': '세션 완료! 잘했어요!',
     'expressions.completed': '완료됨',
     'expressions.click.to.use': '클릭해서 사용하기',
     

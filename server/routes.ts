@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
-import { aiService } from "./ai-service";
+import { openaiService } from "./openai-service";
 import { tutoringEngine } from "./tutoring-engine";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -195,62 +195,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate conversation response using new tutoring engine
+  // New OpenAI-based conversation system
+  app.post("/api/chat/start-session", async (req, res) => {
+    try {
+      const { selectedExpressions } = req.body;
+      
+      // Get available expressions
+      const expressions = await storage.getExpressions();
+      const targetExpressions = selectedExpressions && selectedExpressions.length > 0
+        ? expressions.filter(expr => selectedExpressions.includes(expr.id))
+        : expressions;
+        
+      if (targetExpressions.length === 0) {
+        return res.status(400).json({ message: "No expressions available for practice" });
+      }
+      
+      // Randomly select one expression for this session
+      const randomExpression = targetExpressions[Math.floor(Math.random() * targetExpressions.length)];
+      
+      // Generate scenario using OpenAI
+      const scenarioResponse = await openaiService.generateScenario(randomExpression);
+      
+      // Create new chat session
+      const session = await storage.createChatSession({
+        scenario: scenarioResponse.scenario,
+        isActive: true
+      });
+      
+      // Create initial bot message
+      const initialMessage = await storage.createChatMessage({
+        sessionId: session.id,
+        content: scenarioResponse.initialMessage,
+        isUser: false,
+        expressionUsed: null,
+        isCorrect: null,
+      });
+      
+      res.json({
+        sessionId: session.id,
+        targetExpression: randomExpression,
+        scenario: scenarioResponse.scenario,
+        initialMessage: scenarioResponse.initialMessage,
+        messageId: initialMessage.id
+      });
+      
+    } catch (error) {
+      console.error("Start session error:", error);
+      res.status(500).json({ message: "Failed to start conversation session" });
+    }
+  });
+
+  // Handle user responses and evaluation
   app.post("/api/chat/respond", async (req, res) => {
-    console.log("Received request to /api/chat/respond");
-    console.log("Request body:", req.body);
+    try {
+      const { message, sessionId, targetExpressionId } = req.body;
+      
+      if (!message || !sessionId || !targetExpressionId) {
+        return res.status(400).json({ 
+          message: "Message, sessionId, and targetExpressionId are required"
+        });
+      }
+      
+      // Get target expression
+      const targetExpression = await storage.getExpressionById(targetExpressionId);
+      if (!targetExpression) {
+        return res.status(404).json({ message: "Target expression not found" });
+      }
+      
+      // Get session and conversation history
+      const session = await storage.getChatSessions();
+      const activeSession = session.find(s => s.id === sessionId && s.isActive);
+      if (!activeSession) {
+        return res.status(404).json({ message: "Active session not found" });
+      }
+      
+      const conversationHistory = await storage.getChatMessages(sessionId);
+      
+      // Create conversation context
+      const context = {
+        targetExpression,
+        scenario: activeSession.scenario || "Conversation practice",
+        conversationHistory: conversationHistory.map(msg => ({
+          role: msg.isUser ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        }))
+      };
+      
+      // Save user message first
+      const userMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: message,
+        isUser: true,
+        expressionUsed: null,
+        isCorrect: null,
+      });
+      
+      // Evaluate user response
+      const evaluation = await openaiService.evaluateResponse(message, targetExpression, context);
+      
+      // Update user message with evaluation results
+      await storage.updateChatMessage(userMessage.id, {
+        expressionUsed: evaluation.usedTargetExpression,
+        isCorrect: evaluation.isCorrect
+      });
+      
+      // Update expression stats
+      if (evaluation.usedTargetExpression) {
+        await storage.updateExpressionStats(targetExpression.id, evaluation.isCorrect);
+      }
+      
+      let botResponse = evaluation.feedback;
+      
+      // If session is complete (correct usage), end the session
+      if (evaluation.sessionComplete) {
+        await storage.endChatSession(sessionId);
+        botResponse += " Great job! Session completed.";
+      } else {
+        // Continue conversation to encourage target expression usage
+        botResponse = await openaiService.continueConversation(message, context);
+      }
+      
+      // Create bot response message
+      const botMessage = await storage.createChatMessage({
+        sessionId: sessionId,
+        content: botResponse,
+        isUser: false,
+        expressionUsed: null,
+        isCorrect: null,
+      });
+      
+      res.json({
+        response: botResponse,
+        messageId: botMessage.id,
+        evaluation: evaluation,
+        sessionComplete: evaluation.sessionComplete
+      });
+      
+    } catch (error) {
+      console.error("Chat respond error:", error);
+      res.status(500).json({ message: "Failed to process response" });
+    }
+  });
+
+  // Audio transcription endpoint
+  app.post("/api/chat/transcribe", async (req, res) => {
+    try {
+      if (!req.body.audio) {
+        return res.status(400).json({ message: "Audio file is required" });
+      }
+      
+      // Note: In a real implementation, you'd handle file upload properly
+      // For now, we'll assume the audio is sent as a File object
+      const transcription = await openaiService.transcribeAudio(req.body.audio);
+      
+      res.json({ transcription });
+      
+    } catch (error) {
+      console.error("Transcription error:", error);
+      res.status(500).json({ message: "Failed to transcribe audio" });
+    }
+  });
+
+  // Legacy endpoint compatibility - redirect to new system
+  app.post("/api/chat/respond-old", async (req, res) => {
     try {
       const { message, sessionId, selectedExpressions } = req.body;
       
-      console.log("Extracted message:", message);
-      console.log("Message type:", typeof message);
-      
-      if (!message) {
-        return res.status(400).json({ 
-          message: "Message is required",
-          error: "No message provided in request body"
-        });
+      if (!message || !sessionId) {
+        return res.status(400).json({ message: "Message and sessionId are required" });
       }
       
-      // Handle START_SESSION - initialize tutoring engine
-      if (message === "START_SESSION") {
-        const expressions = await storage.getExpressions();
-        const targetExpressions = selectedExpressions && selectedExpressions.length > 0
-          ? expressions.filter(expr => selectedExpressions.includes(expr.id))
-          : expressions;
+      // Initialize session if not exists
+      const expressions = await storage.getExpressions();
+      const targetExpressions = selectedExpressions && selectedExpressions.length > 0
+        ? expressions.filter(expr => selectedExpressions.includes(expr.id))
+        : expressions;
         
-        // 1. initializeSession
-        const sessionState = tutoringEngine.initializeSession(sessionId, targetExpressions);
-        
-        // 3. getNextPrompt
-        const initialPrompt = tutoringEngine.getNextPrompt(sessionId);
-        
-        const newMessage = await storage.createChatMessage({
-          sessionId: sessionId,
-          content: initialPrompt,
-          isUser: false,
-          expressionUsed: null,
-          isCorrect: null,
-        });
-        
-        return res.json({ 
-          response: initialPrompt, 
-          messageId: newMessage.id,
-          detectedExpression: null
-        });
-      }
-
-      // Check if tutoring engine has this session
-      const sessionState = tutoringEngine.getSessionState(sessionId);
-      if (!sessionState) {
-        // Initialize session if not exists
-        const expressions = await storage.getExpressions();
-        const targetExpressions = selectedExpressions && selectedExpressions.length > 0
-          ? expressions.filter(expr => selectedExpressions.includes(expr.id))
-          : expressions;
-        
-        tutoringEngine.initializeSession(sessionId, targetExpressions);
-      }
+      tutoringEngine.initializeSession(sessionId, targetExpressions);
 
       // 2. processUserAnswer
       const updateResult = tutoringEngine.processUserAnswer(sessionId, message);
