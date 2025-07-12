@@ -68,6 +68,9 @@ function AppContent() {
           <Button variant="link" onClick={signInWithGoogle} className="ml-2">
             Sign in with Google to save your progress
           </Button>
+          <div className="text-xs mt-2 text-gray-600">
+            Note: Google sign-in requires Firebase Authentication to be enabled in the console
+          </div>
         </div>
       )}
       

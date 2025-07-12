@@ -22,6 +22,12 @@ const initializeFirebase = () => {
     return null;
   }
 
+  // Additional validation for project ID format
+  if (!projectId.includes('-') || projectId.length < 10) {
+    console.warn("Firebase project ID format invalid - running in guest mode");
+    return null;
+  }
+
   try {
     const firebaseConfig = {
       apiKey,
