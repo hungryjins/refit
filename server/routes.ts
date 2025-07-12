@@ -319,12 +319,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           botResponse = `🎉 축하합니다! 모든 표현을 완벽하게 완료했습니다!`;
           sessionComplete = true;
         } else {
-          botResponse = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확하게 사용했습니다!\n\n${result.nextMessage}`;
+          // 정확도에 따른 피드백 분기
+          let successMessage = "";
+          if (evaluation.matchType === "exact") {
+            successMessage = `✨ 완벽합니다! "${currentTargetExpression.text}" 표현을 정확히 사용하셨어요!`;
+          } else if (evaluation.matchType === "equivalent") {
+            successMessage = `👍 적절한 표현을 사용했어요! 저장하신 표현은 "${currentTargetExpression.text}"입니다.`;
+          } else {
+            successMessage = `✨ 좋습니다! "${currentTargetExpression.text}" 표현을 사용했습니다!`;
+          }
+          
+          botResponse = `${successMessage}\n\n${result.nextMessage}`;
           nextExpression = result.nextExpression;
         }
       } else {
-        // 오답 또는 미사용 - 간단한 피드백
-        botResponse = evaluation.feedback || "다시 시도해보세요!";
+        // 오답 또는 미사용 - 구체적인 피드백
+        if (evaluation.usedTargetExpression && !evaluation.isCorrect) {
+          botResponse = `아쉬워요! 문맥상 같은 의미지만 저장된 표현을 쓰지 않았어요. "${currentTargetExpression.text}"를 사용해보세요!`;
+        } else {
+          botResponse = evaluation.feedback || "다시 시도해보세요!";
+        }
       }
       
       // Create bot response message

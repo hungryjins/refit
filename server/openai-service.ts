@@ -20,6 +20,7 @@ export interface ScenarioResponse {
 export interface EvaluationResult {
   usedTargetExpression: boolean;
   isCorrect: boolean;
+  matchType?: "exact" | "equivalent" | "incorrect";
   feedback: string;
   corrections?: string;
   sessionComplete: boolean;
@@ -89,23 +90,30 @@ export class OpenAIService {
             Target expression: "${targetExpression.text}"
             Scenario: ${context.scenario}
             
-            Evaluate with these VERY LENIENT criteria:
-            1. Did they use the target expression or semantically equivalent phrases?
-               - "Have a wonderful day" = "Have a good day" = "Have a great day" = "Have a nice day" (ALL CORRECT)
-               - "Nice to meet you" = "Good to meet you" = "Pleased to meet you" (ALL CORRECT)
-            2. Is the meaning and intent clear?
-            3. Ignore minor grammar, spelling, capitalization differences
-            4. Focus on successful communication, not perfect wording
+            Evaluate with these SPECIFIC criteria:
+            1. EXACT MATCH: Did they use the exact target expression? (Mark as "exact")
+            2. SEMANTIC EQUIVALENT: Did they use a semantically equivalent phrase with same structure?
+               - "Have a wonderful day" ≈ "Have a good/great/nice day" (CORRECT as "equivalent")
+               - "Nice to meet you" ≈ "Good to meet you" / "Pleased to meet you" (CORRECT as "equivalent") 
+               - "Could you please help me" ≈ "Can you please help me" (CORRECT as "equivalent")
+            3. DIFFERENT STRUCTURE: Did they express same meaning but different grammar structure?
+               - "Can I get something?" vs "I would like to get something" (INCORRECT - different structure)
+               - "How are you?" vs "How do you do?" (INCORRECT - different structure)
+            4. Focus on phrase structure similarity, not just meaning
 
-            BE VERY LENIENT: If they expressed the same meaning/intent as the target expression, mark it as correct!
+            Response categories:
+            - "exact": Used exact target expression
+            - "equivalent": Used semantically equivalent phrase with same structure  
+            - "incorrect": Wrong structure or didn't use target expression
 
             Respond with JSON:
             {
               "usedTargetExpression": boolean,
-              "isCorrect": boolean (true if expression used with clear meaning - ignore minor errors),
-              "feedback": "Very encouraging Korean feedback message",
-              "corrections": "Only major corrections if absolutely necessary (optional)",
-              "sessionComplete": boolean (true if expression used correctly)
+              "isCorrect": boolean,
+              "matchType": "exact" | "equivalent" | "incorrect",
+              "feedback": "Korean feedback message based on match type",
+              "corrections": "corrections if needed",
+              "sessionComplete": boolean (true if exact or equivalent match)
             }`
           },
           {
@@ -122,6 +130,7 @@ export class OpenAIService {
       return {
         usedTargetExpression: result.usedTargetExpression || false,
         isCorrect: result.isCorrect || false,
+        matchType: result.matchType || "incorrect",
         feedback: result.feedback || "Keep practicing!",
         corrections: result.corrections,
         sessionComplete: result.sessionComplete || false
@@ -131,6 +140,7 @@ export class OpenAIService {
       return {
         usedTargetExpression: false,
         isCorrect: false,
+        matchType: "incorrect",
         feedback: "There was an error evaluating your response. Please try again.",
         sessionComplete: false
       };
