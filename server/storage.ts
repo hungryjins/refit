@@ -83,6 +83,7 @@ export class MemStorage implements IStorage {
     
     this.userStats = {
       id: 1,
+      userId: null,
       totalSessions: 0,
       currentStreak: 7,
       lastPracticeDate: new Date(),
@@ -135,6 +136,7 @@ export class MemStorage implements IStorage {
         id,
         text: expr.text,
         categoryId: category?.id || null,
+        userId: null, // Guest mode
         correctCount: Math.floor(Math.random() * 5),
         totalCount: Math.floor(Math.random() * 8) + 2,
         lastUsed: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null,
@@ -210,6 +212,7 @@ export class MemStorage implements IStorage {
       id,
       text: insertExpression.text,
       categoryId: insertExpression.categoryId || null,
+      userId: null, // Guest mode
       correctCount: 0,
       totalCount: 0,
       lastUsed: null,
@@ -275,8 +278,9 @@ export class MemStorage implements IStorage {
 
     const id = this.currentId++;
     const session: ChatSession = {
-      ...insertSession,
       id,
+      scenario: insertSession.scenario,
+      userId: insertSession.userId || null,
       isActive: true,
       createdAt: new Date(),
     };
@@ -354,6 +358,17 @@ export class MemStorage implements IStorage {
     };
     this.achievements.set(id, achievement);
     return achievement;
+  }
+
+  // User management (for authentication compatibility)
+  async getUser(id: string): Promise<User | undefined> {
+    // In memory storage doesn't support users - always return undefined for guest mode
+    return undefined;
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    // In memory storage doesn't support users - throw error
+    throw new Error("User management not supported in memory storage mode");
   }
 }
 
@@ -573,6 +588,27 @@ export class DatabaseStorage implements IStorage {
         categoryId: category?.id || null,
       });
     }
+  }
+
+  // User management (required for authentication)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 }
 
