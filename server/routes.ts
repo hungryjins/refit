@@ -186,6 +186,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/stats", async (req, res) => {
+    try {
+      const updates = req.body;
+      const stats = await storage.updateUserStats(updates);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user stats" });
+    }
+  });
+
   // Achievement routes
   app.get("/api/achievements", async (req, res) => {
     try {

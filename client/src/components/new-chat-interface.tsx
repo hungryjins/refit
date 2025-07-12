@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock, Trophy, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Expression, Category, ChatMessage, ChatSession } from "@shared/schema";
@@ -110,6 +111,7 @@ export default function NewChatInterface() {
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [usedExpressions, setUsedExpressions] = useState<Set<number>>(new Set());
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
@@ -216,6 +218,10 @@ export default function NewChatInterface() {
       // Check if session is complete
       if (data.sessionComplete) {
         setSessionComplete(true);
+        // Show completion modal after a brief delay
+        setTimeout(() => {
+          setShowCompletionModal(true);
+        }, 1000);
       }
 
       setCurrentInput("");
@@ -250,10 +256,40 @@ export default function NewChatInterface() {
     }
   };
 
+  // Update stats mutation for progress tracking
+  const updateStatsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/stats', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          totalSessions: 1, // increment by 1
+          currentStreak: 1, // increment by 1
+          lastPracticeDate: new Date().toISOString(),
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update stats');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expressions'] });
+    },
+  });
+
+  const handleCloseModal = () => {
+    setShowCompletionModal(false);
+    // Update progress stats when modal is closed
+    updateStatsMutation.mutate();
+    // Reset for new session
+    handleNewSession();
+  };
+
   const handleNewSession = () => {
     setCurrentSession(null);
     setMessages([]);
     setSessionComplete(false);
+    setShowCompletionModal(false);
     setSelectedCategory(null);
     setSelectedExpressions([]);
     setUsedExpressions(new Set());
@@ -481,6 +517,52 @@ export default function NewChatInterface() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Completion Modal */}
+        <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-2xl">
+                <Trophy className="h-8 w-8 text-yellow-500" />
+                세션 완료!
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="flex justify-center gap-1 mb-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-6 w-6 text-yellow-500 fill-current" />
+                  ))}
+                </div>
+                <p className="text-lg font-semibold text-gray-800">
+                  🎉 축하합니다!
+                </p>
+                <p className="text-gray-600 mt-2">
+                  모든 표현을 성공적으로 완료했습니다!
+                </p>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">완료된 표현:</h4>
+                <div className="space-y-1">
+                  {selectedExpressions.map(expr => (
+                    <div key={expr.id} className="flex items-center gap-2 text-sm text-green-700">
+                      <CheckCircle2 size={16} className="text-green-600" />
+                      {expr.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleCloseModal}
+                className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+              >
+                확인
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

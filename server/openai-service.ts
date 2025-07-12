@@ -89,13 +89,15 @@ export class OpenAIService {
             Target expression: "${targetExpression.text}"
             Scenario: ${context.scenario}
             
-            Evaluate with these LENIENT criteria:
-            1. Did they use the target expression (ignore case differences, minor spelling errors)?
-            2. Is the meaning clear and communication successful?
-            3. Don't penalize for minor grammar mistakes, capitalization, or small spelling errors
-            4. Focus on whether they expressed the right idea using the target expression
+            Evaluate with these VERY LENIENT criteria:
+            1. Did they use the target expression or semantically equivalent phrases?
+               - "Have a wonderful day" = "Have a good day" = "Have a great day" = "Have a nice day" (ALL CORRECT)
+               - "Nice to meet you" = "Good to meet you" = "Pleased to meet you" (ALL CORRECT)
+            2. Is the meaning and intent clear?
+            3. Ignore minor grammar, spelling, capitalization differences
+            4. Focus on successful communication, not perfect wording
 
-            BE LENIENT: If they used the expression and the meaning is clear, mark it as correct!
+            BE VERY LENIENT: If they expressed the same meaning/intent as the target expression, mark it as correct!
 
             Respond with JSON:
             {
