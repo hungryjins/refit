@@ -6,6 +6,7 @@ import { openaiService } from "./openai-service";
 import { sessionManager } from "./session-manager";
 import { tutoringEngine } from "./tutoring-engine";
 import { verifyFirebaseToken, getSessionId } from "./firebase-auth";
+import { createAdaptiveDifficultyEngine } from "./adaptive-difficulty";
 import session from "express-session";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -19,6 +20,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Add Firebase token verification to all routes
   app.use(verifyFirebaseToken);
+
+  // Initialize adaptive difficulty engine
+  const adaptiveDifficultyEngine = createAdaptiveDifficultyEngine(storage);
 
   // Category routes
   app.get("/api/categories", async (req, res) => {
@@ -451,6 +455,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Transcription error:", error);
       res.status(500).json({ message: "Failed to transcribe audio" });
+    }
+  });
+
+  // Adaptive Difficulty API Routes
+  app.get("/api/adaptive/analysis/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const analysis = await adaptiveDifficultyEngine.analyzeUserPerformance(userId);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Adaptive analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze user performance" });
+    }
+  });
+
+  app.get("/api/adaptive/challenges/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const challenges = await adaptiveDifficultyEngine.generatePersonalizedChallenges(userId);
+      res.json(challenges);
+    } catch (error) {
+      console.error("Adaptive challenges error:", error);
+      res.status(500).json({ message: "Failed to generate challenges" });
+    }
+  });
+
+  app.post("/api/adaptive/expressions", async (req, res) => {
+    try {
+      const { userId, sessionConfig } = req.body;
+      const expressions = await adaptiveDifficultyEngine.selectAdaptiveExpressions(userId, sessionConfig);
+      res.json(expressions);
+    } catch (error) {
+      console.error("Adaptive expressions error:", error);
+      res.status(500).json({ message: "Failed to select adaptive expressions" });
+    }
+  });
+
+  app.post("/api/adaptive/analytics", async (req, res) => {
+    try {
+      const { userId, sessionId, expressionId, responseTime, accuracy, difficultyLevel, aiResponse } = req.body;
+      
+      await adaptiveDifficultyEngine.recordPerformanceAnalytics(
+        userId, sessionId, expressionId, responseTime, accuracy, difficultyLevel, aiResponse
+      );
+      
+      res.json({ message: "Analytics recorded successfully" });
+    } catch (error) {
+      console.error("Analytics recording error:", error);
+      res.status(500).json({ message: "Failed to record analytics" });
+    }
+  });
+
+  app.post("/api/adaptive/challenge", async (req, res) => {
+    try {
+      const { userId, challenge } = req.body;
+      await adaptiveDifficultyEngine.createAdaptiveChallenge(userId, challenge);
+      res.json({ message: "Challenge created successfully" });
+    } catch (error) {
+      console.error("Challenge creation error:", error);
+      res.status(500).json({ message: "Failed to create challenge" });
+    }
+  });
+
+  app.patch("/api/adaptive/difficulty/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const analysis = req.body;
+      await adaptiveDifficultyEngine.updateAdaptiveDifficulty(userId, analysis);
+      res.json({ message: "Difficulty updated successfully" });
+    } catch (error) {
+      console.error("Difficulty update error:", error);
+      res.status(500).json({ message: "Failed to update difficulty" });
+    }
+  });
+
+  // Get user's adaptive challenges
+  app.get("/api/challenges/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const challenges = await storage.getAdaptiveChallenges(userId);
+      res.json(challenges);
+    } catch (error) {
+      console.error("Challenges fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch challenges" });
+    }
+  });
+
+  // Complete an adaptive challenge
+  app.patch("/api/challenges/:id/complete", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const challenge = await storage.completeAdaptiveChallenge(id);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Challenge completion error:", error);
+      res.status(500).json({ message: "Failed to complete challenge" });
+    }
+  });
+
+  // Get performance analytics
+  app.get("/api/analytics/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const analytics = await storage.getPerformanceAnalytics(userId, limit);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Analytics fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 

@@ -6,6 +6,8 @@ import {
   userStats, 
   achievements,
   users,
+  adaptiveChallenges,
+  performanceAnalytics,
   type Category,
   type InsertCategory,
   type Expression, 
@@ -19,7 +21,11 @@ import {
   type Achievement,
   type InsertAchievement,
   type User,
-  type UpsertUser
+  type UpsertUser,
+  type AdaptiveChallenge,
+  type InsertAdaptiveChallenge,
+  type PerformanceAnalytics,
+  type InsertPerformanceAnalytics
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull } from "drizzle-orm";
@@ -62,6 +68,17 @@ export interface IStorage {
   // Achievements
   getAchievements(): Promise<Achievement[]>;
   createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  
+  // Adaptive Challenges
+  getAdaptiveChallenges(userId?: string): Promise<AdaptiveChallenge[]>;
+  createAdaptiveChallenge(challenge: InsertAdaptiveChallenge): Promise<AdaptiveChallenge>;
+  updateAdaptiveChallenge(id: number, challenge: Partial<InsertAdaptiveChallenge>): Promise<AdaptiveChallenge>;
+  completeAdaptiveChallenge(id: number): Promise<AdaptiveChallenge>;
+  
+  // Performance Analytics
+  getPerformanceAnalytics(userId?: string, limit?: number): Promise<PerformanceAnalytics[]>;
+  createPerformanceAnalytics(analytics: InsertPerformanceAnalytics): Promise<PerformanceAnalytics>;
+  getSessionPerformanceAnalytics(sessionId: number): Promise<PerformanceAnalytics[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -71,6 +88,8 @@ export class MemStorage implements IStorage {
   private chatMessages: Map<number, ChatMessage>;
   private userStats: UserStats;
   private achievements: Map<number, Achievement>;
+  private adaptiveChallenges: Map<number, AdaptiveChallenge>;
+  private performanceAnalytics: Map<number, PerformanceAnalytics>;
   private currentId: number;
 
   constructor() {
@@ -79,6 +98,8 @@ export class MemStorage implements IStorage {
     this.chatSessions = new Map();
     this.chatMessages = new Map();
     this.achievements = new Map();
+    this.adaptiveChallenges = new Map();
+    this.performanceAnalytics = new Map();
     this.currentId = 1;
     
     this.userStats = {
@@ -88,6 +109,9 @@ export class MemStorage implements IStorage {
       currentStreak: 7,
       lastPracticeDate: new Date(),
       overallAccuracy: 84,
+      currentDifficultyLevel: 1,
+      adaptiveScore: 100,
+      lastDifficultyAdjustment: new Date(),
     };
 
     // Add default categories and sample expressions
@@ -141,6 +165,9 @@ export class MemStorage implements IStorage {
         totalCount: Math.floor(Math.random() * 8) + 2,
         lastUsed: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null,
         createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+        difficultyLevel: Math.floor(Math.random() * 5) + 1, // 1-5
+        complexityScore: Math.random() * 2 + 0.5, // 0.5-2.5
+        masteryLevel: Math.random() * 0.8, // 0-0.8 for sample data
       };
       this.expressions.set(id, expression);
     });
@@ -217,6 +244,9 @@ export class MemStorage implements IStorage {
       totalCount: 0,
       lastUsed: null,
       createdAt: new Date(),
+      difficultyLevel: insertExpression.difficultyLevel || 1,
+      complexityScore: insertExpression.complexityScore || 1.0,
+      masteryLevel: 0, // New expressions start with no mastery
     };
     this.expressions.set(id, expression);
     return expression;
@@ -283,6 +313,9 @@ export class MemStorage implements IStorage {
       userId: insertSession.userId || null,
       isActive: true,
       createdAt: new Date(),
+      targetDifficultyLevel: insertSession.targetDifficultyLevel || 1,
+      actualDifficultyScore: null,
+      performanceScore: null,
     };
     this.chatSessions.set(id, session);
     
@@ -369,6 +402,100 @@ export class MemStorage implements IStorage {
   async upsertUser(user: UpsertUser): Promise<User> {
     // In memory storage doesn't support users - throw error
     throw new Error("User management not supported in memory storage mode");
+  }
+
+  // Adaptive Challenges
+  async getAdaptiveChallenges(userId?: string): Promise<AdaptiveChallenge[]> {
+    return Array.from(this.adaptiveChallenges.values())
+      .filter(challenge => !userId || challenge.userId === userId);
+  }
+
+  async createAdaptiveChallenge(insertChallenge: InsertAdaptiveChallenge): Promise<AdaptiveChallenge> {
+    const id = this.currentId++;
+    const challenge: AdaptiveChallenge = {
+      id,
+      userId: insertChallenge.userId || null,
+      challengeType: insertChallenge.challengeType,
+      difficultyLevel: insertChallenge.difficultyLevel,
+      targetMetric: insertChallenge.targetMetric,
+      isCompleted: false,
+      completedAt: null,
+      reward: insertChallenge.reward || null,
+      expiresAt: insertChallenge.expiresAt || null,
+      createdAt: new Date(),
+    };
+    
+    this.adaptiveChallenges.set(id, challenge);
+    return challenge;
+  }
+
+  async updateAdaptiveChallenge(id: number, updateData: Partial<InsertAdaptiveChallenge>): Promise<AdaptiveChallenge> {
+    const challenge = this.adaptiveChallenges.get(id);
+    if (!challenge) {
+      throw new Error(`Adaptive challenge with id ${id} not found`);
+    }
+
+    const updated: AdaptiveChallenge = {
+      ...challenge,
+      ...updateData,
+    };
+
+    this.adaptiveChallenges.set(id, updated);
+    return updated;
+  }
+
+  async completeAdaptiveChallenge(id: number): Promise<AdaptiveChallenge> {
+    const challenge = this.adaptiveChallenges.get(id);
+    if (!challenge) {
+      throw new Error(`Adaptive challenge with id ${id} not found`);
+    }
+
+    const completed: AdaptiveChallenge = {
+      ...challenge,
+      isCompleted: true,
+      completedAt: new Date(),
+    };
+
+    this.adaptiveChallenges.set(id, completed);
+    return completed;
+  }
+
+  // Performance Analytics
+  async getPerformanceAnalytics(userId?: string, limit?: number): Promise<PerformanceAnalytics[]> {
+    let analytics = Array.from(this.performanceAnalytics.values())
+      .filter(analytic => !userId || analytic.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    if (limit) {
+      analytics = analytics.slice(0, limit);
+    }
+    
+    return analytics;
+  }
+
+  async createPerformanceAnalytics(insertAnalytics: InsertPerformanceAnalytics): Promise<PerformanceAnalytics> {
+    const id = this.currentId++;
+    const analytics: PerformanceAnalytics = {
+      id,
+      userId: insertAnalytics.userId || null,
+      sessionId: insertAnalytics.sessionId || null,
+      expressionId: insertAnalytics.expressionId || null,
+      responseTime: insertAnalytics.responseTime || null,
+      accuracyScore: insertAnalytics.accuracyScore || null,
+      difficultyAttempted: insertAnalytics.difficultyAttempted,
+      confidenceScore: insertAnalytics.confidenceScore || null,
+      improvementSuggestion: insertAnalytics.improvementSuggestion || null,
+      createdAt: new Date(),
+    };
+    
+    this.performanceAnalytics.set(id, analytics);
+    return analytics;
+  }
+
+  async getSessionPerformanceAnalytics(sessionId: number): Promise<PerformanceAnalytics[]> {
+    return Array.from(this.performanceAnalytics.values())
+      .filter(analytic => analytic.sessionId === sessionId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 }
 
@@ -609,6 +736,81 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  // Adaptive Challenges
+  async getAdaptiveChallenges(userId?: string): Promise<AdaptiveChallenge[]> {
+    if (userId) {
+      return await db.select().from(adaptiveChallenges)
+        .where(eq(adaptiveChallenges.userId, userId))
+        .orderBy(desc(adaptiveChallenges.createdAt));
+    }
+    return await db.select().from(adaptiveChallenges)
+      .orderBy(desc(adaptiveChallenges.createdAt));
+  }
+
+  async createAdaptiveChallenge(insertChallenge: InsertAdaptiveChallenge): Promise<AdaptiveChallenge> {
+    const [challenge] = await db
+      .insert(adaptiveChallenges)
+      .values(insertChallenge)
+      .returning();
+    return challenge;
+  }
+
+  async updateAdaptiveChallenge(id: number, updateData: Partial<InsertAdaptiveChallenge>): Promise<AdaptiveChallenge> {
+    const [challenge] = await db
+      .update(adaptiveChallenges)
+      .set(updateData)
+      .where(eq(adaptiveChallenges.id, id))
+      .returning();
+    return challenge;
+  }
+
+  async completeAdaptiveChallenge(id: number): Promise<AdaptiveChallenge> {
+    const [challenge] = await db
+      .update(adaptiveChallenges)
+      .set({ 
+        isCompleted: true,
+        completedAt: new Date()
+      })
+      .where(eq(adaptiveChallenges.id, id))
+      .returning();
+    return challenge;
+  }
+
+  // Performance Analytics
+  async getPerformanceAnalytics(userId?: string, limit?: number): Promise<PerformanceAnalytics[]> {
+    if (userId && limit) {
+      return await db.select().from(performanceAnalytics)
+        .where(eq(performanceAnalytics.userId, userId))
+        .orderBy(desc(performanceAnalytics.createdAt))
+        .limit(limit);
+    } else if (userId) {
+      return await db.select().from(performanceAnalytics)
+        .where(eq(performanceAnalytics.userId, userId))
+        .orderBy(desc(performanceAnalytics.createdAt));
+    } else if (limit) {
+      return await db.select().from(performanceAnalytics)
+        .orderBy(desc(performanceAnalytics.createdAt))
+        .limit(limit);
+    } else {
+      return await db.select().from(performanceAnalytics)
+        .orderBy(desc(performanceAnalytics.createdAt));
+    }
+  }
+
+  async createPerformanceAnalytics(insertAnalytics: InsertPerformanceAnalytics): Promise<PerformanceAnalytics> {
+    const [analytics] = await db
+      .insert(performanceAnalytics)
+      .values(insertAnalytics)
+      .returning();
+    return analytics;
+  }
+
+  async getSessionPerformanceAnalytics(sessionId: number): Promise<PerformanceAnalytics[]> {
+    return await db.select().from(performanceAnalytics)
+      .where(eq(performanceAnalytics.sessionId, sessionId))
+      .orderBy(performanceAnalytics.createdAt);
   }
 }
 

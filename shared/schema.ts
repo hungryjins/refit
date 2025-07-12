@@ -42,6 +42,10 @@ export const expressions = pgTable("expressions", {
   totalCount: integer("total_count").default(0).notNull(),
   lastUsed: timestamp("last_used"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Adaptive difficulty metadata
+  difficultyLevel: integer("difficulty_level").default(1).notNull(), // 1-5 scale
+  complexityScore: real("complexity_score").default(1.0).notNull(), // calculated complexity
+  masteryLevel: real("mastery_level").default(0).notNull(), // 0-1 user mastery
 });
 
 export const chatSessions = pgTable("chat_sessions", {
@@ -50,6 +54,10 @@ export const chatSessions = pgTable("chat_sessions", {
   userId: varchar("user_id").references(() => users.id), // null for guest users
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Adaptive difficulty session data
+  targetDifficultyLevel: integer("target_difficulty_level").default(1).notNull(),
+  actualDifficultyScore: real("actual_difficulty_score"), // calculated post-session
+  performanceScore: real("performance_score"), // user performance in this session
 });
 
 export const chatMessages = pgTable("chat_messages", {
@@ -69,6 +77,38 @@ export const userStats = pgTable("user_stats", {
   currentStreak: integer("current_streak").default(0).notNull(),
   lastPracticeDate: timestamp("last_practice_date"),
   overallAccuracy: real("overall_accuracy").default(0).notNull(),
+  // Adaptive difficulty tracking
+  currentDifficultyLevel: integer("current_difficulty_level").default(1).notNull(),
+  adaptiveScore: real("adaptive_score").default(100).notNull(), // 0-200 scale
+  lastDifficultyAdjustment: timestamp("last_difficulty_adjustment").defaultNow(),
+});
+
+// New table for adaptive challenges
+export const adaptiveChallenges = pgTable("adaptive_challenges", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  challengeType: text("challenge_type").notNull(), // "speed", "accuracy", "complexity", "endurance"
+  difficultyLevel: integer("difficulty_level").notNull(),
+  targetMetric: real("target_metric").notNull(), // target score/time/accuracy
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  reward: text("reward"), // description of reward/achievement
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Performance analytics table
+export const performanceAnalytics = pgTable("performance_analytics", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: integer("session_id").references(() => chatSessions.id),
+  expressionId: integer("expression_id").references(() => expressions.id),
+  responseTime: real("response_time"), // seconds to respond
+  accuracyScore: real("accuracy_score"), // 0-1 accuracy
+  difficultyAttempted: integer("difficulty_attempted").notNull(),
+  confidenceScore: real("confidence_score"), // AI-assessed confidence
+  improvementSuggestion: text("improvement_suggestion"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const achievements = pgTable("achievements", {
@@ -128,6 +168,7 @@ export const insertExpressionSchema = createInsertSchema(expressions).omit({
   totalCount: true,
   lastUsed: true,
   createdAt: true,
+  masteryLevel: true, // calculated field
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -139,6 +180,8 @@ export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
   id: true,
   isActive: true,
   createdAt: true,
+  actualDifficultyScore: true, // calculated post-session
+  performanceScore: true, // calculated post-session
 });
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
@@ -155,6 +198,16 @@ export const insertAchievementSchema = createInsertSchema(achievements).omit({
   unlockedAt: true,
 });
 
+export const insertAdaptiveChallengeSchema = createInsertSchema(adaptiveChallenges).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPerformanceAnalyticsSchema = createInsertSchema(performanceAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type Category = typeof categories.$inferSelect;
@@ -169,3 +222,7 @@ export type UserStats = typeof userStats.$inferSelect;
 export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
 export type Achievement = typeof achievements.$inferSelect;
 export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type AdaptiveChallenge = typeof adaptiveChallenges.$inferSelect;
+export type InsertAdaptiveChallenge = z.infer<typeof insertAdaptiveChallengeSchema>;
+export type PerformanceAnalytics = typeof performanceAnalytics.$inferSelect;
+export type InsertPerformanceAnalytics = z.infer<typeof insertPerformanceAnalyticsSchema>;

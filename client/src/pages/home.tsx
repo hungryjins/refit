@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import AdaptiveDifficulty from "@/components/AdaptiveDifficulty";
 
-type Tab = "chat" | "expressions" | "repository";
+type Tab = "chat" | "expressions" | "repository" | "adaptive";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
@@ -20,6 +21,7 @@ export default function Home() {
     { id: "chat", label: "Practice", icon: "💬" },
     { id: "expressions", label: "Expressions", icon: "📚" },
     { id: "repository", label: "Progress", icon: "📊" },
+    { id: "adaptive", label: "AI Adaptive", icon: "🤖" },
   ] as const;
 
   return (
@@ -94,6 +96,11 @@ export default function Home() {
                   ? "Track your learning progress." 
                   : "Sign in to see your progress and statistics."}
               </p>
+            </div>
+          )}
+          {activeTab === "adaptive" && (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <AdaptiveDifficulty />
             </div>
           )}
         </motion.div>
