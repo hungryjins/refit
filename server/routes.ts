@@ -278,8 +278,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Selected expressions:', selectedExpressions);
       console.log('Expression IDs:', expressionIds);
       
+      // Get user info for hybrid storage
+      const userId = req.user?.claims?.sub;
+      const sessionId = req.sessionID;
+      
       // SessionManager로 세션 생성
-      const sessionState = await sessionManager.createSession(expressionIds);
+      const sessionState = await sessionManager.createSession(expressionIds, userId, sessionId);
       const currentExpression = sessionState.expressions[0];
       
       // 초기 메시지 가져오기

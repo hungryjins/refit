@@ -14,9 +14,9 @@ export interface SessionState {
 class SessionManager {
   private sessions: Map<number, SessionState> = new Map();
 
-  async createSession(expressionIds: number[]): Promise<SessionState> {
+  async createSession(expressionIds: number[], userId?: string, sessionId?: string): Promise<SessionState> {
     console.log('Creating session with expression IDs:', expressionIds);
-    const expressions = await storage.getExpressions();
+    const expressions = await storage.getExpressions(userId, sessionId);
     console.log('Available expressions:', expressions.map(e => ({ id: e.id, text: e.text })));
     const selectedExpressions = expressions.filter(expr => expressionIds.includes(expr.id));
     console.log('Selected expressions:', selectedExpressions.map(e => ({ id: e.id, text: e.text })));
@@ -34,7 +34,7 @@ class SessionManager {
     const session = await storage.createChatSession({
       scenario: scenarioResponse.scenario,
       isActive: true
-    });
+    }, userId, sessionId);
 
     // 초기 메시지 생성 (2단계: 상황 설명 + 3단계: 대화 시작)
     const fullInitialMessage = `📝 상황: ${scenarioResponse.scenario}\n\n${scenarioResponse.initialMessage}`;
