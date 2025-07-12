@@ -15,11 +15,14 @@ class SessionManager {
   private sessions: Map<number, SessionState> = new Map();
 
   async createSession(expressionIds: number[]): Promise<SessionState> {
+    console.log('Creating session with expression IDs:', expressionIds);
     const expressions = await storage.getExpressions();
+    console.log('Available expressions:', expressions.map(e => ({ id: e.id, text: e.text })));
     const selectedExpressions = expressions.filter(expr => expressionIds.includes(expr.id));
+    console.log('Selected expressions:', selectedExpressions.map(e => ({ id: e.id, text: e.text })));
     
     if (selectedExpressions.length === 0) {
-      throw new Error("No valid expressions found");
+      throw new Error(`No valid expressions found. Available IDs: ${expressions.map(e => e.id).join(', ')}, Requested IDs: ${expressionIds.join(', ')}`);
     }
 
     // 첫 번째 표현으로 세션 시작

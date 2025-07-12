@@ -270,8 +270,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No expressions selected" });
       }
       
+      // Extract expression IDs if full objects are passed
+      const expressionIds = Array.isArray(selectedExpressions) 
+        ? selectedExpressions.map(expr => typeof expr === 'object' ? expr.id : expr)
+        : selectedExpressions;
+      
+      console.log('Selected expressions:', selectedExpressions);
+      console.log('Expression IDs:', expressionIds);
+      
       // SessionManager로 세션 생성
-      const sessionState = await sessionManager.createSession(selectedExpressions);
+      const sessionState = await sessionManager.createSession(expressionIds);
       const currentExpression = sessionState.expressions[0];
       
       // 초기 메시지 가져오기
