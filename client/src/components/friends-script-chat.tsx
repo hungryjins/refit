@@ -129,13 +129,16 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
       // 다음 표현으로 이동 (즉시 새로고침 방지)
       const nextIndex = currentExpressionIndex + 1;
       if (nextIndex < selectedExpressions.length) {
+        const nextExpression = selectedExpressions[nextIndex];
+        console.log('Moving to next expression:', nextExpression.text);
+        
         // 잠시 대기 후 다음 연습으로 이동
         setTimeout(() => {
           setCurrentExpressionIndex(nextIndex);
           setPracticeData(null);
-          // 다음 연습 자동 시작
+          // 다음 연습 자동 시작 - 다음 표현으로
           setTimeout(() => {
-            startPracticeMutation.mutate(selectedExpressions[nextIndex]);
+            startPracticeMutation.mutate(nextExpression);
           }, 500);
         }, 2000); // 2초 대기
       } else {

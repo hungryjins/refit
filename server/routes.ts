@@ -581,7 +581,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "userInput and expressions are required" });
       }
       
+      console.log('Starting practice for expression:', userInput);
       const practiceRound = await friendsScriptService.practiceRound(userInput, expressions);
+      console.log('Generated practice round:', practiceRound);
       res.json(practiceRound);
       
     } catch (error) {

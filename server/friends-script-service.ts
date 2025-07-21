@@ -144,18 +144,17 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
   }
 
   /**
-   * Python의 practice_round 함수 구현
+   * Python의 practice_round 함수 구현 - 특정 표현에 대한 연습
    */
   async practiceRound(userInput: string, expressions: Expression[], topK = 1): Promise<PracticeRound> {
     try {
-      // 1. 검색 쿼리 생성
+      // userInput이 이미 선택된 표현이므로 직접 사용
+      const targetSentence = userInput;
+      
+      // 1. 해당 표현에 대한 검색 쿼리 생성 (표현 분석용)
       const searchQuery = await this.generateSearchQuery(userInput);
       
-      // 2. 표현 검색
-      const results = await this.searchInExpressions(searchQuery, expressions, topK);
-      const targetSentence = results[0]?.text || userInput;
-      
-      // 3. 연습 대화 생성
+      // 2. 연습 대화 생성 (타겟 표현 기반)
       const dialogueScript = await this.generatePracticePrompt(targetSentence);
       
       return {
