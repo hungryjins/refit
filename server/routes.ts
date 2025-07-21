@@ -618,42 +618,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "message, sessionId, and expressions are required" });
       }
 
-      // 간단한 AI 응답 생성 (실제로는 더 복잡한 로직 필요)
-      const context = {
+      console.log('AI conversation request:', { message, sessionId, expressionCount: expressions.length });
+
+      // AI 응답 생성
+      const aiResponse = await openaiService.generateConversationResponse({
+        userMessage: message,
         userExpressions: expressions,
-        conversationHistory: [], // 실제로는 세션 기반으로 히스토리 관리 필요
-        scenario: "자유 대화",
-        messageCount: 1
-      };
+        conversationHistory: [], // 실제로는 세션 기반으로 히스토리 관리
+        scenario: "자유 대화"
+      });
 
-      // 표현 사용 감지
-      let usedExpression = null;
-      for (const expr of expressions) {
-        if (message.toLowerCase().includes(expr.text.toLowerCase())) {
-          usedExpression = expr.text;
-          break;
-        }
-      }
-
-      // 기본 응답 생성
-      let response = "좋은 표현이네요! 계속해서 대화해보세요.";
-      
-      if (usedExpression) {
-        response = `훌륭합니다! "${usedExpression}" 표현을 잘 사용하셨네요. 다른 표현도 사용해보세요.`;
-      } else {
-        const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
-        response = `좋습니다! 이번에는 "${randomExpr.text}" 표현을 사용해보시겠어요?`;
-      }
+      console.log('AI conversation response:', aiResponse);
 
       res.json({
-        response,
-        usedExpression,
-        feedback: usedExpression ? "표현을 성공적으로 사용했습니다!" : undefined
+        response: aiResponse.response,
+        feedback: aiResponse.feedback,
+        usedExpression: aiResponse.usedExpression
       });
       
     } catch (error) {
       console.error("AI conversation error:", error);
-      res.status(500).json({ message: "Failed to generate AI response" });
+      res.status(500).json({ 
+        message: "Failed to generate AI response",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

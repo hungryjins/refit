@@ -203,6 +203,78 @@ export class OpenAIService {
       return "Could you try that again?";
     }
   }
+
+  /**
+   * AI 대화 모드용 응답 생성
+   */
+  async generateConversationResponse(context: {
+    userMessage: string;
+    userExpressions: Expression[];
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+    scenario: string;
+  }): Promise<{
+    response: string;
+    usedExpression?: string;
+    feedback?: string;
+  }> {
+    try {
+      // 사용자가 표현을 사용했는지 확인
+      let usedExpression: string | undefined;
+      for (const expr of context.userExpressions) {
+        if (context.userMessage.toLowerCase().includes(expr.text.toLowerCase())) {
+          usedExpression = expr.text;
+          break;
+        }
+      }
+
+      let systemPrompt = `You are a friendly English conversation partner helping someone practice specific expressions.
+
+The user is practicing these expressions: ${context.userExpressions.map(e => `"${e.text}"`).join(', ')}
+
+Continue the conversation naturally. If the user used one of their target expressions, acknowledge it positively. If they haven't used any expressions yet, gently encourage them to try using one.
+
+Respond in Korean to be supportive, but keep the conversation context in English.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          ...context.conversationHistory,
+          {
+            role: "user",
+            content: context.userMessage
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 150
+      });
+
+      let responseText = response.choices[0].message.content || "계속해보세요!";
+
+      // 표현 사용 시 피드백 추가
+      let feedback: string | undefined;
+      if (usedExpression) {
+        feedback = `"${usedExpression}" 표현을 성공적으로 사용했습니다!`;
+        responseText += `\n\n훌륭합니다! "${usedExpression}" 표현을 잘 사용하셨네요! 👏`;
+      }
+
+      return {
+        response: responseText,
+        usedExpression,
+        feedback
+      };
+
+    } catch (error) {
+      console.error('AI Conversation Generation Error:', error);
+      return {
+        response: "죄송합니다. 다시 시도해주세요.",
+        feedback: "오류가 발생했습니다."
+      };
+    }
+  }
 }
 
 export const openaiService = new OpenAIService();
