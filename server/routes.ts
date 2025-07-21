@@ -126,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertChatSessionSchema.parse(req.body);
       const session = await storage.createChatSession(validatedData);
       
-      // Original Chat는 수동으로 시작할 때만 표현 설정함 (기본 자동 설정 제거)
+      // Original Chat 세션 생성 시 초기 메시지는 /api/chat/start-session에서 생성함
       
       res.json(session);
     } catch (error) {

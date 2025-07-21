@@ -316,6 +316,12 @@ export default function NewChatInterface() {
           // Load messages for the active session
           const messages = await apiRequest(`/api/chat/sessions/${activeSession.id}/messages`);
           setMessages(messages);
+          
+          // If no messages exist, this session might need initialization
+          if (messages.length === 0) {
+            console.log('Active session found but no messages - session may need restart');
+            setCurrentSession(null); // Reset to allow new session creation
+          }
         }
       } catch (error) {
         console.log('No active session found');
