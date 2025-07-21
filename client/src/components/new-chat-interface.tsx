@@ -329,9 +329,10 @@ export default function NewChatInterface() {
           console.log('Loaded messages:', messages);
           setMessages(messages);
           
-          // If no messages exist, don't reset - let user start new session manually
+          // If no messages exist, this session is broken - reset to allow new session
           if (messages.length === 0) {
-            console.log('Active session found but no messages - keeping session active');
+            console.log('Active session found but no messages - resetting session');
+            setCurrentSession(null);
           }
         } else {
           console.log('No active session found');
