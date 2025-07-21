@@ -138,6 +138,7 @@ Changelog:
 - July 21, 2025. Original Chat 자동시작 및 중복 메시지 문제 해결 - 깔끔한 대화 시작 구현
 - July 21, 2025. 사용자 선택 표현 기반 세션 시작 구현 - 기본 표현 자동 설정 제거, START_SESSION 텍스트 제거
 - July 21, 2025. Original Chat 초기 메시지 생성 완전 구현 - GPT 시나리오 자동 생성 및 메시지 저장 시스템 완성
+- July 21, 2025. apiRequest import 오류 해결 및 세션 생성 완전 수정 - 백엔드 API 정상 작동 확인
 ```
 
 ## User Preferences
