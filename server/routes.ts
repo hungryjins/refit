@@ -5,6 +5,8 @@ import { insertCategorySchema, insertExpressionSchema, insertChatSessionSchema, 
 import { openaiService } from "./openai-service";
 import { sessionManager } from "./session-manager";
 import { tutoringEngine } from "./tutoring-engine";
+import { friendsScriptService } from "./friends-script-service";
+import { aiService } from "./ai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Category routes
@@ -550,6 +552,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(500).json({ success: false, error: 'Failed to test endpoint' });
+    }
+  });
+
+  // Friends Script API endpoints - Python 코드 기반 구현
+  app.post("/api/friends-script/preview", async (req, res) => {
+    try {
+      const { expressions } = req.body;
+      
+      if (!expressions || !Array.isArray(expressions)) {
+        return res.status(400).json({ message: "Expressions array is required" });
+      }
+      
+      const previews = await friendsScriptService.previewExpressions(expressions);
+      res.json(previews);
+      
+    } catch (error) {
+      console.error("Friends script preview error:", error);
+      res.status(500).json({ message: "Failed to generate preview" });
+    }
+  });
+
+  app.post("/api/friends-script/practice", async (req, res) => {
+    try {
+      const { userInput, expressions } = req.body;
+      
+      if (!userInput || !expressions) {
+        return res.status(400).json({ message: "userInput and expressions are required" });
+      }
+      
+      const practiceRound = await friendsScriptService.practiceRound(userInput, expressions);
+      res.json(practiceRound);
+      
+    } catch (error) {
+      console.error("Friends script practice error:", error);
+      res.status(500).json({ message: "Failed to start practice round" });
+    }
+  });
+
+  app.post("/api/friends-script/evaluate", async (req, res) => {
+    try {
+      const { userResponse, targetSentence } = req.body;
+      
+      if (!userResponse || !targetSentence) {
+        return res.status(400).json({ message: "userResponse and targetSentence are required" });
+      }
+      
+      const evaluation = await friendsScriptService.evaluatePracticeResponse(userResponse, targetSentence);
+      res.json(evaluation);
+      
+    } catch (error) {
+      console.error("Friends script evaluation error:", error);
+      res.status(500).json({ message: "Failed to evaluate response" });
+    }
+  });
+
+  // AI Conversation API endpoint - OpenAI 기반 자유 대화
+  app.post("/api/ai-conversation/respond", async (req, res) => {
+    try {
+      const { message, sessionId, expressions } = req.body;
+      
+      if (!message || !sessionId || !expressions) {
+        return res.status(400).json({ message: "message, sessionId, and expressions are required" });
+      }
+
+      // 간단한 AI 응답 생성 (실제로는 더 복잡한 로직 필요)
+      const context = {
+        userExpressions: expressions,
+        conversationHistory: [], // 실제로는 세션 기반으로 히스토리 관리 필요
+        scenario: "자유 대화",
+        messageCount: 1
+      };
+
+      // 표현 사용 감지
+      let usedExpression = null;
+      for (const expr of expressions) {
+        if (message.toLowerCase().includes(expr.text.toLowerCase())) {
+          usedExpression = expr.text;
+          break;
+        }
+      }
+
+      // 기본 응답 생성
+      let response = "좋은 표현이네요! 계속해서 대화해보세요.";
+      
+      if (usedExpression) {
+        response = `훌륭합니다! "${usedExpression}" 표현을 잘 사용하셨네요. 다른 표현도 사용해보세요.`;
+      } else {
+        const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
+        response = `좋습니다! 이번에는 "${randomExpr.text}" 표현을 사용해보시겠어요?`;
+      }
+
+      res.json({
+        response,
+        usedExpression,
+        feedback: usedExpression ? "표현을 성공적으로 사용했습니다!" : undefined
+      });
+      
+    } catch (error) {
+      console.error("AI conversation error:", error);
+      res.status(500).json({ message: "Failed to generate AI response" });
     }
   });
 
