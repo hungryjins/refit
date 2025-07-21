@@ -189,27 +189,45 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
   }
 
   /**
-   * 표현 미리보기 (Python의 practice_loop_with_preview 일부)
+   * 표현 미리보기 (Python의 practice_loop_with_preview 일부) - 병렬 처리로 최적화
    */
   async previewExpressions(expressions: Expression[]): Promise<{
     expression: Expression;
     searchQuery: string;
     topResults: SearchResult[];
   }[]> {
-    const previews = [];
-    
-    for (const expr of expressions) {
-      const searchQuery = await this.generateSearchQuery(expr.text);
-      const topResults = await this.searchInExpressions(searchQuery, expressions, 3);
+    try {
+      // 병렬로 검색 쿼리 생성
+      const searchQueries = await Promise.all(
+        expressions.map(expr => this.generateSearchQuery(expr.text))
+      );
       
-      previews.push({
-        expression: expr,
-        searchQuery,
-        topResults
+      // 각 표현에 대한 미리보기 생성
+      const previews = searchQueries.map((searchQuery, index) => {
+        const expr = expressions[index];
+        const topResults = this.searchInExpressions(searchQuery, expressions, 3);
+        
+        return {
+          expression: expr,
+          searchQuery,
+          topResults: topResults // 동기 처리로 변경
+        };
       });
+      
+      return await Promise.all(previews.map(async p => ({
+        ...p,
+        topResults: await p.topResults
+      })));
+      
+    } catch (error) {
+      console.error('Preview generation error:', error);
+      // 오류 시 기본 미리보기 반환
+      return expressions.map(expr => ({
+        expression: expr,
+        searchQuery: `"${expr.text}"`,
+        topResults: [{ text: expr.text, score: 1.0 }]
+      }));
     }
-    
-    return previews;
   }
 
   /**

@@ -66,7 +66,8 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
   });
 
   useEffect(() => {
-    if (preview) {
+    if (preview && Array.isArray(preview)) {
+      console.log('Preview data received:', preview);
       setPreviewData(preview);
     }
   }, [preview]);
@@ -198,23 +199,31 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {previewData.length === 0 ? (
+            {!preview ? (
               <div className="text-center py-8">
                 <div className="animate-pulse">미리보기 데이터를 불러오는 중...</div>
               </div>
+            ) : preview.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-red-500">미리보기 데이터가 없습니다.</div>
+              </div>
             ) : (
-              previewData.map((item, index) => (
+              preview.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="font-medium">표현: "{item.expression.text}"</div>
                   <div className="text-sm text-gray-600">🧠 GPT 쿼리: {item.searchQuery}</div>
                   <div className="space-y-1">
-                    {item.topResults.map((result, i) => (
-                      <div key={i} className="text-sm pl-4">
-                        🔹 Top {i + 1}: {result.text} (score: {result.score.toFixed(4)})
-                      </div>
-                    ))}
+                    {item.topResults && item.topResults.length > 0 ? (
+                      item.topResults.map((result, i) => (
+                        <div key={i} className="text-sm pl-4">
+                          🔹 Top {i + 1}: {result.text} (score: {result.score.toFixed(4)})
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm pl-4 text-gray-500">검색 결과가 없습니다.</div>
+                    )}
                   </div>
-                  {index < previewData.length - 1 && <Separator />}
+                  {index < preview.length - 1 && <Separator />}
                 </div>
               ))
             )}
@@ -224,7 +233,7 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
         <div className="text-center">
           <Button 
             onClick={handleStartPractice}
-            disabled={previewData.length === 0 || startPracticeMutation.isPending}
+            disabled={!preview || preview.length === 0 || startPracticeMutation.isPending}
             size="lg"
           >
             {startPracticeMutation.isPending ? "시작 중..." : "연습 시작하기"}
