@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PracticeModeSelector, { PracticeMode } from "./practice-mode-selector";
-import ChatInterface from "./chat-interface"; // 기존 원래 채팅
+import NewChatInterface from "./new-chat-interface"; // 수정된 Original Chat
 import AIConversationChat from "./ai-conversation-chat"; // 새로운 AI 대화
 import FriendsScriptChat from "./friends-script-chat"; // 새로운 Friends Script
 import type { Expression, Category } from "@shared/schema";
@@ -67,7 +67,7 @@ export default function PracticeChatInterface() {
   if (selectedMode === 'original') {
     return (
       <div className="container mx-auto px-4 py-8">
-        <ChatInterface />
+        <NewChatInterface />
       </div>
     );
   }
