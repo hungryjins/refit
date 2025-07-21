@@ -137,7 +137,7 @@ export default function NewChatInterface() {
       });
     },
     onSuccess: (data) => {
-      console.log('Session started:', data);
+      console.log('Session started successfully:', data);
       
       // Create session object from response
       const session = {
@@ -149,15 +149,21 @@ export default function NewChatInterface() {
       };
       
       setCurrentSession(session);
-      setMessages([{
-        id: data.messageId || Date.now(),
-        sessionId: data.sessionId,
-        content: data.initialMessage,
-        isUser: false,
-        expressionUsed: null,
-        isCorrect: null,
-        createdAt: new Date().toISOString(),
-      }]);
+      
+      // Set initial message from server response
+      if (data.initialMessage) {
+        setMessages([{
+          id: data.messageId || Date.now(),
+          sessionId: data.sessionId,
+          content: data.initialMessage,
+          isUser: false,
+          expressionUsed: null,
+          isCorrect: null,
+          createdAt: new Date().toISOString(),
+        }]);
+        console.log('Initial message set:', data.initialMessage);
+      }
+      
       setUsedExpressions(new Set());
       setSessionComplete(false);
     },
@@ -247,6 +253,7 @@ export default function NewChatInterface() {
 
   const handleStartSession = () => {
     if (selectedExpressions.length === 0) return;
+    console.log('Starting session with expressions:', selectedExpressions.map(expr => expr.id));
     startSessionMutation.mutate(selectedExpressions.map(expr => expr.id));
   };
 

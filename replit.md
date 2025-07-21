@@ -137,6 +137,7 @@ Changelog:
 - July 21, 2025. response.json() 오류 완전 해결 - apiRequest 함수와 모든 컴포넌트/hooks 동기화 완료
 - July 21, 2025. Original Chat 자동시작 및 중복 메시지 문제 해결 - 깔끔한 대화 시작 구현
 - July 21, 2025. 사용자 선택 표현 기반 세션 시작 구현 - 기본 표현 자동 설정 제거, START_SESSION 텍스트 제거
+- July 21, 2025. Original Chat 초기 메시지 생성 완전 구현 - GPT 시나리오 자동 생성 및 메시지 저장 시스템 완성
 ```
 
 ## User Preferences
