@@ -56,6 +56,7 @@ Return only the clean search query (1 sentence or phrase). No explanations.
 
   /**
    * Python의 search_in_pinecone 함수 구현 (로컬 표현 검색으로 대체)
+   * Friends 스크립트에서 유사한 표현을 찾는 역할
    */
   async searchInExpressions(queryText: string, expressions: Expression[], topK = 3): Promise<SearchResult[]> {
     try {
@@ -63,10 +64,17 @@ Return only the clean search query (1 sentence or phrase). No explanations.
       const results: SearchResult[] = [];
       
       for (const expr of expressions) {
-        const score = this.calculateTextSimilarity(queryText.toLowerCase(), expr.text.toLowerCase());
+        // 검색 쿼리와 표현 간의 유사도 계산
+        const directSimilarity = this.calculateTextSimilarity(queryText.toLowerCase(), expr.text.toLowerCase());
+        // 단어 기반 유사도도 계산
+        const wordSimilarity = this.calculateWordSimilarity(queryText.toLowerCase(), expr.text.toLowerCase());
+        
+        // 두 유사도의 평균 사용
+        const combinedScore = (directSimilarity + wordSimilarity) / 2;
+        
         results.push({
           text: expr.text,
-          score: Math.min(0.99, score) // 최대값 0.99로 제한
+          score: Math.min(0.99, combinedScore) // 최대값 0.99로 제한
         });
       }
       
@@ -144,17 +152,22 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
   }
 
   /**
-   * Python의 practice_round 함수 구현 - 특정 표현에 대한 연습
+   * Python의 practice_round 함수 구현 - Pinecone 스타일 유사 표현 검색
    */
   async practiceRound(userInput: string, expressions: Expression[], topK = 1): Promise<PracticeRound> {
     try {
-      // userInput이 이미 선택된 표현이므로 직접 사용
-      const targetSentence = userInput;
-      
-      // 1. 해당 표현에 대한 검색 쿼리 생성 (표현 분석용)
+      // 1. 사용자 표현을 기반으로 검색 쿼리 생성
       const searchQuery = await this.generateSearchQuery(userInput);
       
-      // 2. 연습 대화 생성 (타겟 표현 기반)
+      // 2. 유사한 표현 검색 (Pinecone 역할)
+      const searchResults = await this.searchInExpressions(searchQuery, expressions, topK);
+      
+      // 3. 검색된 표현 중 가장 유사한 것을 타겟으로 사용 (사용자 표현과 다를 수 있음)
+      const targetSentence = searchResults.length > 0 ? searchResults[0].text : userInput;
+      
+      console.log(`Original expression: "${userInput}" -> Target from search: "${targetSentence}"`);
+      
+      // 4. 타겟 표현을 기반으로 연습 대화 생성
       const dialogueScript = await this.generatePracticePrompt(targetSentence);
       
       return {
@@ -246,6 +259,48 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
     
     const totalWords = Math.max(words1.length, words2.length);
     return totalWords > 0 ? commonWords / totalWords : 0;
+  }
+
+  /**
+   * 단어 유사도 계산 (의미적 유사도)
+   */
+  private calculateWordSimilarity(query: string, text: string): number {
+    // 키워드 기반 유사도 (감사, 도움, 인사 등)
+    const thankKeywords = ['thank', 'thanks', 'appreciate', 'grateful'];
+    const helpKeywords = ['help', 'assist', 'support', 'aid'];
+    const greetKeywords = ['hello', 'hi', 'meet', 'nice', 'pleasure'];
+    const requestKeywords = ['please', 'could', 'would', 'can', 'may'];
+    
+    const queryLower = query.toLowerCase();
+    const textLower = text.toLowerCase();
+    
+    let score = 0;
+    
+    // 감사 표현 매칭
+    if (thankKeywords.some(k => queryLower.includes(k)) && 
+        thankKeywords.some(k => textLower.includes(k))) {
+      score += 0.4;
+    }
+    
+    // 도움 요청 표현 매칭
+    if (helpKeywords.some(k => queryLower.includes(k)) && 
+        helpKeywords.some(k => textLower.includes(k))) {
+      score += 0.4;
+    }
+    
+    // 인사 표현 매칭
+    if (greetKeywords.some(k => queryLower.includes(k)) && 
+        greetKeywords.some(k => textLower.includes(k))) {
+      score += 0.4;
+    }
+    
+    // 정중한 요청 표현 매칭
+    if (requestKeywords.some(k => queryLower.includes(k)) && 
+        requestKeywords.some(k => textLower.includes(k))) {
+      score += 0.3;
+    }
+    
+    return Math.min(1.0, score);
   }
 }
 
