@@ -282,20 +282,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 현재 타겟 표현 가져오기 (세션 매니저에서)
       let currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
-      console.log(`Session ${sessionId} current expression:`, currentTargetExpression);
       
       // 세션이 세션 매니저에 등록되지 않은 경우 기본 표현들로 초기화
       if (!currentTargetExpression) {
-        console.log(`Initializing session ${sessionId} with default expressions`);
         const allExpressions = await storage.getExpressions();
-        console.log('Available expressions:', allExpressions.length);
         if (allExpressions.length > 0) {
           const defaultExpressions = allExpressions.slice(0, 3);
           const expressionIds = defaultExpressions.map(expr => expr.id);
-          console.log('Using expressions:', expressionIds);
           await sessionManager.createSessionWithoutScenario(sessionId, expressionIds);
           currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
-          console.log('After initialization, current expression:', currentTargetExpression);
         }
       }
       
@@ -305,11 +300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get session and conversation history
       const session = await storage.getChatSessions();
-      console.log(`Looking for session ${sessionId}, found sessions:`, session.map(s => ({ id: s.id, isActive: s.isActive })));
       const activeSession = session.find(s => s.id === sessionId && s.isActive);
       if (!activeSession) {
         // 서버 재시작 등으로 인해 세션이 사라진 경우, 새로운 세션 생성
-        console.log(`Active session ${sessionId} not found, creating new session`);
         const newSession = await storage.createChatSession({
           scenario: "Conversation practice",
           isActive: true
@@ -329,7 +322,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           needRestart: true
         });
       }
-      console.log(`Found active session ${sessionId}`);
       
       const conversationHistory = await storage.getChatMessages(sessionId);
       
@@ -424,7 +416,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const progressData = sessionComplete ? 
         sessionManager.getFinalSessionResults(sessionId) : 
         sessionManager.getSessionProgress(sessionId);
-      console.log('Sending progress data:', progressData);
       
       res.json({
         response: botResponse,

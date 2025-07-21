@@ -130,15 +130,11 @@ class SessionManager {
 
   getCurrentExpression(sessionId: number): Expression | null {
     const sessionState = this.sessions.get(sessionId);
-    console.log(`SessionManager.getCurrentExpression for ${sessionId}:`, sessionState ? 'found' : 'not found');
     if (!sessionState || sessionState.isComplete) {
-      console.log(`Session ${sessionId} not found or complete`);
       return null;
     }
     
-    const currentExpression = sessionState.expressions[sessionState.currentExpressionIndex];
-    console.log(`Current expression for session ${sessionId}:`, currentExpression?.text);
-    return currentExpression;
+    return sessionState.expressions[sessionState.currentExpressionIndex];
   }
 
   getSessionProgress(sessionId: number): {
