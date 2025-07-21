@@ -1,9 +1,16 @@
 import OpenAI from "openai";
 import { Expression } from "../shared/schema.js";
+import { Pinecone } from '@pinecone-database/pinecone';
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY 
 });
+
+// Pinecone 클라이언트 초기화 (Python 코드와 동일)
+const pc = new Pinecone({ 
+  apiKey: process.env.PINECONE_API_KEY || ''
+});
+const pineconeIndex = pc.index("refit");
 
 export interface SearchResult {
   text: string;
@@ -55,40 +62,51 @@ Return only the clean search query (1 sentence or phrase). No explanations.
   }
 
   /**
-   * Python의 search_in_pinecone 함수 구현 (로컬 표현 검색으로 대체)
-   * Friends 스크립트에서 유사한 표현을 찾는 역할
+   * Python의 search_in_pinecone 함수 구현 - 실제 Pinecone 벡터 검색
    */
-  async searchInExpressions(queryText: string, expressions: Expression[], topK = 3): Promise<SearchResult[]> {
+  async searchInPinecone(queryText: string, topK = 3): Promise<SearchResult[]> {
     try {
-      // 실제 벡터 검색 대신 문자열 유사도 기반 검색
-      const results: SearchResult[] = [];
+      // 1. OpenAI 임베딩 생성 (Python 코드와 동일)
+      const embeddingResponse = await openai.embeddings.create({
+        input: [queryText],
+        model: "text-embedding-3-small"
+      });
       
-      for (const expr of expressions) {
-        // 검색 쿼리와 표현 간의 유사도 계산
-        const directSimilarity = this.calculateTextSimilarity(queryText.toLowerCase(), expr.text.toLowerCase());
-        // 단어 기반 유사도도 계산
-        const wordSimilarity = this.calculateWordSimilarity(queryText.toLowerCase(), expr.text.toLowerCase());
-        
-        // 두 유사도의 평균 사용
-        const combinedScore = (directSimilarity + wordSimilarity) / 2;
-        
-        results.push({
-          text: expr.text,
-          score: Math.min(0.99, combinedScore) // 최대값 0.99로 제한
-        });
+      const embedding = embeddingResponse.data[0].embedding;
+      
+      // 2. Pinecone에서 벡터 검색 (Python 코드와 동일)
+      const queryResponse = await pineconeIndex.query({
+        vector: embedding,
+        topK: topK,
+        includeMetadata: true
+      });
+      
+      console.log(`Pinecone query for "${queryText}":`, {
+        matchCount: queryResponse.matches?.length || 0,
+        matches: queryResponse.matches?.slice(0, 2).map(m => ({
+          text: m.metadata?.text,
+          score: m.score
+        }))
+      });
+      
+      // 3. 결과 포맷팅 (Python 코드와 동일)
+      const results: SearchResult[] = [];
+      for (const match of queryResponse.matches || []) {
+        if (match.metadata && match.metadata.text) {
+          results.push({
+            text: match.metadata.text as string,
+            score: match.score || 0
+          });
+        }
       }
       
-      // 점수순으로 정렬하고 topK개 반환
-      return results
-        .sort((a, b) => b.score - a.score)
-        .slice(0, topK);
-        
+      console.log(`Pinecone search results for "${queryText}":`, results);
+      return results;
+      
     } catch (error) {
-      console.error('Expression search error:', error);
-      return expressions.slice(0, topK).map(expr => ({
-        text: expr.text,
-        score: 0.5
-      }));
+      console.error('Pinecone search error:', error);
+      // 오류 시 빈 배열 반환 (Python 코드 스타일)
+      return [];
     }
   }
 
@@ -152,22 +170,25 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
   }
 
   /**
-   * Python의 practice_round 함수 구현 - Pinecone 스타일 유사 표현 검색
+   * Python의 practice_round 함수 구현 - 실제 Pinecone 검색 사용
    */
   async practiceRound(userInput: string, expressions: Expression[], topK = 1): Promise<PracticeRound> {
     try {
-      // 1. 사용자 표현을 기반으로 검색 쿼리 생성
+      // 1. 사용자 표현을 기반으로 검색 쿼리 생성 (Python 코드와 동일)
       const searchQuery = await this.generateSearchQuery(userInput);
       
-      // 2. 유사한 표현 검색 (Pinecone 역할)
-      const searchResults = await this.searchInExpressions(searchQuery, expressions, topK);
+      // 2. Pinecone에서 유사한 Friends 대사 검색 (Python 코드와 동일)
+      const searchResults = await this.searchInPinecone(searchQuery, topK);
       
-      // 3. 검색된 표현 중 가장 유사한 것을 타겟으로 사용 (사용자 표현과 다를 수 있음)
+      // 3. 검색된 Friends 대사 중 가장 유사한 것을 타겟으로 사용
       const targetSentence = searchResults.length > 0 ? searchResults[0].text : userInput;
       
-      console.log(`Original expression: "${userInput}" -> Target from search: "${targetSentence}"`);
+      console.log(`Original expression: "${userInput}"`);
+      console.log(`Search query: "${searchQuery}"`);
+      console.log(`Target from Pinecone: "${targetSentence}"`);
+      console.log(`Search results:`, searchResults);
       
-      // 4. 타겟 표현을 기반으로 연습 대화 생성
+      // 4. 타겟 표현을 기반으로 연습 대화 생성 (Python 코드와 동일)
       const dialogueScript = await this.generatePracticePrompt(targetSentence);
       
       return {
@@ -202,7 +223,7 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
   }
 
   /**
-   * 표현 미리보기 (Python의 practice_loop_with_preview 일부) - 병렬 처리로 최적화
+   * 표현 미리보기 (Python의 practice_loop_with_preview 일부) - 실제 Pinecone 검색 사용
    */
   async previewExpressions(expressions: Expression[]): Promise<{
     expression: Expression;
@@ -210,27 +231,28 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
     topResults: SearchResult[];
   }[]> {
     try {
-      // 병렬로 검색 쿼리 생성
-      const searchQueries = await Promise.all(
-        expressions.map(expr => this.generateSearchQuery(expr.text))
-      );
+      const previews = [];
       
-      // 각 표현에 대한 미리보기 생성
-      const previews = searchQueries.map((searchQuery, index) => {
-        const expr = expressions[index];
-        const topResults = this.searchInExpressions(searchQuery, expressions, 3);
+      for (const expr of expressions) {
+        // 1. 검색 쿼리 생성 (Python 코드와 동일)
+        const searchQuery = await this.generateSearchQuery(expr.text);
         
-        return {
+        // 2. Pinecone에서 상위 3개 유사 표현 검색 (Python 코드와 동일)
+        const topResults = await this.searchInPinecone(searchQuery, 3);
+        
+        previews.push({
           expression: expr,
           searchQuery,
-          topResults: topResults // 동기 처리로 변경
-        };
-      });
+          topResults
+        });
+        
+        console.log(`Preview for "${expr.text}":`, {
+          searchQuery,
+          topResults: topResults.map(r => `${r.text} (${r.score.toFixed(4)})`)
+        });
+      }
       
-      return await Promise.all(previews.map(async p => ({
-        ...p,
-        topResults: await p.topResults
-      })));
+      return previews;
       
     } catch (error) {
       console.error('Preview generation error:', error);
