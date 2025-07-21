@@ -125,6 +125,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertChatSessionSchema.parse(req.body);
       const session = await storage.createChatSession(validatedData);
+      
+      // 현재 세션에 대한 기본 표현들을 세션 매니저에 등록
+      // Original Chat에서 사용할 기본 표현들을 가져옴
+      const allExpressions = await storage.getExpressions();
+      if (allExpressions.length > 0) {
+        // 처음 몇 개 표현을 기본으로 사용
+        const defaultExpressions = allExpressions.slice(0, 3);
+        const expressionIds = defaultExpressions.map(expr => expr.id);
+        
+        // 세션 매니저에 세션 상태 등록 (시나리오 생성 없이)
+        await sessionManager.createSessionWithoutScenario(session.id, expressionIds);
+      }
+      
       res.json(session);
     } catch (error) {
       res.status(400).json({ message: "Invalid session data" });
@@ -256,17 +269,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 현재 타겟 표현 가져오기 (세션 매니저에서)
-      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+      let currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+      console.log(`Session ${sessionId} current expression:`, currentTargetExpression);
+      
+      // 세션이 세션 매니저에 등록되지 않은 경우 기본 표현들로 초기화
       if (!currentTargetExpression) {
-        return res.status(400).json({ message: "No active expression for this session" });
+        console.log(`Initializing session ${sessionId} with default expressions`);
+        const allExpressions = await storage.getExpressions();
+        console.log('Available expressions:', allExpressions.length);
+        if (allExpressions.length > 0) {
+          const defaultExpressions = allExpressions.slice(0, 3);
+          const expressionIds = defaultExpressions.map(expr => expr.id);
+          console.log('Using expressions:', expressionIds);
+          await sessionManager.createSessionWithoutScenario(sessionId, expressionIds);
+          currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+          console.log('After initialization, current expression:', currentTargetExpression);
+        }
+      }
+      
+      if (!currentTargetExpression) {
+        return res.status(400).json({ message: "No expressions available for practice" });
       }
       
       // Get session and conversation history
       const session = await storage.getChatSessions();
+      console.log(`Looking for session ${sessionId}, found sessions:`, session.map(s => ({ id: s.id, isActive: s.isActive })));
       const activeSession = session.find(s => s.id === sessionId && s.isActive);
       if (!activeSession) {
-        return res.status(404).json({ message: "Active session not found" });
+        // 서버 재시작 등으로 인해 세션이 사라진 경우, 새로운 세션 생성
+        console.log(`Active session ${sessionId} not found, creating new session`);
+        const newSession = await storage.createChatSession({
+          scenario: "Conversation practice",
+          isActive: true
+        });
+        
+        // 새 세션 ID로 세션 매니저 초기화
+        const allExpressions = await storage.getExpressions();
+        if (allExpressions.length > 0) {
+          const defaultExpressions = allExpressions.slice(0, 3);
+          const expressionIds = defaultExpressions.map(expr => expr.id);
+          await sessionManager.createSessionWithoutScenario(newSession.id, expressionIds);
+        }
+        
+        return res.json({
+          message: "Session restarted",
+          sessionId: newSession.id,
+          needRestart: true
+        });
       }
+      console.log(`Found active session ${sessionId}`);
       
       const conversationHistory = await storage.getChatMessages(sessionId);
       

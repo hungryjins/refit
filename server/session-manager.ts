@@ -56,6 +56,30 @@ class SessionManager {
     return sessionState;
   }
 
+  // Original Chat에서 사용할 시나리오 생성 없는 세션 생성
+  async createSessionWithoutScenario(sessionId: number, expressionIds: number[]): Promise<SessionState> {
+    const expressions = await storage.getExpressions();
+    const selectedExpressions = expressions.filter(expr => expressionIds.includes(expr.id));
+    
+    if (selectedExpressions.length === 0) {
+      throw new Error("No valid expressions found");
+    }
+
+    // 세션 상태만 저장 (메시지 생성은 하지 않음)
+    const sessionState: SessionState = {
+      sessionId: sessionId,
+      expressions: selectedExpressions,
+      currentExpressionIndex: 0,
+      completedExpressions: new Set(),
+      expressionResults: new Map(),
+      isComplete: false
+    };
+
+    this.sessions.set(sessionId, sessionState);
+    
+    return sessionState;
+  }
+
   async completeExpression(sessionId: number, expressionId: number, isCorrect: boolean = true): Promise<{
     nextExpression?: Expression;
     nextScenario?: string;
@@ -106,11 +130,15 @@ class SessionManager {
 
   getCurrentExpression(sessionId: number): Expression | null {
     const sessionState = this.sessions.get(sessionId);
+    console.log(`SessionManager.getCurrentExpression for ${sessionId}:`, sessionState ? 'found' : 'not found');
     if (!sessionState || sessionState.isComplete) {
+      console.log(`Session ${sessionId} not found or complete`);
       return null;
     }
     
-    return sessionState.expressions[sessionState.currentExpressionIndex];
+    const currentExpression = sessionState.expressions[sessionState.currentExpressionIndex];
+    console.log(`Current expression for session ${sessionId}:`, currentExpression?.text);
+    return currentExpression;
   }
 
   getSessionProgress(sessionId: number): {
