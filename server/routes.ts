@@ -126,16 +126,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertChatSessionSchema.parse(req.body);
       const session = await storage.createChatSession(validatedData);
       
-      // 현재 세션에 대한 기본 표현들을 세션 매니저에 등록
-      // Original Chat에서 사용할 기본 표현들을 가져옴
+      // Original Chat에서 사용할 기본 표현들을 세션 매니저에 등록
       const allExpressions = await storage.getExpressions();
       if (allExpressions.length > 0) {
         // 처음 몇 개 표현을 기본으로 사용
         const defaultExpressions = allExpressions.slice(0, 3);
         const expressionIds = defaultExpressions.map(expr => expr.id);
         
-        // 세션 매니저에 세션 상태 등록 (시나리오 생성 없이)
+        // 세션 매니저에 세션 상태 등록
         await sessionManager.createSessionWithoutScenario(session.id, expressionIds);
+        
+        // 첫 번째 표현으로 초기 시나리오 메시지 생성
+        const firstExpression = defaultExpressions[0];
+        const scenarioResponse = await openaiService.generateScenario(firstExpression);
+        
+        // 초기 메시지 저장
+        await storage.createChatMessage({
+          sessionId: session.id,
+          content: scenarioResponse.initialMessage,
+          isUser: false,
+          expressionUsed: null,
+          isCorrect: null,
+        });
       }
       
       res.json(session);
@@ -395,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             wrongMessage = `❌ ${evaluation.feedback || "다시 시도해보세요!"} 정답은 "${currentTargetExpression.text}"였습니다.`;
           }
           
-          botResponse = `${wrongMessage}\n\n🎯 새로운 표현 연습!\n\n${result.nextMessage}`;
+          botResponse = `${wrongMessage}\n\n${result.nextMessage}`;
           nextExpression = result.nextExpression;
         }
       }

@@ -114,7 +114,7 @@ class SessionManager {
     // 다음 시나리오 메시지 저장
     await storage.createChatMessage({
       sessionId: sessionId,
-      content: `\n🎯 새로운 표현 연습!\n\n${scenarioResponse.initialMessage}`,
+      content: scenarioResponse.initialMessage,
       isUser: false,
       expressionUsed: null,
       isCorrect: null,
@@ -123,7 +123,7 @@ class SessionManager {
     return {
       nextExpression: nextExpression,
       nextScenario: scenarioResponse.scenario,
-      nextMessage: `\n🎯 새로운 표현 연습!\n\n${scenarioResponse.initialMessage}`,
+      nextMessage: scenarioResponse.initialMessage,
       isSessionComplete: false
     };
   }
