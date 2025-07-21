@@ -12,8 +12,7 @@ export function useChatSession() {
   const createSessionMutation = useMutation({
     mutationFn: async (scenario: string): Promise<ChatSession> => {
       const data: InsertChatSession = { scenario };
-      const response = await apiRequest("POST", "/api/chat/sessions", data);
-      return response.json();
+      return await apiRequest("POST", "/api/chat/sessions", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });

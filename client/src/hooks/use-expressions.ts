@@ -11,8 +11,7 @@ export function useExpressions() {
 
   const updateExpressionMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: number } & Partial<InsertExpression>) => {
-      const response = await apiRequest("PATCH", `/api/expressions/${id}`, data);
-      return response.json();
+      return await apiRequest("PATCH", `/api/expressions/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
@@ -21,8 +20,7 @@ export function useExpressions() {
 
   const deleteExpressionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/expressions/${id}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/expressions/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });

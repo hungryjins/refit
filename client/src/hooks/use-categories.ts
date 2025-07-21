@@ -11,8 +11,7 @@ export function useCategories() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (data: InsertCategory) => {
-      const response = await apiRequest("POST", "/api/categories", data);
-      return response.json();
+      return await apiRequest("POST", "/api/categories", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -21,8 +20,7 @@ export function useCategories() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: number } & Partial<InsertCategory>) => {
-      const response = await apiRequest("PATCH", `/api/categories/${id}`, data);
-      return response.json();
+      return await apiRequest("PATCH", `/api/categories/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -31,8 +29,7 @@ export function useCategories() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/categories/${id}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });

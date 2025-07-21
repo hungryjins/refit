@@ -134,6 +134,7 @@ Changelog:
 - July 21, 2025. 3가지 연습 모드 시스템 구축: Original Chat, AI Conversation, Friends Script RAG
 - July 21, 2025. 사용자 응답 평가 개선 - 즉시 새로고침 방지, 한국어 피드백, 결과 표시 기능 추가
 - July 21, 2025. 실제 Pinecone 벡터 데이터베이스 통합 - Python 코드와 동일한 Friends 대사 검색 구현
+- July 21, 2025. response.json() 오류 완전 해결 - apiRequest 함수와 모든 컴포넌트/hooks 동기화 완료
 ```
 
 ## User Preferences
