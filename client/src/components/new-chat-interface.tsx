@@ -130,13 +130,11 @@ export default function NewChatInterface() {
   // Start session mutation
   const startSessionMutation = useMutation({
     mutationFn: async (expressionIds: number[]) => {
-      const response = await fetch('/api/chat/start-session', {
+      return await apiRequest('/api/chat/start-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selectedExpressions: expressionIds }),
       });
-      if (!response.ok) throw new Error('Failed to start session');
-      return response.json();
     },
     onSuccess: (data) => {
       console.log('Session started:', data);
@@ -172,7 +170,7 @@ export default function NewChatInterface() {
       sessionId: number;
       targetExpressionId?: number;
     }) => {
-      const response = await fetch('/api/chat/respond', {
+      return await apiRequest('/api/chat/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -181,8 +179,6 @@ export default function NewChatInterface() {
           targetExpressionId: targetExpressionId || selectedExpressions[0]?.id
         }),
       });
-      if (!response.ok) throw new Error('Failed to send message');
-      return response.json();
     },
     onSuccess: (data) => {
       console.log('Message response:', data);
@@ -276,7 +272,7 @@ export default function NewChatInterface() {
   // Update stats mutation for progress tracking
   const updateStatsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/stats', {
+      return await apiRequest('/api/stats', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -285,8 +281,6 @@ export default function NewChatInterface() {
           lastPracticeDate: new Date().toISOString(),
         }),
       });
-      if (!response.ok) throw new Error('Failed to update stats');
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });

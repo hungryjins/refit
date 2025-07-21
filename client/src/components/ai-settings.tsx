@@ -21,8 +21,7 @@ export default function AISettings() {
 
   const updateConfigMutation = useMutation({
     mutationFn: async (configData: typeof config) => {
-      const response = await apiRequest("POST", "/api/ai/config", configData);
-      return response.json();
+      return await apiRequest("POST", "/api/ai/config", configData);
     },
     onSuccess: () => {
       toast({
@@ -41,8 +40,7 @@ export default function AISettings() {
 
   const testEndpointMutation = useMutation({
     mutationFn: async (data: { message: string; customEndpoint: string }) => {
-      const response = await apiRequest("POST", "/api/ai/test", data);
-      return response.json();
+      return await apiRequest("POST", "/api/ai/test", data);
     },
     onSuccess: (data) => {
       toast({

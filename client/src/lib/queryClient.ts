@@ -57,7 +57,13 @@ export async function apiRequest(
   // JSON 응답인 경우 파싱해서 반환
   const contentType = res.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
-    return await res.json();
+    try {
+      return await res.json();
+    } catch (error) {
+      console.error('JSON parsing error:', error);
+      console.error('Response:', res);
+      throw new Error('Failed to parse JSON response');
+    }
   }
   
   return res;

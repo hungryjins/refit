@@ -123,27 +123,23 @@ export default function ChatInterface() {
         const sessionId = newSession.id;
         
         // Send user message
-        const userMessageResponse = await apiRequest("POST", "/api/chat/messages", {
+        const userMessage = await apiRequest("POST", "/api/chat/messages", {
           sessionId,
           content,
           isUser: true,
           expressionUsed: null,
           isCorrect: null,
         });
-        
-        const userMessage = await userMessageResponse.json();
         console.log("Created user message:", userMessage);
         return { sessionId, userMessage, originalContent: content };
       } else {
-        const userMessageResponse = await apiRequest("POST", "/api/chat/messages", {
+        const userMessage = await apiRequest("POST", "/api/chat/messages", {
           sessionId: activeSession.id,
           content,
           isUser: true,
           expressionUsed: null,
           isCorrect: null,
         });
-        
-        const userMessage = await userMessageResponse.json();
         console.log("Created user message:", userMessage);
         return { sessionId: activeSession.id, userMessage, originalContent: content };
       }
@@ -165,13 +161,11 @@ export default function ChatInterface() {
         console.log("User message content:", userMessage.content);
         console.log("Original content:", originalContent);
         
-        const responseObj = await apiRequest("POST", "/api/chat/respond", {
+        const response = await apiRequest("POST", "/api/chat/respond", {
           message: messageContent, // Use either the saved content or original content
           sessionId,
           selectedExpressions: !isSetupMode ? Array.from(selectedExpressions) : undefined,
         });
-        
-        const response = await responseObj.json();
         
         console.log("Session complete:", response.sessionComplete);
         console.log("Session stats:", response.sessionStats);

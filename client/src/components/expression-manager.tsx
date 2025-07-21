@@ -35,8 +35,7 @@ export default function ExpressionManager() {
 
   const addExpressionMutation = useMutation({
     mutationFn: async (data: InsertExpression) => {
-      const response = await apiRequest("POST", "/api/expressions", data);
-      return response.json();
+      return await apiRequest("POST", "/api/expressions", data);
     },
     onSuccess: () => {
       setNewExpression("");
@@ -58,8 +57,7 @@ export default function ExpressionManager() {
 
   const addCategoryMutation = useMutation({
     mutationFn: async (data: InsertCategory) => {
-      const response = await apiRequest("POST", "/api/categories", data);
-      return response.json();
+      return await apiRequest("POST", "/api/categories", data);
     },
     onSuccess: () => {
       setNewCategoryName("");
