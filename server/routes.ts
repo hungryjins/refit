@@ -247,18 +247,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle user responses and evaluation
   app.post("/api/chat/respond", async (req, res) => {
     try {
-      const { message, sessionId, targetExpressionId } = req.body;
+      const { message, sessionId } = req.body;
       
-      if (!message || !sessionId || !targetExpressionId) {
+      if (!message || !sessionId) {
         return res.status(400).json({ 
-          message: "Message, sessionId, and targetExpressionId are required"
+          message: "Message and sessionId are required"
         });
       }
       
-      // Get target expression
-      const targetExpression = await storage.getExpressionById(targetExpressionId);
-      if (!targetExpression) {
-        return res.status(404).json({ message: "Target expression not found" });
+      // 현재 타겟 표현 가져오기 (세션 매니저에서)
+      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
+      if (!currentTargetExpression) {
+        return res.status(400).json({ message: "No active expression for this session" });
       }
       
       // Get session and conversation history
@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create conversation context
       const context = {
-        targetExpression,
+        targetExpression: currentTargetExpression,
         scenario: activeSession.scenario || "Conversation practice",
         conversationHistory: conversationHistory.map(msg => ({
           role: msg.isUser ? 'user' as const : 'assistant' as const,
@@ -288,12 +288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expressionUsed: null,
         isCorrect: null,
       });
-      
-      // 현재 타겟 표현 가져오기
-      const currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
-      if (!currentTargetExpression) {
-        return res.status(400).json({ message: "No active expression for this session" });
-      }
       
       // 평가 수행
       const evaluation = await openaiService.evaluateResponse(message, currentTargetExpression, context);

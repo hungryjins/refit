@@ -165,18 +165,16 @@ export default function NewChatInterface() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ message, sessionId, targetExpressionId }: { 
+    mutationFn: async ({ message, sessionId }: { 
       message: string; 
       sessionId: number;
-      targetExpressionId?: number;
     }) => {
       return await apiRequest('/api/chat/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message, 
-          sessionId,
-          targetExpressionId: targetExpressionId || selectedExpressions[0]?.id
+          sessionId
         }),
       });
     },
@@ -258,7 +256,6 @@ export default function NewChatInterface() {
     sendMessageMutation.mutate({
       message: currentInput.trim(),
       sessionId: currentSession.id,
-      targetExpressionId: selectedExpressions[0]?.id,
     });
   };
 
