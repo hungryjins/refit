@@ -211,33 +211,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New session-based conversation system  
+  // Original Chat start session route
   app.post("/api/chat/start-session", async (req, res) => {
     try {
       const { selectedExpressions } = req.body;
       
       if (!selectedExpressions || selectedExpressions.length === 0) {
-        return res.status(400).json({ message: "No expressions selected" });
+        return res.status(400).json({ message: "At least one expression must be selected" });
       }
       
-      // SessionManager로 세션 생성
-      const sessionState = await sessionManager.createSession(selectedExpressions);
-      const currentExpression = sessionState.expressions[0];
+      // Create new chat session
+      const session = await storage.createChatSession({
+        scenario: "Conversation practice with selected expressions",
+        isActive: true
+      });
       
-      // 초기 메시지 가져오기
-      const messages = await storage.getChatMessages(sessionState.sessionId);
-      const initialMessage = messages[messages.length - 1];
+      // Get expressions by IDs
+      const allExpressions = await storage.getExpressions();
+      const expressions = allExpressions.filter(expr => selectedExpressions.includes(expr.id));
       
+      if (expressions.length === 0) {
+        return res.status(400).json({ message: "Invalid expression IDs provided" });
+      }
+      
+      // Initialize session manager with selected expressions  
+      await sessionManager.createSessionWithoutScenario(session.id, expressions.map(e => e.id));
+      
+      // Generate initial scenario for first expression
+      const firstExpression = expressions[0];
+      const scenarioResponse = await openaiService.generateScenario(firstExpression);
+      
+      // Create initial AI message
+      const initialMessage = await storage.createChatMessage({
+        sessionId: session.id,
+        content: scenarioResponse.initialMessage,
+        isUser: false,
+        expressionUsed: null,
+        isCorrect: null,
+      });
+
       res.json({
-        sessionId: sessionState.sessionId,
-        targetExpression: currentExpression,
-        scenario: initialMessage.content,
+        sessionId: session.id,
+        scenario: scenarioResponse.scenario,
         initialMessage: initialMessage.content,
         messageId: initialMessage.id,
         progress: {
           completed: 0,
-          total: sessionState.expressions.length,
-          expressions: sessionState.expressions
+          total: expressions.length,
+          expressions: expressions
         }
       });
       

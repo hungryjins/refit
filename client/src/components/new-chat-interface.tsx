@@ -305,6 +305,26 @@ export default function NewChatInterface() {
     setCurrentInput("");
   };
 
+  // Load active session on mount
+  useEffect(() => {
+    const loadActiveSession = async () => {
+      try {
+        const activeSession = await apiRequest('/api/chat/active');
+        if (activeSession && activeSession.isActive) {
+          setCurrentSession(activeSession);
+          
+          // Load messages for the active session
+          const messages = await apiRequest(`/api/chat/sessions/${activeSession.id}/messages`);
+          setMessages(messages);
+        }
+      } catch (error) {
+        console.log('No active session found');
+      }
+    };
+    
+    loadActiveSession();
+  }, []);
+
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
