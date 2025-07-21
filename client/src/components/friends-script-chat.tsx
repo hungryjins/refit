@@ -209,24 +209,59 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
               </div>
             ) : (
               preview.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="font-medium">표현: "{item.expression.text}"</div>
-                  <div className="text-sm text-gray-600">🧠 GPT 쿼리: {item.searchQuery}</div>
-                  <div className="space-y-1">
-                    {item.topResults && item.topResults.length > 0 ? (
-                      item.topResults.map((result, i) => (
-                        <div key={i} className="text-sm pl-4">
-                          🔹 Top {i + 1}: {result.text} (score: {result.score.toFixed(4)})
+                <div key={index} className="space-y-3">
+                  <div className="font-medium">📖 표현: "{item.expression.text}"</div>
+                  <div className="text-sm text-gray-600">🔍 검색 쿼리: "{item.searchQuery}"</div>
+                  
+                  {/* 목표 답안 (탑1 결과) 강조 표시 */}
+                  {item.topResults && item.topResults.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-400">
+                        <div className="text-sm font-medium text-green-800 mb-1">🎯 목표 답안 (자동 설정):</div>
+                        <div className="font-semibold text-green-700">"{item.topResults[0].text}"</div>
+                        <div className="text-xs text-green-600 mt-1">
+                          유사도: {(item.topResults[0].score * 100).toFixed(1)}% (최고 일치)
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-sm pl-4 text-gray-500">검색 결과가 없습니다.</div>
-                    )}
-                  </div>
-                  {index < preview.length - 1 && <Separator />}
+                      </div>
+                      
+                      {/* 참고용 다른 결과들 (접을 수 있음) */}
+                      {item.topResults.length > 1 && (
+                        <details className="text-sm">
+                          <summary className="text-gray-500 cursor-pointer hover:text-gray-700">
+                            다른 유사 표현 보기 (참고용)
+                          </summary>
+                          <div className="mt-2 space-y-1">
+                            {item.topResults.slice(1).map((result, i) => (
+                              <div key={i} className="bg-gray-50 p-2 rounded text-xs text-gray-600">
+                                #{i + 2}: "{result.text}" (유사도: {(result.score * 100).toFixed(1)}%)
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm pl-4 text-gray-500">검색 결과가 없습니다.</div>
+                  )}
+                  
+                  {index < preview.length - 1 && <Separator className="my-4" />}
                 </div>
               ))
             )}
+          </CardContent>
+        </Card>
+
+        {/* 연습 방법 안내 */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-4">
+            <div className="text-sm text-blue-800">
+              <div className="font-medium mb-2">🎯 연습 방법:</div>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>각 표현마다 가장 유사한 Friends 대사가 <strong>목표 답안</strong>으로 자동 설정됩니다</li>
+                <li>대화 시나리오를 읽고 목표 답안을 정확히 말해보세요</li>
+                <li>AI가 정답 여부를 한국어로 피드백해드립니다</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
 
@@ -309,31 +344,33 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-sm text-gray-600">
-                목표 표현: "{practiceData.targetSentence}"
+            <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-400">
+              <div className="text-sm font-medium text-green-800 mb-1">🎯 목표 답안:</div>
+              <div className="font-semibold text-green-700">"{practiceData.targetSentence}"</div>
+              <div className="text-xs text-green-600 mt-1">
+                이 문장을 정확히 말해보세요!
               </div>
+            </div>
               
-              <div className="flex gap-2">
-                <Input
-                  value={userResponse}
-                  onChange={(e) => setUserResponse(e.target.value)}
-                  placeholder="Your response..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmitResponse();
-                    }
-                  }}
-                  disabled={evaluateMutation.isPending}
-                />
-                <Button 
-                  onClick={handleSubmitResponse}
-                  disabled={!userResponse.trim() || evaluateMutation.isPending}
-                >
-                  {evaluateMutation.isPending ? "평가 중..." : <Send className="h-4 w-4" />}
-                </Button>
-              </div>
+            <div className="flex gap-2">
+              <Input
+                value={userResponse}
+                onChange={(e) => setUserResponse(e.target.value)}
+                placeholder="Your response..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmitResponse();
+                  }
+                }}
+                disabled={evaluateMutation.isPending}
+              />
+              <Button 
+                onClick={handleSubmitResponse}
+                disabled={!userResponse.trim() || evaluateMutation.isPending}
+              >
+                {evaluateMutation.isPending ? "평가 중..." : <Send className="h-4 w-4" />}
+              </Button>
             </div>
           </CardContent>
         </Card>

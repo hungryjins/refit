@@ -139,6 +139,7 @@ Changelog:
 - July 21, 2025. 사용자 선택 표현 기반 세션 시작 구현 - 기본 표현 자동 설정 제거, START_SESSION 텍스트 제거
 - July 21, 2025. Original Chat 초기 메시지 생성 완전 구현 - GPT 시나리오 자동 생성 및 메시지 저장 시스템 완성
 - July 21, 2025. apiRequest import 오류 해결 및 세션 생성 완전 수정 - 백엔드 API 정상 작동 확인
+- July 21, 2025. Friends Script 연습 모드 UI 개선 - 유사도 탑1 결과를 목표 답안으로 명확히 표시, 사용자 이해도 향상
 ```
 
 ## User Preferences
