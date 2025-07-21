@@ -352,7 +352,7 @@ export default function ChatInterface() {
     // Generate initial AI scenario message
     try {
       const response = await apiRequest("POST", "/api/chat/respond", {
-        message: "START_SESSION", // Special message to trigger initial scenario
+        message: "", // Special message to trigger initial scenario
         sessionId: newSession.id,
         selectedExpressions: Array.from(selectedExpressions),
       });

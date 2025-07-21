@@ -136,6 +136,7 @@ Changelog:
 - July 21, 2025. 실제 Pinecone 벡터 데이터베이스 통합 - Python 코드와 동일한 Friends 대사 검색 구현
 - July 21, 2025. response.json() 오류 완전 해결 - apiRequest 함수와 모든 컴포넌트/hooks 동기화 완료
 - July 21, 2025. Original Chat 자동시작 및 중복 메시지 문제 해결 - 깔끔한 대화 시작 구현
+- July 21, 2025. 사용자 선택 표현 기반 세션 시작 구현 - 기본 표현 자동 설정 제거, START_SESSION 텍스트 제거
 ```
 
 ## User Preferences

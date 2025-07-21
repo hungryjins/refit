@@ -126,29 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertChatSessionSchema.parse(req.body);
       const session = await storage.createChatSession(validatedData);
       
-      // Original Chat에서 사용할 기본 표현들을 세션 매니저에 등록
-      const allExpressions = await storage.getExpressions();
-      if (allExpressions.length > 0) {
-        // 처음 몇 개 표현을 기본으로 사용
-        const defaultExpressions = allExpressions.slice(0, 3);
-        const expressionIds = defaultExpressions.map(expr => expr.id);
-        
-        // 세션 매니저에 세션 상태 등록
-        await sessionManager.createSessionWithoutScenario(session.id, expressionIds);
-        
-        // 첫 번째 표현으로 초기 시나리오 메시지 생성
-        const firstExpression = defaultExpressions[0];
-        const scenarioResponse = await openaiService.generateScenario(firstExpression);
-        
-        // 초기 메시지 저장
-        await storage.createChatMessage({
-          sessionId: session.id,
-          content: scenarioResponse.initialMessage,
-          isUser: false,
-          expressionUsed: null,
-          isCorrect: null,
-        });
-      }
+      // Original Chat는 수동으로 시작할 때만 표현 설정함 (기본 자동 설정 제거)
       
       res.json(session);
     } catch (error) {
@@ -283,20 +261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 현재 타겟 표현 가져오기 (세션 매니저에서)
       let currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
       
-      // 세션이 세션 매니저에 등록되지 않은 경우 기본 표현들로 초기화
+      // 세션이 세션 매니저에 등록되지 않은 경우 오류 반환 (사용자가 표현을 선택해야 함)
       if (!currentTargetExpression) {
-        const allExpressions = await storage.getExpressions();
-        if (allExpressions.length > 0) {
-          const defaultExpressions = allExpressions.slice(0, 3);
-          const expressionIds = defaultExpressions.map(expr => expr.id);
-          await sessionManager.createSessionWithoutScenario(sessionId, expressionIds);
-          currentTargetExpression = sessionManager.getCurrentExpression(sessionId);
-        }
+        return res.status(400).json({ 
+          message: "세션을 시작하려면 먼저 연습할 표현을 선택해주세요.",
+          needExpressionSelection: true
+        });
       }
       
-      if (!currentTargetExpression) {
-        return res.status(400).json({ message: "No expressions available for practice" });
-      }
+
       
       // Get session and conversation history
       const session = await storage.getChatSessions();
@@ -308,13 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: true
         });
         
-        // 새 세션 ID로 세션 매니저 초기화
-        const allExpressions = await storage.getExpressions();
-        if (allExpressions.length > 0) {
-          const defaultExpressions = allExpressions.slice(0, 3);
-          const expressionIds = defaultExpressions.map(expr => expr.id);
-          await sessionManager.createSessionWithoutScenario(newSession.id, expressionIds);
-        }
+        // 새 세션은 표현 선택 없이 생성됨
         
         return res.json({
           message: "Session restarted",
