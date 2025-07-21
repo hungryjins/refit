@@ -117,12 +117,12 @@ then output exactly '👉 Your turn to speak:' on the final line.`;
    * Python의 evaluate_response 함수 구현
    */
   async evaluateResponse(userResponse: string, targetSentence: string): Promise<string> {
-    const systemPrompt = "You are a friendly language coach.";
-    const userPrompt = `Target sentence: "${targetSentence}"
-Student response: "${userResponse}"
+    const systemPrompt = "You are a friendly English language coach. Please respond in Korean.";
+    const userPrompt = `목표 표현: "${targetSentence}"
+학생 답변: "${userResponse}"
 
-If the student used the target sentence correctly, reply ONLY with 'Correct!'. 
-Otherwise, reply with 'Incorrect:' followed by a brief note.`;
+학생이 목표 표현을 올바르게 사용했다면 "정답!"이라고만 답하세요.
+그렇지 않으면 "틀렸습니다:" 뒤에 간단한 설명을 한국어로 해주세요.`;
 
     try {
       const response = await openai.chat.completions.create({
@@ -135,11 +135,11 @@ Otherwise, reply with 'Incorrect:' followed by a brief note.`;
       });
       
       const llmOutput = response.choices[0].message.content?.trim() || "";
-      // Python 코드처럼 첫 번째 줄만 반환
+      // 첫 번째 줄만 반환
       return llmOutput.split('\n')[0].trim();
     } catch (error) {
       console.error('Response evaluation error:', error);
-      return "Incorrect: 평가 중 오류가 발생했습니다.";
+      return "틀렸습니다: 평가 중 오류가 발생했습니다.";
     }
   }
 
@@ -181,11 +181,11 @@ Otherwise, reply with 'Incorrect:' followed by a brief note.`;
     feedback: string;
   }> {
     const evaluation = await this.evaluateResponse(userResponse, targetSentence);
-    const isCorrect = evaluation === "Correct!";
+    const isCorrect = evaluation === "정답!" || evaluation === "Correct!";
     
     return {
       isCorrect,
-      feedback: isCorrect ? "✅ " + evaluation : "❌ " + evaluation
+      feedback: evaluation
     };
   }
 

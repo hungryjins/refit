@@ -106,27 +106,44 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
       });
     },
     onSuccess: (data: { isCorrect: boolean; feedback: string }) => {
+      if (!practiceData || !currentExpression) return;
+      
       // 결과 저장
       setPracticeResults(prev => [...prev, {
         expression: currentExpression.text,
-        target: practiceData!.targetSentence,
+        target: practiceData.targetSentence,
         isCorrect: data.isCorrect,
         userResponse: userResponse
       }]);
 
-      // 다음 표현으로 이동
+      // 피드백 표시
+      toast({
+        title: data.isCorrect ? "정답!" : "틀렸습니다",
+        description: data.feedback,
+        variant: data.isCorrect ? "default" : "destructive"
+      });
+
+      // 입력 필드 클리어
+      setUserResponse("");
+
+      // 다음 표현으로 이동 (즉시 새로고침 방지)
       const nextIndex = currentExpressionIndex + 1;
       if (nextIndex < selectedExpressions.length) {
-        setCurrentExpressionIndex(nextIndex);
-        setPracticeData(null);
-        setUserResponse("");
-        // 다음 연습 자동 시작
+        // 잠시 대기 후 다음 연습으로 이동
         setTimeout(() => {
-          startPracticeMutation.mutate(selectedExpressions[nextIndex]);
-        }, 1000);
+          setCurrentExpressionIndex(nextIndex);
+          setPracticeData(null);
+          // 다음 연습 자동 시작
+          setTimeout(() => {
+            startPracticeMutation.mutate(selectedExpressions[nextIndex]);
+          }, 500);
+        }, 2000); // 2초 대기
       } else {
-        setCurrentExpressionIndex(nextIndex);
-        setPracticeData(null);
+        // 모든 연습 완료
+        setTimeout(() => {
+          setCurrentExpressionIndex(nextIndex);
+          setPracticeData(null);
+        }, 2000);
       }
     },
     onError: () => {
@@ -280,47 +297,87 @@ export default function FriendsScriptChat({ selectedExpressions, onBack }: Frien
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Input
-                value={userResponse}
-                onChange={(e) => setUserResponse(e.target.value)}
-                placeholder="Your response..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmitResponse();
-                  }
-                }}
-                disabled={evaluateMutation.isPending}
-              />
+            <div className="space-y-2">
+              <div className="text-sm text-gray-600">
+                목표 표현: "{practiceData.targetSentence}"
+              </div>
+              
+              <div className="flex gap-2">
+                <Input
+                  value={userResponse}
+                  onChange={(e) => setUserResponse(e.target.value)}
+                  placeholder="Your response..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmitResponse();
+                    }
+                  }}
+                  disabled={evaluateMutation.isPending}
+                />
+                <Button 
+                  onClick={handleSubmitResponse}
+                  disabled={!userResponse.trim() || evaluateMutation.isPending}
+                >
+                  {evaluateMutation.isPending ? "평가 중..." : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!practiceData && !startPracticeMutation.isPending && !evaluateMutation.isPending && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <div className="space-y-3">
+              <div className="text-lg font-semibold">
+                표현 {currentExpressionIndex + 1} / {selectedExpressions.length}
+              </div>
               <Button 
-                onClick={handleSubmitResponse}
-                disabled={!userResponse.trim() || evaluateMutation.isPending}
+                onClick={() => startPracticeMutation.mutate(currentExpression)}
+                size="lg"
               >
-                <Send className="h-4 w-4" />
+                연습 시작: "{currentExpression?.text}"
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {!practiceData && !startPracticeMutation.isPending && (
+      {(startPracticeMutation.isPending || evaluateMutation.isPending) && (
         <Card>
           <CardContent className="text-center py-8">
-            <Button 
-              onClick={() => startPracticeMutation.mutate(currentExpression)}
-              size="lg"
-            >
-              연습 시작: "{currentExpression?.text}"
-            </Button>
+            <div className="animate-pulse">
+              {startPracticeMutation.isPending ? "연습 준비 중..." : "응답 평가 중..."}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {startPracticeMutation.isPending && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <div className="animate-pulse">연습 준비 중...</div>
+      {/* 최근 결과 표시 */}
+      {practiceResults.length > 0 && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-sm">최근 결과</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {practiceResults.slice(-3).map((result, index) => (
+                <div key={index} className={`flex items-center justify-between p-2 rounded ${
+                  result.isCorrect ? 'bg-green-50' : 'bg-red-50'
+                }`}>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">"{result.expression}"</div>
+                    <div className="text-xs text-gray-600">목표: {result.target}</div>
+                    <div className="text-xs text-gray-500">답변: {result.userResponse}</div>
+                  </div>
+                  <div className={`text-lg ${result.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    {result.isCorrect ? '✅' : '❌'}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
