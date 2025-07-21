@@ -316,22 +316,28 @@ export default function NewChatInterface() {
   useEffect(() => {
     const loadActiveSession = async () => {
       try {
+        console.log('Checking for active session...');
         const activeSession = await apiRequest('/api/chat/active');
+        console.log('Active session response:', activeSession);
+        
         if (activeSession && activeSession.isActive) {
+          console.log('Setting current session:', activeSession);
           setCurrentSession(activeSession);
           
           // Load messages for the active session
           const messages = await apiRequest(`/api/chat/sessions/${activeSession.id}/messages`);
+          console.log('Loaded messages:', messages);
           setMessages(messages);
           
-          // If no messages exist, this session might need initialization
+          // If no messages exist, don't reset - let user start new session manually
           if (messages.length === 0) {
-            console.log('Active session found but no messages - session may need restart');
-            setCurrentSession(null); // Reset to allow new session creation
+            console.log('Active session found but no messages - keeping session active');
           }
+        } else {
+          console.log('No active session found');
         }
       } catch (error) {
-        console.log('No active session found');
+        console.log('Error checking active session:', error);
       }
     };
     
