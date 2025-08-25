@@ -246,7 +246,7 @@ export default function ProgressRepository() {
                           <ProgressRing percentage={accuracy} />
                           <div>
                             <p className="font-semibold text-gray-800">"{expr.text}"</p>
-                            <p className="text-sm text-gray-600">{expr.category || "General"} category</p>
+                            <p className="text-sm text-gray-600">{expr.categoryId || "General"} category</p>
                             <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
                               <span>✅ {expr.correctCount} correct</span>
                               <span>❌ {expr.totalCount - expr.correctCount} incorrect</span>
@@ -276,7 +276,7 @@ export default function ProgressRepository() {
                           <div key={expr.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                             <div>
                               <p className="text-sm font-medium text-gray-800">"{expr.text}"</p>
-                              <p className="text-xs text-gray-600">{expr.category || "General"} category</p>
+                              <p className="text-xs text-gray-600">{expr.categoryId || "General"} category</p>
                             </div>
                             <div className="text-xs text-yellow-600 font-medium">Ready to practice</div>
                           </div>

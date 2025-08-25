@@ -1,29 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api, queryClient } from "@/lib/api";
 import type { Expression, InsertExpression } from "@shared/schema";
 
 export function useExpressions() {
-  const queryClient = useQueryClient();
-  
-  const query = useQuery<Expression[]>({
-    queryKey: ["/api/expressions"],
+  const query = useQuery({
+    queryKey: ["expressions"],
+    queryFn: () => api.expressions.getAll(),
   });
 
   const updateExpressionMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number } & Partial<InsertExpression>) => {
-      return await apiRequest("PATCH", `/api/expressions/${id}`, data);
+    mutationFn: async ({ id, ...data }: { id: string } & Partial<InsertExpression>) => {
+      return await api.expressions.update(id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
+      queryClient.invalidateQueries({ queryKey: ["expressions"] });
     },
   });
 
   const deleteExpressionMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/expressions/${id}`);
+    mutationFn: async (id: string) => {
+      return await api.expressions.delete(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
+      queryClient.invalidateQueries({ queryKey: ["expressions"] });
     },
   });
 
@@ -32,7 +31,7 @@ export function useExpressions() {
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
-    invalidate: () => queryClient.invalidateQueries({ queryKey: ["/api/expressions"] }),
+    invalidate: () => queryClient.invalidateQueries({ queryKey: ["expressions"] }),
     updateExpression: updateExpressionMutation.mutate,
     deleteExpression: deleteExpressionMutation.mutate,
     isUpdating: updateExpressionMutation.isPending,

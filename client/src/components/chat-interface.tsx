@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { api, queryClient as globalQueryClient } from "@/lib/api";
 import { useChatSession } from "@/hooks/use-chat";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
@@ -103,7 +103,7 @@ export default function ChatInterface() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
-  const [selectedExpressions, setSelectedExpressions] = useState<Set<number>>(
+  const [selectedExpressions, setSelectedExpressions] = useState<Set<string>>(
     new Set()
   );
   const [isSetupMode, setIsSetupMode] = useState(true);
@@ -112,15 +112,19 @@ export default function ChatInterface() {
   const [sessionResults, setSessionResults] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { t } = useLanguage();
 
   const { activeSession, createSession } = useChatSession();
   const { expressions } = useExpressions();
   const { categories } = useCategories();
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: [`/api/chat/sessions/${activeSession?.id}/messages`],
+  const { data: messages = [] } = useQuery({
+    queryKey: [`chat-messages-${activeSession?.id}`],
+    queryFn: async () => {
+      if (!activeSession?.id) return [];
+      const response = await api.chat.getSession(activeSession.id);
+      return response.data || [];
+    },
     enabled: !!activeSession?.id,
   });
 
@@ -129,27 +133,32 @@ export default function ChatInterface() {
       console.log("sendMessageMutation called with content:", content);
 
       if (!activeSession) {
-        const newSession = await createSession("Coffee shop conversation");
+        const newSession = await createSession();
         const sessionId = newSession.id;
 
-        // Send user message
-        const userMessage = await apiRequest("POST", "/api/chat/messages", {
+        // Send user message - using placeholder for now
+        const userMessage = {
+          id: String(Date.now()),
           sessionId,
           content,
           isUser: true,
           expressionUsed: null,
           isCorrect: null,
-        });
+          createdAt: new Date()
+        };
         console.log("Created user message:", userMessage);
         return { sessionId, userMessage, originalContent: content };
       } else {
-        const userMessage = await apiRequest("POST", "/api/chat/messages", {
+        // Send user message - using placeholder for now
+        const userMessage = {
+          id: String(Date.now()),
           sessionId: activeSession.id,
           content,
           isUser: true,
           expressionUsed: null,
           isCorrect: null,
-        });
+          createdAt: new Date()
+        };
         console.log("Created user message:", userMessage);
         return {
           sessionId: activeSession.id,
@@ -177,33 +186,27 @@ export default function ChatInterface() {
         console.log("User message content:", userMessage.content);
         console.log("Original content:", originalContent);
 
-        const response = await apiRequest("POST", "/api/chat/respond", {
+        const response = await api.chat.respond({
           message: messageContent, // Use either the saved content or original content
           sessionId,
-          selectedExpressions: !isSetupMode
-            ? Array.from(selectedExpressions)
-            : undefined,
         });
 
-        console.log("Session complete:", response.sessionComplete);
-        console.log("Session stats:", response.sessionStats);
+        console.log("Session complete:", response.data?.sessionComplete);
+        console.log("Session stats:", response.data?.sessionStats);
 
         // Handle expression detection and update UI
-        if (response.detectedExpression) {
-          const expressionId = response.detectedExpression.id;
-          const isCorrect = response.detectedExpression.isCorrect;
+        if (response.data?.detectedExpression) {
+          const expressionId = response.data.detectedExpression;
+          const isCorrect = response.data.isCorrect;
 
           // Update the message with expression info only if userMessage has valid id
+          // Message update placeholder - would need API endpoint
           if (userMessage && userMessage.id) {
             try {
-              await apiRequest(
-                "PATCH",
-                `/api/chat/messages/${userMessage.id}`,
-                {
-                  expressionUsed: expressionId,
-                  isCorrect: isCorrect,
-                }
-              );
+              // await api.chat.updateMessage(userMessage.id, {
+              //   expressionUsed: expressionId,
+              //   isCorrect: isCorrect,
+              // });
             } catch (error) {
               console.log("Failed to update message, but continuing...");
             }
@@ -211,46 +214,45 @@ export default function ChatInterface() {
 
           // Show appropriate toast
           if (isCorrect) {
+            const expr = expressions.find(e => e.id === expressionId);
             toast({
               title: "✅ Perfect!",
-              description: `You correctly used the expression "${response.detectedExpression.text}"!`,
+              description: `You correctly used the expression "${expr?.text || expressionId}"!`,
               variant: "default",
             });
           }
         }
 
         // Handle failed expression (when no expression was detected but one was marked as failed)
-        if (response.failedExpression) {
-          const expressionId = response.failedExpression.id;
+        if (response.data?.failedExpression) {
+          const expressionId = response.data.failedExpression;
 
           // Update the message with failed expression info
+          // Message update placeholder - would need API endpoint
           if (userMessage && userMessage.id) {
             try {
-              await apiRequest(
-                "PATCH",
-                `/api/chat/messages/${userMessage.id}`,
-                {
-                  expressionUsed: expressionId,
-                  isCorrect: false,
-                }
-              );
+              // await api.chat.updateMessage(userMessage.id, {
+              //   expressionUsed: expressionId,
+              //   isCorrect: false,
+              // });
             } catch (error) {
               console.log("Failed to update message, but continuing...");
             }
           }
 
           // Show failure toast
+          const expr = expressions.find(e => e.id === expressionId);
           toast({
             title: "❌ Incorrect",
-            description: `You failed to use the expression "${response.failedExpression.text}".`,
+            description: `You failed to use the expression "${expr?.text || expressionId}".`,
             variant: "destructive",
           });
         }
 
         // Check if session is complete
-        if (response.sessionComplete) {
+        if (response.data?.sessionComplete) {
           // Get session results from the response
-          const sessionStats = response.sessionStats || {
+          const sessionStats = response.data.sessionStats || {
             totalExpressions: Array.from(selectedExpressions).length,
             completedExpressions: Array.from(selectedExpressions).length,
             correctUsages: Array.from(selectedExpressions).length,
@@ -272,11 +274,11 @@ export default function ChatInterface() {
         }
 
         // AI response is already saved by the backend, so refresh immediately
-        queryClient.invalidateQueries({
-          queryKey: [`/api/chat/sessions/${sessionId}/messages`],
+        globalQueryClient.invalidateQueries({
+          queryKey: [`chat-messages-${sessionId}`],
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        globalQueryClient.invalidateQueries({ queryKey: ["expressions"] });
+        globalQueryClient.invalidateQueries({ queryKey: ["stats"] });
 
         // Add a small delay before stopping typing indicator for better UX
         setTimeout(() => {
@@ -295,10 +297,10 @@ export default function ChatInterface() {
       }
 
       // Refresh messages and session data after user message is sent
-      queryClient.invalidateQueries({
-        queryKey: [`/api/chat/sessions/${sessionId}/messages`],
+      globalQueryClient.invalidateQueries({
+        queryKey: [`chat-messages-${sessionId}`],
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
+      globalQueryClient.invalidateQueries({ queryKey: ["chat-active"] });
     },
     onError: () => {
       toast({
@@ -347,7 +349,7 @@ export default function ChatInterface() {
     setSelectedExpressions(new Set());
   };
 
-  const handleExpressionToggle = (expressionId: number) => {
+  const handleExpressionToggle = (expressionId: string) => {
     const newSelected = new Set(selectedExpressions);
     if (newSelected.has(expressionId)) {
       newSelected.delete(expressionId);
@@ -380,21 +382,19 @@ export default function ChatInterface() {
     setIsSetupMode(false);
 
     // Create new session
-    const categoryName = selectedCategory?.name || "Practice";
-    const newSession = await createSession(`${categoryName} Practice`);
+    const newSession = await createSession();
 
     // Generate initial AI scenario message
     try {
-      const response = await apiRequest("POST", "/api/chat/respond", {
+      const response = await api.chat.respond({
         message: "", // Special message to trigger initial scenario
         sessionId: newSession.id,
-        selectedExpressions: Array.from(selectedExpressions),
       });
 
-      queryClient.invalidateQueries({
-        queryKey: [`/api/chat/sessions/${newSession.id}/messages`],
+      globalQueryClient.invalidateQueries({
+        queryKey: [`chat-messages-${newSession.id}`],
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
+      globalQueryClient.invalidateQueries({ queryKey: ["chat-active"] });
     } catch (error) {
       toast({
         title: "Error",
@@ -411,7 +411,7 @@ export default function ChatInterface() {
   };
 
   const expressionsUsed = messages.filter(
-    (m) => m.isUser && m.expressionUsed
+    (m: ChatMessage) => m.isUser && m.expressionUsed
   ).length;
   const totalExpressions = Array.from(selectedExpressions).length;
 
@@ -440,7 +440,7 @@ export default function ChatInterface() {
               📚 {t("chat.category.selection")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map((category, index) => (
+              {categories.map((category: Category, index: number) => (
                 <motion.div
                   key={category.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -656,7 +656,7 @@ export default function ChatInterface() {
         {/* Chat Messages */}
         <div className="h-96 overflow-y-auto p-4 space-y-4">
           <AnimatePresence>
-            {messages.map((msg) => {
+            {messages.map((msg: ChatMessage) => {
               const expression = msg.expressionUsed
                 ? expressions.find((e) => e.id === msg.expressionUsed)
                 : undefined;
@@ -724,7 +724,7 @@ export default function ChatInterface() {
               if (!expr) return null;
 
               const usedMessage = messages.find(
-                (m) => m.isUser && m.expressionUsed === exprId
+                (m: ChatMessage) => m.isUser && m.expressionUsed === exprId
               );
 
               return (

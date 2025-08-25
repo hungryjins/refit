@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { api } from "@/lib/api";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
 import { useLanguage } from "@/contexts/language-context";
@@ -44,8 +44,8 @@ import type {
 
 export default function ExpressionManager() {
   const [newExpression, setNewExpression] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(
+    undefined
   );
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryIcon, setNewCategoryIcon] = useState("📝");
@@ -58,7 +58,7 @@ export default function ExpressionManager() {
   );
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editText, setEditText] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
+  const [editCategoryId, setEditCategoryId] = useState<string | undefined>(undefined);
   const [editCategoryName, setEditCategoryName] = useState("");
   const [editCategoryIcon, setEditCategoryIcon] = useState("");
   const [editCategoryColor, setEditCategoryColor] = useState("");
@@ -76,11 +76,11 @@ export default function ExpressionManager() {
 
   const addExpressionMutation = useMutation({
     mutationFn: async (data: InsertExpression) => {
-      return await apiRequest("POST", "/api/expressions", data);
+      return await api.expressions.create(data);
     },
     onSuccess: () => {
       setNewExpression("");
-      setSelectedCategoryId(null);
+      setSelectedCategoryId(undefined);
       refetch();
       toast({
         title: "Success! 🎉",
@@ -91,29 +91,6 @@ export default function ExpressionManager() {
       toast({
         title: "Error",
         description: "Failed to add expression",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const addCategoryMutation = useMutation({
-    mutationFn: async (data: InsertCategory) => {
-      return await apiRequest("POST", "/api/categories", data);
-    },
-    onSuccess: () => {
-      setNewCategoryName("");
-      setNewCategoryIcon("📝");
-      setNewCategoryColor("from-blue-500 to-purple-500");
-      setIsCreateCategoryOpen(false);
-      toast({
-        title: "Success! 🎉",
-        description: "Category created successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create category",
         variant: "destructive",
       });
     },
@@ -145,10 +122,21 @@ export default function ExpressionManager() {
       return;
     }
 
-    addCategoryMutation.mutate({
+    createCategory({
       name: newCategoryName.trim(),
       icon: newCategoryIcon,
       color: newCategoryColor,
+    });
+
+    // UI 상태 초기화
+    setNewCategoryName("");
+    setNewCategoryIcon("📝");
+    setNewCategoryColor("from-blue-500 to-purple-500");
+    setIsCreateCategoryOpen(false);
+
+    toast({
+      title: "Success! 🎉",
+      description: "Category created successfully",
     });
   };
 
@@ -169,7 +157,7 @@ export default function ExpressionManager() {
 
     setEditingExpression(null);
     setEditText("");
-    setEditCategoryId(null);
+    setEditCategoryId(undefined);
 
     toast({
       title: "Success! 🎉",
@@ -177,7 +165,7 @@ export default function ExpressionManager() {
     });
   };
 
-  const handleDeleteExpression = (id: number) => {
+  const handleDeleteExpression = (id: string) => {
     deleteExpression(id);
     toast({
       title: "Deleted 🗑️",
@@ -213,7 +201,7 @@ export default function ExpressionManager() {
     });
   };
 
-  const handleDeleteCategory = (id: number) => {
+  const handleDeleteCategory = (id: string) => {
     deleteCategory(id);
     toast({
       title: "Deleted 🗑️",
@@ -271,10 +259,10 @@ export default function ExpressionManager() {
             </label>
             <div className="flex gap-2">
               <Select
-                value={selectedCategoryId?.toString() || "uncategorized"}
+                value={selectedCategoryId || "uncategorized"}
                 onValueChange={(value) =>
                   setSelectedCategoryId(
-                    value === "uncategorized" ? null : parseInt(value)
+                    value === "uncategorized" ? undefined : value
                   )
                 }
               >
@@ -285,8 +273,8 @@ export default function ExpressionManager() {
                   <SelectItem value="uncategorized">
                     {t("expressions.uncategorized")}
                   </SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {categories.map((cat: Category) => (
+                    <SelectItem key={cat.id} value={cat.id}>
                       {cat.icon} {cat.name}
                     </SelectItem>
                   ))}
@@ -354,10 +342,10 @@ export default function ExpressionManager() {
                     <div className="flex gap-2 pt-4">
                       <Button
                         onClick={handleCreateCategory}
-                        disabled={addCategoryMutation.isPending}
+                        disabled={isCreating}
                         className="flex-1"
                       >
-                        {addCategoryMutation.isPending
+                        {isCreating
                           ? t("expressions.creating")
                           : t("expressions.create")}
                       </Button>
@@ -388,9 +376,8 @@ export default function ExpressionManager() {
 
       {/* Expression Categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category, index) => {
+        {categories.map((category: Category, index: number) => {
           const categoryExpressions = groupedExpressions[category.id] || [];
-          if (categoryExpressions.length === 0) return null;
 
           return (
             <motion.div
@@ -438,9 +425,10 @@ export default function ExpressionManager() {
                               {t("categories.delete.title")}
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t("categories.delete.description", {
-                                name: category.name,
-                              })}
+                              {t("categories.delete.description").replace(
+                                "{name}",
+                                category.name
+                              )}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -459,96 +447,104 @@ export default function ExpressionManager() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                  {categoryExpressions.map((expr) => {
-                    const accuracy =
-                      expr.totalCount > 0
-                        ? Math.round(
-                            (expr.correctCount / expr.totalCount) * 100
-                          )
-                        : 0;
+                  {categoryExpressions.length === 0 ? (
+                    <div className="text-sm text-gray-500">
+                      {t("expressions.no.expressions.yet")}
+                    </div>
+                  ) : (
+                    categoryExpressions.map((expr) => {
+                      const accuracy =
+                        expr.totalCount > 0
+                          ? Math.round(
+                              (expr.correctCount / expr.totalCount) * 100
+                            )
+                          : 0;
 
-                    return (
-                      <motion.div
-                        key={expr.id}
-                        whileHover={{ scale: 1.02 }}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">
-                            "{expr.text}"
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {t("expressions.used")} {expr.totalCount}{" "}
-                            {t("expressions.times")}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <div
-                              className={`text-xs font-medium ${
-                                accuracy >= 80
-                                  ? "text-green-600"
-                                  : accuracy >= 60
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {expr.totalCount > 0
-                                ? `${accuracy}%`
-                                : t("expressions.new")}
-                            </div>
-                            {expr.totalCount > 0 && (
-                              <div className="text-xs text-gray-500">
-                                {expr.correctCount}/{expr.totalCount}
+                      return (
+                        <motion.div
+                          key={expr.id}
+                          whileHover={{ scale: 1.02 }}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800">
+                              "{expr.text}"
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {t("expressions.used")} {expr.totalCount}{" "}
+                              {t("expressions.times")}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <div
+                                className={`text-xs font-medium ${
+                                  accuracy >= 80
+                                    ? "text-green-600"
+                                    : accuracy >= 60
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {expr.totalCount > 0
+                                  ? `${accuracy}%`
+                                  : t("expressions.new")}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="p-1 h-6 w-6 text-gray-600 hover:text-blue-600"
-                              onClick={() => handleEditExpression(expr)}
-                            >
-                              ✏️
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="p-1 h-6 w-6 text-gray-600 hover:text-red-600"
-                                >
-                                  🗑️
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Delete Expression
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete the
-                                    expression "{expr.text}"?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() =>
-                                      handleDeleteExpression(expr.id)
-                                    }
+                              {expr.totalCount > 0 && (
+                                <div className="text-xs text-gray-500">
+                                  {expr.correctCount}/{expr.totalCount}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="p-1 h-6 w-6 text-gray-600 hover:text-blue-600"
+                                onClick={() => handleEditExpression(expr)}
+                              >
+                                ✏️
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="p-1 h-6 w-6 text-gray-600 hover:text-red-600"
                                   >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                    🗑️
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Delete Expression
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete the
+                                      expression "{expr.text}"?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteExpression(expr.id)
+                                      }
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                        </motion.div>
+                      );
+                    })
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -670,10 +666,10 @@ export default function ExpressionManager() {
                 {t("expressions.category")}
               </label>
               <Select
-                value={editCategoryId?.toString() || "uncategorized"}
+                value={editCategoryId || "uncategorized"}
                 onValueChange={(value) =>
                   setEditCategoryId(
-                    value === "uncategorized" ? null : parseInt(value)
+                    value === "uncategorized" ? undefined : value
                   )
                 }
               >
@@ -684,8 +680,8 @@ export default function ExpressionManager() {
                   <SelectItem value="uncategorized">
                     {t("expressions.uncategorized")}
                   </SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {categories.map((cat: Category) => (
+                    <SelectItem key={cat.id} value={cat.id}>
                       {cat.icon} {cat.name}
                     </SelectItem>
                   ))}

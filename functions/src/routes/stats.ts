@@ -3,11 +3,11 @@ import { getFirestore } from "firebase-admin/firestore";
 import { authenticateUser, requireUser } from "../middleware/auth";
 
 const router = express.Router();
-const db = getFirestore();
 
 // Get user statistics
 router.get("/", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const statsRef = db
@@ -43,6 +43,7 @@ router.get("/", authenticateUser, async (req, res) => {
 // Update statistics
 router.put("/", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const {
@@ -87,6 +88,7 @@ router.put("/", authenticateUser, async (req, res) => {
 // Get achievements list
 router.get("/achievements", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const achievementsRef = db
@@ -110,6 +112,7 @@ router.get("/achievements", authenticateUser, async (req, res) => {
 // Add achievement
 router.post("/achievements", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const { type, title, description } = req.body;
@@ -146,6 +149,7 @@ router.post("/achievements", authenticateUser, async (req, res) => {
 // Get practice records
 router.get("/practice-history", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const { limit = 10, offset = 0 } = req.query;
@@ -175,6 +179,7 @@ router.get("/practice-history", authenticateUser, async (req, res) => {
 // Get expression statistics
 router.get("/expressions", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const expressionsRef = db

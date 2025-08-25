@@ -1,32 +1,36 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import type { ChatSession, InsertChatSession } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api, queryClient } from "@/lib/api";
+import type { ChatSession } from "@shared/schema";
 
 export function useChatSession() {
-  const queryClient = useQueryClient();
-  
-  const { data: activeSession } = useQuery<ChatSession | null>({
-    queryKey: ["/api/chat/active"],
+  const { data: activeSession } = useQuery({
+    queryKey: ["chat-active"],
+    queryFn: async () => {
+      const response = await api.chat.getSessions();
+      return (response as any)?.data;
+    },
   });
 
   const createSessionMutation = useMutation({
-    mutationFn: async (scenario: string): Promise<ChatSession> => {
-      const data: InsertChatSession = { scenario };
-      return await apiRequest("POST", "/api/chat/sessions", data);
+    mutationFn: async (): Promise<ChatSession> => {
+      const response = await api.chat.startSession({ 
+        selectedExpressions: []
+      });
+      return (response as any)?.data || {} as ChatSession;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-active"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
     },
   });
 
   const endSessionMutation = useMutation({
-    mutationFn: async (sessionId: number) => {
-      await apiRequest("PATCH", `/api/chat/sessions/${sessionId}/end`, {});
+    mutationFn: async (sessionId: string) => {
+      await api.chat.endSession(sessionId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-active"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
     },
   });
 

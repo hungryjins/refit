@@ -19,7 +19,7 @@ export default function PracticeChatInterface() {
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/expressions/categories"],
   });
 
   const handleModeSelect = (mode: PracticeMode) => {
@@ -115,10 +115,10 @@ function ExpressionSelector({
   onBack,
   onStart,
 }: ExpressionSelectorProps) {
-  const [selectedExpressionIds, setSelectedExpressionIds] = useState<number[]>(
+  const [selectedExpressionIds, setSelectedExpressionIds] = useState<string[]>(
     []
   );
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
 
@@ -130,7 +130,7 @@ function ExpressionSelector({
     selectedExpressionIds.includes(expr.id)
   );
 
-  const handleExpressionToggle = (expressionId: number) => {
+  const handleExpressionToggle = (expressionId: string) => {
     setSelectedExpressionIds((prev) =>
       prev.includes(expressionId)
         ? prev.filter((id) => id !== expressionId)

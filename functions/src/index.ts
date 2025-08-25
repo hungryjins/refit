@@ -1,19 +1,45 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import express from "express";
+import cors from "cors";
 
-// import {onRequest} from "firebase-functions/v2/https";
-// import * as logger from "firebase-functions/logger";
+// Routes
+import { expressionsRouter } from "./routes/expressions";
+import { authRouter } from "./routes/auth";
+import { chatRouter } from "./routes/chat";
+import { statsRouter } from "./routes/stats";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+// Initialize Firebase Admin
+admin.initializeApp();
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// Create Express app
+const app = express();
+
+// Middleware
+app.use(cors({ 
+  origin: [
+    'https://conversation-practice-f2199.web.app',
+    'https://conversation-practice-f2199.firebaseapp.com',
+    'https://dailyconvo.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
+
+// Routes
+app.use("/expressions", expressionsRouter);
+app.use("/auth", authRouter);
+app.use("/chat", chatRouter);
+app.use("/stats", statsRouter);
+
+// Health check
+app.get("/", (_req, res) => {
+  res.json({ status: "Firebase Functions API is running" });
+});
+
+// Export the API
+export const api = functions.https.onRequest(app);

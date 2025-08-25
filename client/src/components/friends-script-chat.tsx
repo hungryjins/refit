@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { api } from "@/lib/api";
 import { Mic, Send, RefreshCw, Eye } from "lucide-react";
 import type { Expression } from "@shared/schema";
 
@@ -63,11 +63,8 @@ export default function FriendsScriptChat({
   const { data: preview } = useQuery({
     queryKey: ["friends-preview", selectedExpressions.map((e) => e.id)],
     queryFn: async () => {
-      return apiRequest("/api/friends-script/preview", {
-        method: "POST",
-        body: JSON.stringify({ expressions: selectedExpressions }),
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await api.chat.friendsScriptPreview({ expressions: selectedExpressions });
+      return response.data;
     },
     enabled: showPreview && selectedExpressions.length > 0,
   });
@@ -82,14 +79,11 @@ export default function FriendsScriptChat({
   // Start practice round
   const startPracticeMutation = useMutation({
     mutationFn: async (expression: Expression) => {
-      return apiRequest("/api/friends-script/practice", {
-        method: "POST",
-        body: JSON.stringify({
-          userInput: expression.text,
-          expressions: selectedExpressions,
-        }),
-        headers: { "Content-Type": "application/json" },
+      const response = await api.chat.friendsScriptPractice({
+        userInput: expression.text,
+        expressions: selectedExpressions,
       });
+      return response.data;
     },
     onSuccess: (data: PracticeRound) => {
       setPracticeData(data);
@@ -110,11 +104,17 @@ export default function FriendsScriptChat({
       userResponse: string;
       targetSentence: string;
     }) => {
-      return apiRequest("/api/friends-script/evaluate", {
-        method: "POST",
-        body: JSON.stringify(params),
-        headers: { "Content-Type": "application/json" },
+      const response = await api.chat.friendsScriptEvaluate({
+        userResponse: params.userResponse,
+        correctAnswer: params.targetSentence,
       });
+      
+      // Extract and validate the required fields from response
+      const data = response.data;
+      return {
+        isCorrect: data?.isCorrect ?? false,
+        feedback: data?.feedback ?? "No feedback available"
+      };
     },
     onSuccess: (data: { isCorrect: boolean; feedback: string }) => {
       if (!practiceData || !currentExpression) return;
@@ -221,7 +221,7 @@ export default function FriendsScriptChat({
                 <div className="text-red-500">No preview data available.</div>
               </div>
             ) : (
-              preview.map((item, index) => (
+              preview.map((item: any, index: number) => (
                 <div key={index} className="space-y-3">
                   <div className="font-medium">
                     📖 Expression: "{item.expression.text}"
@@ -254,7 +254,7 @@ export default function FriendsScriptChat({
                             View other similar expressions (for reference)
                           </summary>
                           <div className="mt-2 space-y-1">
-                            {item.topResults.slice(1).map((result, i) => (
+                            {item.topResults.slice(1).map((result: SearchResult, i: number) => (
                               <div
                                 key={i}
                                 className="bg-gray-50 p-2 rounded text-xs text-gray-600"

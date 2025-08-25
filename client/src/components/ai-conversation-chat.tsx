@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { api } from "@/lib/api";
 import { Mic, Send, Bot } from "lucide-react";
 import type { Expression } from "@shared/schema";
 
@@ -49,33 +49,25 @@ export default function AIConversationChat({
   // Generate AI response
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      return apiRequest("/api/ai-conversation/respond", {
-        method: "POST",
-        body: JSON.stringify({
-          message: userMessage,
-          sessionId,
-          expressions: selectedExpressions,
-        }),
-        headers: { "Content-Type": "application/json" },
+      return api.chat.aiConversation({
+        message: userMessage,
+        sessionId: sessionId?.toString(),
       });
     },
-    onSuccess: (data: {
-      response: string;
-      feedback?: string;
-      usedExpression?: string;
-    }) => {
+    onSuccess: (response) => {
+      const data = response.data;
       const aiMessage: ChatMessage = {
         id: Date.now(),
-        content: data.response,
+        content: data?.response || "I understand.",
         isUser: false,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
 
-      if (data.usedExpression) {
+      if (data?.isCorrect) {
         toast({
           title: "Expression Detected!",
-          description: `You used the expression "${data.usedExpression}"!`,
+          description: `Great job using the expression!`,
           variant: "default",
         });
       }

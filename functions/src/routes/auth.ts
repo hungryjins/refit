@@ -4,13 +4,13 @@ import { getFirestore } from "firebase-admin/firestore";
 import { authenticateUser, requireUser } from "../middleware/auth";
 
 const router = express.Router();
-const db = getFirestore();
 
 // Get user profile
 router.get("/profile", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
     const userId = user.uid;
+    const db = getFirestore();
     const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
@@ -49,6 +49,7 @@ router.put("/profile", authenticateUser, async (req, res) => {
     const userId = user.uid;
     const { displayName, photoURL } = req.body;
 
+    const db = getFirestore();
     const userRef = db.collection("users").doc(userId);
     const updateData: any = {
       updatedAt: new Date(),
@@ -73,6 +74,7 @@ router.delete("/account", authenticateUser, async (req, res) => {
     const userId = user.uid;
 
     // Delete user data from Firestore
+    const db = getFirestore();
     const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
@@ -90,6 +92,7 @@ router.delete("/account", authenticateUser, async (req, res) => {
         const collectionRef = userRef.collection(collectionName);
         const snapshot = await collectionRef.get();
 
+        const db = getFirestore();
         const batch = db.batch();
         snapshot.docs.forEach((doc) => {
           batch.delete(doc.ref);

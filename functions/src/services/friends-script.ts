@@ -1,13 +1,14 @@
 import OpenAI from "openai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import * as functions from "firebase-functions";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: functions.config().openai?.api_key || "",
 });
 
 // Initialize Pinecone client
 const pc = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY || "",
+  apiKey: functions.config().pinecone?.api_key || "",
 });
 const pineconeIndex = pc.index("refit");
 

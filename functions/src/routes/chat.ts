@@ -7,7 +7,6 @@ import { tutoringEngine } from "../services/tutoring-engine";
 import { authenticateUser, requireUser } from "../middleware/auth";
 
 const router = express.Router();
-const db = getFirestore();
 const openaiService = new OpenAIService();
 const friendsScriptService = new FriendsScriptService();
 
@@ -27,6 +26,7 @@ router.post("/start-session", authenticateUser, async (req, res) => {
     }
 
     // Get expressions
+    const db = getFirestore();
     const expressionsRef = db
       .collection("users")
       .doc(userId)
@@ -110,6 +110,7 @@ router.post("/start-session", authenticateUser, async (req, res) => {
 // Process Original Chat response
 router.post("/respond", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const { message, sessionId } = req.body;
@@ -350,6 +351,7 @@ router.post("/friends-script/evaluate", authenticateUser, async (req, res) => {
 // Get chat session list
 router.get("/sessions", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const sessionsRef = db
@@ -376,6 +378,7 @@ router.get("/sessions", authenticateUser, async (req, res) => {
 // Get chat session
 router.get("/sessions/:id", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const sessionId = req.params.id;
@@ -420,6 +423,7 @@ router.get("/sessions/:id", authenticateUser, async (req, res) => {
 // End session
 router.put("/sessions/:id/end", authenticateUser, async (req, res) => {
   try {
+    const db = getFirestore();
     const user = requireUser(req);
     const userId = user.uid;
     const sessionId = req.params.id;

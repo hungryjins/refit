@@ -354,17 +354,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: string): string => {
-    const translation = translations[language]?.[key];
+    const languageTranslations = translations[language] as Record<string, string>;
+    const translation = languageTranslations?.[key];
     if (translation) {
       return translation;
     }
     // Fallback to English if key not found in current language
     if (language !== "en") {
-      return translations.en[key] || key;
+      const enTranslations = translations.en as Record<string, string>;
+      return enTranslations[key] || key;
     }
     // Debug logging for missing keys
-    if (process.env.NODE_ENV === "development" && !translations.en[key]) {
-      console.warn(`Missing translation key: ${key}`);
+    if (process.env.NODE_ENV === "development") {
+      const enTranslations = translations.en as Record<string, string>;
+      if (!enTranslations[key]) {
+        console.warn(`Missing translation key: ${key}`);
+      }
     }
     return key;
   };

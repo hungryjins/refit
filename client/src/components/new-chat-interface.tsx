@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { api, queryClient } from "@/lib/api";
 import type {
   Expression,
   Category,
@@ -36,7 +36,7 @@ interface ChatBubbleProps {
   targetExpression?: Expression;
 }
 
-function ChatBubble({ message, targetExpression }: ChatBubbleProps) {
+function ChatBubble({ message }: ChatBubbleProps) {
   const isBot = !message.isUser;
 
   return (
@@ -48,109 +48,100 @@ function ChatBubble({ message, targetExpression }: ChatBubbleProps) {
             : "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md"
         }`}
       >
-        {isBot && message.content.includes("<Situation>") ? (
-          // Game format parsing: situation-role-dialogue
-          <div className="space-y-3">
-            {message.content.split("\n").map((line, index) => {
-              if (line.includes("<Situation>")) {
-                return (
-                  <div
-                    key={index}
-                    className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-yellow-600 font-bold">
-                        🎬 Situation
-                      </span>
-                    </div>
-                    <p className="text-sm text-yellow-800">
-                      {line.replace("<Situation>", "").trim()}
-                    </p>
-                  </div>
-                );
-              } else if (line.includes("<Role>")) {
-                return (
-                  <div
-                    key={index}
-                    className="bg-blue-100 border-l-4 border-blue-500 p-3 rounded"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-600 font-bold">👤 Role</span>
-                    </div>
-                    <p className="text-sm text-blue-800">
-                      {line.replace("<Role>", "").trim()}
-                    </p>
-                  </div>
-                );
-              } else if (line.includes("<Dialogue>")) {
-                return (
-                  <div
-                    key={index}
-                    className="bg-green-100 border-l-4 border-green-500 p-3 rounded"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-600 font-bold">
-                        💬 Dialogue
-                      </span>
-                    </div>
-                    <p className="text-sm text-green-800 font-medium">
-                      {line.replace("<Dialogue>", "").trim()}
-                    </p>
-                  </div>
-                );
-              } else if (line.trim()) {
-                return (
-                  <p key={index} className="text-sm">
-                    {line}
-                  </p>
-                );
-              }
-              return null;
-            })}
-          </div>
-        ) : (
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        )}
-
-        {message.isUser && message.expressionUsed !== null && (
-          <div className="mt-3 p-2 bg-white bg-opacity-20 rounded text-xs">
-            {message.isCorrect ? (
-              <span className="flex items-center gap-1 text-green-200">
-                <CheckCircle2 size={12} />✨ Excellent! You used the expression
-                perfectly!
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-red-200">
-                <AlertCircle size={12} />
-                💡 Please try again
-              </span>
-            )}
-          </div>
-        )}
+        <p className="text-sm leading-relaxed">{message.content}</p>
       </div>
     </div>
+  );
+}
+
+interface ExpressionResultDisplayProps {
+  result: {
+    expression: string;
+    isCorrect: boolean;
+  };
+}
+
+function ExpressionResultDisplay({ result }: ExpressionResultDisplayProps) {
+  return (
+    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg mb-2">
+      {result.isCorrect ? (
+        <CheckCircle2 className="h-4 w-4 text-green-500" />
+      ) : (
+        <XCircle className="h-4 w-4 text-red-500" />
+      )}
+      <span className="text-sm">{result.expression}</span>
+      <Badge variant={result.isCorrect ? "default" : "destructive"}>
+        {result.isCorrect ? "Correct" : "Incorrect"}
+      </Badge>
+    </div>
+  );
+}
+
+interface CompletionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  stats: {
+    totalCorrect: number;
+    totalAttempts: number;
+    accuracy: number;
+  };
+}
+
+function CompletionModal({ isOpen, onClose, stats }: CompletionModalProps) {
+  const { t } = useLanguage();
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center">
+            <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+            {t("session.complete")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="text-center">
+            <p className="text-lg font-semibold mb-2">
+              {t("session.congratulations")}
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.totalCorrect}
+                </div>
+                <div className="text-sm text-gray-600">Correct</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {stats.totalAttempts}
+                </div>
+                <div className="text-sm text-gray-600">Total</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {Math.round(stats.accuracy)}%
+                </div>
+                <div className="text-sm text-gray-600">Accuracy</div>
+              </div>
+            </div>
+          </div>
+          <Button onClick={onClose} className="w-full">
+            Continue
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function TypingIndicator() {
   return (
     <div className="flex justify-start mb-4">
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 p-3 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-            <div
-              className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-              style={{ animationDelay: "0.1s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-          </div>
-          <span className="text-xs text-blue-600">
-            AI is generating response...
-          </span>
+      <div className="bg-gray-100 p-4 rounded-lg">
+        <div className="flex space-x-1">
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
         </div>
       </div>
     </div>
@@ -158,195 +149,171 @@ function TypingIndicator() {
 }
 
 export default function NewChatInterface() {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
-  const [selectedExpressions, setSelectedExpressions] = useState<Expression[]>(
-    []
-  );
+  // State variables
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedExpressions, setSelectedExpressions] = useState<Expression[]>([]);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
-    null
-  );
-  const [usedExpressions, setUsedExpressions] = useState<Set<number>>(
-    new Set()
-  );
-  const [expressionResults, setExpressionResults] = useState<
-    Map<number, boolean>
-  >(new Map());
+  
+  // Session state
+  const [usedExpressions, setUsedExpressions] = useState<Set<string>>(new Set());
+  const [expressionResults, setExpressionResults] = useState<{
+    expression: string;
+    isCorrect: boolean;
+  }[]>([]);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
 
-  // Fetch expressions and categories
-  const { data: expressions = [] } = useQuery<Expression[]>({
-    queryKey: ["/api/expressions"],
+  // Data fetching
+  const { data: expressionsResponse } = useQuery({
+    queryKey: ["expressions"],
+    queryFn: () => api.expressions.getAll(),
   });
+  const expressions = (expressionsResponse as any)?.data || [];
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.expressions.getCategories(),
   });
+  const categories = (categoriesResponse as any)?.data || [];
 
-  // Start session mutation
+  // Mutations
   const startSessionMutation = useMutation({
-    mutationFn: async (expressionIds: number[]) => {
-      return await apiRequest("/api/chat/start-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedExpressions: expressionIds }),
+    mutationFn: async (data: { selectedExpressions: string[] }) => {
+      return api.chat.startSession({
+        selectedExpressions: data.selectedExpressions,
       });
     },
-    onSuccess: (data) => {
-      console.log("Session started successfully:", data);
+    onSuccess: (response: any) => {
+      const data = response?.data;
+      if (data) {
+        setCurrentSession({
+          id: data.sessionId || "",
+          userId: "current-user",
+          scenario: data.scenario || "",
+          isActive: true,
+          mode: "expression_practice",
+          difficulty: "beginner",
+          createdAt: new Date(),
+        });
 
-      // Create session object from response
-      const session = {
-        id: data.sessionId,
-        scenario: data.scenario,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        endedAt: null,
-      };
+        // Add initial message
+        const initialMessage: ChatMessage = {
+          id: data.messageId || Date.now().toString(),
+          sessionId: data.sessionId || "",
+          content: data.initialMessage || "Let's start practicing!",
+          isUser: false,
+          createdAt: new Date(),
+        };
 
-      setCurrentSession(session);
-
-      // Set initial message from server response
-      if (data.initialMessage) {
-        setMessages([
-          {
-            id: data.messageId || Date.now(),
-            sessionId: data.sessionId,
-            content: data.initialMessage,
-            isUser: false,
-            expressionUsed: null,
-            isCorrect: null,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-        console.log("Initial message set:", data.initialMessage);
+        setMessages([initialMessage]);
+        setUsedExpressions(new Set());
+        setExpressionResults([]);
+        setSessionComplete(false);
+        setShowCompletionModal(false);
       }
-
-      setUsedExpressions(new Set());
-      setSessionComplete(false);
     },
   });
 
-  // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({
-      message,
-      sessionId,
-    }: {
-      message: string;
-      sessionId: number;
+    mutationFn: async (data: { 
+      message: string; 
+      sessionId: string;
     }) => {
-      return await apiRequest("/api/chat/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          sessionId,
-        }),
+      return api.chat.respond({
+        message: data.message,
+        sessionId: data.sessionId,
       });
     },
-    onSuccess: (data) => {
-      console.log("Message response:", data);
+    onSuccess: (response: any) => {
+      const data = response?.data;
+      if (data) {
+        // Add AI response message
+        const aiMessage: ChatMessage = {
+          id: Date.now().toString(),
+          sessionId: currentSession?.id || "",
+          content: data.response,
+          isUser: false,
+          createdAt: new Date(),
+        };
 
-      // Add user message
-      const userMessage: ChatMessage = {
-        id: Date.now(),
-        sessionId: currentSession!.id,
-        content: currentInput,
-        isUser: true,
-        expressionUsed: data.usedExpression || null,
-        isCorrect: data.isCorrect || null,
-        createdAt: new Date().toISOString(),
-      };
+        setMessages((prev) => [...prev, aiMessage]);
 
-      // Add bot response
-      const botMessage: ChatMessage = {
-        id: Date.now() + 1,
-        sessionId: currentSession!.id,
-        content: data.response || "Unable to receive response.",
-        isUser: false,
-        expressionUsed: null,
-        isCorrect: null,
-        createdAt: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, userMessage, botMessage]);
-
-      // Update progress based on actual server response
-      console.log("Server progress data:", data.progress);
-      if (data.progress && Array.isArray(data.progress.completedExpressions)) {
-        // Update used expressions based on server's completed list
-        setUsedExpressions(new Set(data.progress.completedExpressions));
-
-        // Update expression results (correct/incorrect)
-        if (data.progress.expressionResults) {
-          const resultsMap = new Map();
-          data.progress.expressionResults.forEach(
-            (result: { id: number; isCorrect: boolean }) => {
-              resultsMap.set(result.id, result.isCorrect);
-            }
-          );
-          setExpressionResults(resultsMap);
+        // Handle expression detection and feedback
+        if (data.detectedExpression) {
+          const newResult = {
+            expression: data.detectedExpression,
+            isCorrect: data.isCorrect || false,
+          };
+          setExpressionResults((prev) => [...prev, newResult]);
+          setUsedExpressions((prev) => new Set([...Array.from(prev), data.detectedExpression]));
         }
 
-        console.log(
-          "Updated used expressions:",
-          data.progress.completedExpressions
-        );
-        console.log(
-          "Updated expression results:",
-          data.progress.expressionResults
-        );
-      } else {
-        console.log("No valid progress data received");
-      }
+        if (data.failedExpression) {
+          const newResult = {
+            expression: data.failedExpression,
+            isCorrect: false,
+          };
+          setExpressionResults((prev) => [...prev, newResult]);
+        }
 
-      // Check if session is complete
-      if (data.sessionComplete) {
-        setSessionComplete(true);
-        // Show completion modal after a brief delay
-        setTimeout(() => {
+        // Check if session is complete
+        if (data.sessionComplete) {
+          setSessionComplete(true);
           setShowCompletionModal(true);
-        }, 1000);
+        }
       }
 
+      setIsLoading(false);
       setCurrentInput("");
+    },
+    onError: () => {
+      setIsLoading(false);
     },
   });
 
-  const handleCategorySelect = (category: Category) => {
-    setSelectedCategory(category);
-    const categoryExpressions = expressions.filter(
-      (expr) => expr.categoryId === category.id
+  // Event handlers
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    const filteredExpressions = expressions.filter(
+      (expr: Expression) => expr.categoryId === categoryId
     );
-    setSelectedExpressions(categoryExpressions);
+    setSelectedExpressions(filteredExpressions);
   };
 
   const handleStartSession = () => {
     if (selectedExpressions.length === 0) return;
-    console.log(
-      "Starting session with expressions:",
-      selectedExpressions.map((expr) => expr.id)
-    );
-    startSessionMutation.mutate(selectedExpressions.map((expr) => expr.id));
+
+    startSessionMutation.mutate({
+      selectedExpressions: selectedExpressions.map((expr) => expr.id),
+    });
   };
 
   const handleSendMessage = () => {
     if (!currentInput.trim() || !currentSession) return;
 
     sendMessageMutation.mutate({
-      message: currentInput.trim(),
+      message: currentInput,
       sessionId: currentSession.id,
     });
+
+    // Add user message immediately
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      sessionId: currentSession.id,
+      content: currentInput,
+      isUser: true,
+      createdAt: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setCurrentInput("");
+    setIsLoading(true);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -356,34 +323,9 @@ export default function NewChatInterface() {
     }
   };
 
-  // Update stats mutation for progress tracking
-  const updateStatsMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("/api/stats", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          totalSessions: 1, // increment by 1
-          currentStreak: 1, // increment by 1
-          lastPracticeDate: new Date().toISOString(),
-        }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
-    },
-  });
-
   const handleCloseModal = () => {
     setShowCompletionModal(false);
-    // Update progress stats when modal is closed
-    updateStatsMutation.mutate();
-    // Reset for new session
-    handleNewSession();
-  };
-
-  const handleNewSession = () => {
+    // Reset session
     setCurrentSession(null);
     setMessages([]);
     setSessionComplete(false);
@@ -391,514 +333,198 @@ export default function NewChatInterface() {
     setSelectedCategory(null);
     setSelectedExpressions([]);
     setUsedExpressions(new Set());
-    setExpressionResults(new Map());
+    setExpressionResults([]);
     setCurrentInput("");
   };
 
-  // Load active session on mount
+  // Auto-scroll to bottom
   useEffect(() => {
-    const loadActiveSession = async () => {
-      try {
-        console.log("Checking for active session...");
-        const activeSession = await apiRequest("/api/chat/active");
-        console.log("Active session response:", activeSession);
+    if (!currentSession) return;
 
-        if (activeSession && activeSession.isActive) {
-          console.log("Setting current session:", activeSession);
-          setCurrentSession(activeSession);
+    const { data: sessionResponse } = useQuery({
+      queryKey: ["session", currentSession.id],
+      queryFn: () => api.chat.getSession(currentSession.id),
+    });
 
-          // Load messages for the active session
-          const messages = await apiRequest(
-            `/api/chat/sessions/${activeSession.id}/messages`
-          );
-          console.log("Loaded messages:", messages);
-          setMessages(messages);
+    if (sessionResponse?.data?.data) {
+      setCurrentSession(sessionResponse.data.data);
+    }
+  }, [currentSession]);
 
-          // If no messages exist, this session is broken - reset to allow new session
-          if (messages.length === 0) {
-            console.log(
-              "Active session found but no messages - resetting session"
-            );
-            setCurrentSession(null);
-          }
-        } else {
-          console.log("No active session found");
-        }
-      } catch (error) {
-        console.log("Error checking active session:", error);
-      }
-    };
-
-    loadActiveSession();
-  }, []);
-
-  // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Show category selection if no session active
   if (!currentSession) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50 to-purple-50 backdrop-blur-sm">
-          <CardHeader className="text-center pb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-t-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-            <div className="absolute top-0 left-0 w-full h-full opacity-30">
-              <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_2px,transparent_2px)] bg-[length:20px_20px]"></div>
-            </div>
-            <CardTitle className="flex items-center justify-center gap-4 text-3xl relative z-10">
-              <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 border border-white/30">
-                <span className="text-4xl">🎯</span>
-              </div>
-              <div className="text-left">
-                <div className="text-2xl font-bold text-white drop-shadow-lg">
-                  {t("chat.conversation")}
-                </div>
-                <div className="text-sm text-white/90 font-normal">
-                  AI-Powered English Practice
-                </div>
-              </div>
-            </CardTitle>
-            <p className="text-white/90 mt-3 relative z-10 font-medium">
-              Select a category and practice English expressions! ✨
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span>📚</span> {t("chat.select.category")}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={
-                      selectedCategory?.id === category.id
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() => handleCategorySelect(category)}
-                    className="p-4 h-auto text-left hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex flex-col items-start w-full">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">{category.icon}</span>
-                        <span className="font-medium">{category.name}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {
-                          expressions.filter(
-                            (expr) => expr.categoryId === category.id
-                          ).length
-                        }{" "}
-                        expressions
-                      </span>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
+      <div className="h-full flex flex-col space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Start New Practice Session</h2>
+          <p className="text-gray-600">Choose expressions to practice</p>
+        </div>
 
-            {selectedExpressions.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-blue-100">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <span>🎯</span> Practice Expressions (
-                  {selectedExpressions.length})
-                </h3>
-                <div className="space-y-3 mb-6">
-                  {selectedExpressions.map((expr) => (
-                    <div
-                      key={expr.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <span className="font-medium">{expr.text}</span>
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-gray-400" />
-                        <Badge variant="outline" className="text-xs">
-                          Waiting
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* Category Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {categories.map((category: Category) => (
                 <Button
-                  onClick={handleStartSession}
-                  disabled={startSessionMutation.isPending}
-                  className="w-full py-3 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  onClick={() => handleCategorySelect(category.id)}
+                  className="flex items-center space-x-2 h-auto p-4"
                 >
-                  {startSessionMutation.isPending ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      {t("chat.starting")}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      🚀 {t("chat.start.session")}
-                    </span>
-                  )}
+                  <span className="text-lg">{category.icon}</span>
+                  <span className="font-medium">{category.name}</span>
                 </Button>
-              </div>
-            )}
+              ))}
+            </div>
           </CardContent>
         </Card>
+
+        {/* Expression Selection */}
+        {selectedExpressions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Selected Expressions ({selectedExpressions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {selectedExpressions.map((expr) => (
+                  <div
+                    key={expr.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <span className="font-medium">{expr.text}</span>
+                    <Badge variant="outline">
+                      {expr.correctCount}/{expr.totalCount}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <Button
+                onClick={handleStartSession}
+                className="w-full mt-4"
+                disabled={selectedExpressions.length === 0 || startSessionMutation.isPending}
+              >
+                {startSessionMutation.isPending ? "Starting..." : "Start Practice Session"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
 
-  // Show chat interface with expression tracking
+  const stats = {
+    totalCorrect: expressionResults.filter(r => r.isCorrect).length,
+    totalAttempts: expressionResults.length,
+    accuracy: expressionResults.length > 0 
+      ? (expressionResults.filter(r => r.isCorrect).length / expressionResults.length) * 100 
+      : 0,
+  };
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Expression Tracking Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-20 shadow-lg border-0 bg-gradient-to-br from-white to-green-50">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <span>📊</span> Expression Checklist
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {selectedExpressions.map((expr) => {
-                const isUsed = usedExpressions.has(expr.id);
-                const isCorrect = expressionResults.get(expr.id);
-                // Check if this expression is currently being practiced
-                const isCurrentTarget = currentSession && messages.length > 0;
-                const lastMessage = messages[messages.length - 1];
-                const isCurrentExpression =
-                  lastMessage &&
-                  !lastMessage.isUser &&
-                  (lastMessage.content.includes("new expression") ||
-                    lastMessage.content.includes(expr.text));
-
-                console.log(
-                  `Expression ${expr.id} (${
-                    expr.text
-                  }): isUsed=${isUsed}, isCorrect=${isCorrect}, usedExpressions=${Array.from(
-                    usedExpressions
-                  )}`
-                );
-
-                return (
-                  <div
-                    key={expr.id}
-                    className={`p-3 rounded-lg border transition-all duration-300 ${
-                      isUsed
-                        ? isCorrect
-                          ? "bg-green-100 border-green-300 shadow-sm"
-                          : "bg-red-100 border-red-300 shadow-sm"
-                        : isCurrentExpression
-                        ? "bg-blue-100 border-blue-300 ring-2 ring-blue-200"
-                        : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-sm font-medium ${
-                          isUsed
-                            ? isCorrect
-                              ? "text-green-800"
-                              : "text-red-800"
-                            : isCurrentExpression
-                            ? "text-blue-800"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {expr.text}
-                      </span>
-                      {isUsed ? (
-                        isCorrect ? (
-                          <CheckCircle2 size={18} className="text-green-600" />
-                        ) : (
-                          <XCircle size={18} className="text-red-600" />
-                        )
-                      ) : isCurrentExpression ? (
-                        <Play size={16} className="text-blue-600" />
-                      ) : (
-                        <Clock size={16} className="text-gray-400" />
-                      )}
-                    </div>
-                    <div
-                      className={`text-xs mt-1 ${
-                        isUsed
-                          ? isCorrect
-                            ? "text-green-600"
-                            : "text-red-600"
-                          : isCurrentExpression
-                          ? "text-blue-600"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {isUsed
-                        ? isCorrect
-                          ? "✅ Correct!"
-                          : "❌ Incorrect"
-                        : isCurrentExpression
-                        ? "🎯 Practicing..."
-                        : "Waiting..."}
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-sm font-medium text-blue-800">
-                  Progress: {usedExpressions.size}/{selectedExpressions.length}
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${
-                        (usedExpressions.size / selectedExpressions.length) *
-                        100
-                      }%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {sessionComplete && (
-                <Button
-                  onClick={handleNewSession}
-                  className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
-                >
-                  🎉 Start New Session
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <div>
+          <h2 className="text-lg font-semibold">Practice Session</h2>
+          <p className="text-sm text-gray-600">
+            {selectedExpressions.length} expressions selected
+          </p>
         </div>
-
-        {/* Chat Interface */}
-        <div className="lg:col-span-2">
-          <Card className="shadow-2xl h-[700px] flex flex-col border-0 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 backdrop-blur-sm">
-            <CardHeader className="flex-shrink-0 border-b bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-t-lg relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-              <div className="absolute top-0 left-0 w-full h-full opacity-20">
-                <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[length:15px_15px]"></div>
-              </div>
-              <CardTitle className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 border border-white/30">
-                    <span className="text-3xl">🎭</span>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-white drop-shadow-lg">
-                      English Conversation Practice
-                    </div>
-                    <div className="text-sm text-white/90 font-medium">
-                      Use expressions appropriate for the situation! ✨
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleNewSession}
-                  className="text-white border-white/30 hover:bg-white/20 backdrop-blur-sm bg-white/10 transition-all duration-200 hover:scale-105 relative z-10"
-                >
-                  🔄 New Session
-                </Button>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <ChatBubble key={message.id} message={message} />
-                ))}
-                {sendMessageMutation.isPending && <TypingIndicator />}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input Area */}
-              <div className="flex-shrink-0 p-6 border-t bg-gradient-to-r from-gray-50 to-blue-50/50 backdrop-blur-sm">
-                <div className="flex gap-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsRecording(!isRecording)}
-                    className={`transition-all duration-300 hover:scale-110 border-2 ${
-                      isRecording
-                        ? "bg-red-100 border-red-300 shadow-lg shadow-red-200/50"
-                        : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg"
-                    }`}
-                  >
-                    {isRecording ? (
-                      <MicOff className="h-4 w-4 text-red-600" />
-                    ) : (
-                      <Mic className="h-4 w-4 text-gray-600" />
-                    )}
-                  </Button>
-                  <Input
-                    value={currentInput}
-                    onChange={(e) => setCurrentInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Use English expressions appropriate for the situation to chat... ✨"
-                    className="flex-1 border-2 border-gray-200 focus:border-blue-400 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 focus:shadow-lg"
-                    disabled={sendMessageMutation.isPending}
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={
-                      !currentInput.trim() ||
-                      sendMessageMutation.isPending ||
-                      sessionComplete
-                    }
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-6"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-                {sessionComplete && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-xl text-center shadow-lg">
-                    <span className="text-green-800 font-bold text-lg">
-                      🎉 You have successfully used all expressions! Congratulations! ✨
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Completion Modal */}
-        <Dialog
-          open={showCompletionModal}
-          onOpenChange={setShowCompletionModal}
-        >
-          <DialogContent className="max-w-lg bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 border-2 border-blue-200 shadow-2xl">
-            <DialogHeader className="text-center">
-              <div className="mx-auto mb-4 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                <Trophy className="h-12 w-12 text-white" />
-              </div>
-              <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                🎉 Session Complete! 🎉
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
-                <div className="flex justify-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-8 w-8 text-yellow-500 fill-current animate-pulse"
-                      style={{ animationDelay: `${i * 0.1}s` }}
-                    />
-                  ))}
-                </div>
-                <p className="text-2xl font-bold text-gray-800 mb-3">
-                  Congratulations! 🎊
-                </p>
-                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-md">
-                  <div className="text-center mb-3">
-                    <div className="text-3xl font-bold text-blue-800">
-                      {
-                        Array.from(expressionResults.values()).filter(Boolean)
-                          .length
-                      }{" "}
-                      / {usedExpressions.size}
-                    </div>
-                    <div className="text-lg text-blue-600 font-medium">
-                      Accuracy:{" "}
-                      {usedExpressions.size > 0
-                        ? Math.round(
-                            (Array.from(expressionResults.values()).filter(
-                              Boolean
-                            ).length /
-                              usedExpressions.size) *
-                              100
-                          )
-                        : 0}
-                      % ✨
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Correct expressions */}
-              {selectedExpressions.filter(
-                (expr) =>
-                  usedExpressions.has(expr.id) && expressionResults.get(expr.id)
-              ).length > 0 && (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-lg">
-                  <h4 className="font-bold text-green-800 mb-3 text-lg flex items-center gap-2">
-                    <div className="bg-green-200 rounded-full p-1">
-                      <CheckCircle2 size={20} className="text-green-700" />
-                    </div>
-                    Correct Expressions
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedExpressions
-                      .filter(
-                        (expr) =>
-                          usedExpressions.has(expr.id) &&
-                          expressionResults.get(expr.id)
-                      )
-                      .map((expr) => (
-                        <div
-                          key={expr.id}
-                          className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-green-700 font-medium"
-                        >
-                          <CheckCircle2 size={18} className="text-green-600" />
-                          {expr.text}
-                          <span className="ml-auto text-xs text-green-600">
-                            ✅
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Incorrect expressions */}
-              {selectedExpressions.filter(
-                (expr) =>
-                  usedExpressions.has(expr.id) &&
-                  !expressionResults.get(expr.id)
-              ).length > 0 && (
-                <div className="bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
-                  <h4 className="font-bold text-red-800 mb-3 text-lg flex items-center gap-2">
-                    <div className="bg-red-200 rounded-full p-1">
-                      <XCircle size={20} className="text-red-700" />
-                    </div>
-                    Expressions to Practice Again
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedExpressions
-                      .filter(
-                        (expr) =>
-                          usedExpressions.has(expr.id) &&
-                          !expressionResults.get(expr.id)
-                      )
-                      .map((expr) => (
-                        <div
-                          key={expr.id}
-                          className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-red-700 font-medium"
-                        >
-                          <XCircle size={18} className="text-red-600" />
-                          {expr.text}
-                          <span className="ml-auto text-xs text-red-600">
-                            📚
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={handleCloseModal}
-                className="w-full bg-gradient-to-r from-green-500 via-blue-500 to-purple-600 hover:from-green-600 hover:via-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 py-3 text-lg font-bold"
-              >
-                🎉 Start New Session
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Badge variant="outline" className="px-3 py-1">
+          <Clock className="h-4 w-4 mr-1" />
+          Active
+        </Badge>
       </div>
+
+      {/* Progress */}
+      <div className="p-4 border-b bg-gray-50">
+        <div className="flex items-center justify-between text-sm">
+          <span>
+            Progress: {usedExpressions.size}/{selectedExpressions.length}
+          </span>
+          <span>
+            Accuracy: {Math.round(stats.accuracy)}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style={{
+              width: `${(usedExpressions.size / selectedExpressions.length) * 100}%`,
+            }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Results Display */}
+      {expressionResults.length > 0 && (
+        <div className="p-4 border-b bg-white">
+          <h3 className="text-sm font-medium mb-2">Recent Results</h3>
+          <div className="space-y-1 max-h-20 overflow-y-auto">
+            {expressionResults.slice(-3).map((result, index) => (
+              <ExpressionResultDisplay key={index} result={result} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {messages.map((message) => (
+          <ChatBubble
+            key={message.id}
+            message={message}
+          />
+        ))}
+        {isLoading && <TypingIndicator />}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t bg-white">
+        <div className="flex space-x-2">
+          <Input
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Type your response using the expressions..."
+            disabled={isLoading || sessionComplete}
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={!currentInput.trim() || isLoading || sessionComplete}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsRecording(!isRecording)}
+            size="icon"
+            disabled={sessionComplete}
+          >
+            {isRecording ? (
+              <MicOff className="h-4 w-4 text-red-500" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Completion Modal */}
+      <CompletionModal
+        isOpen={showCompletionModal}
+        onClose={handleCloseModal}
+        stats={stats}
+      />
     </div>
   );
 }
