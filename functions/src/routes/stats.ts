@@ -5,7 +5,7 @@ import { authenticateUser, requireUser } from "../middleware/auth";
 const router = express.Router();
 const db = getFirestore();
 
-// 사용자 통계 조회
+// Get user statistics
 router.get("/", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -18,7 +18,7 @@ router.get("/", authenticateUser, async (req, res) => {
     const statsDoc = await statsRef.get();
 
     if (!statsDoc.exists) {
-      // 기본 통계 생성
+      // Create default statistics
       const defaultStats = {
         totalSessions: 0,
         currentStreak: 0,
@@ -40,7 +40,7 @@ router.get("/", authenticateUser, async (req, res) => {
   }
 });
 
-// 통계 업데이트
+// Update statistics
 router.put("/", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -84,7 +84,7 @@ router.put("/", authenticateUser, async (req, res) => {
   }
 });
 
-// 성취 목록 조회
+// Get achievements list
 router.get("/achievements", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -107,7 +107,7 @@ router.get("/achievements", authenticateUser, async (req, res) => {
   }
 });
 
-// 성취 추가
+// Add achievement
 router.post("/achievements", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -143,7 +143,7 @@ router.post("/achievements", authenticateUser, async (req, res) => {
   }
 });
 
-// 연습 기록 조회
+// Get practice records
 router.get("/practice-history", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -172,7 +172,7 @@ router.get("/practice-history", authenticateUser, async (req, res) => {
   }
 });
 
-// 표현식 통계 조회
+// Get expression statistics
 router.get("/expressions", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -193,7 +193,7 @@ router.get("/expressions", authenticateUser, async (req, res) => {
       createdAt: doc.data().createdAt || new Date(),
     }));
 
-    // 통계 계산
+    // Calculate statistics
     const totalExpressions = expressions.length;
     const totalUsage = expressions.reduce(
       (sum, expr) => sum + (expr.totalCount || 0),
@@ -206,13 +206,13 @@ router.get("/expressions", authenticateUser, async (req, res) => {
     const overallAccuracy =
       totalUsage > 0 ? (totalCorrect / totalUsage) * 100 : 0;
 
-    // 가장 많이 사용된 표현식
+    // Most used expressions
     const mostUsed = expressions
       .filter((expr) => expr.totalCount > 0)
       .sort((a, b) => (b.totalCount || 0) - (a.totalCount || 0))
       .slice(0, 5);
 
-    // 최근 사용된 표현식
+    // Recently used expressions
     const recentlyUsed = expressions
       .filter((expr) => expr.lastUsed)
       .sort(

@@ -2,7 +2,7 @@ import { auth } from './firebase';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://us-central1-daily-convo-app.cloudfunctions.net/api';
 
-// API 요청 헬퍼 함수
+// API request helper function
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const user = auth.currentUser;
   if (!user) {
@@ -28,7 +28,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-// 표현식 API
+// Expression API
 export const expressionsAPI = {
   getAll: () => apiRequest('/expressions'),
   create: (data: any) => apiRequest('/expressions', {
@@ -49,7 +49,7 @@ export const expressionsAPI = {
   }),
 };
 
-// 채팅 API
+// Chat API
 export const chatAPI = {
   startSession: (data: any) => apiRequest('/chat/start-session', {
     method: 'POST',
@@ -82,7 +82,7 @@ export const chatAPI = {
   }),
 };
 
-// 통계 API
+// Statistics API
 export const statsAPI = {
   get: () => apiRequest('/stats'),
   update: (data: any) => apiRequest('/stats', {
@@ -101,7 +101,7 @@ export const statsAPI = {
   getExpressionStats: () => apiRequest('/stats/expressions'),
 };
 
-// 인증 API
+// Authentication API
 export const authAPI = {
   getProfile: () => apiRequest('/auth/profile'),
   updateProfile: (data: any) => apiRequest('/auth/profile', {

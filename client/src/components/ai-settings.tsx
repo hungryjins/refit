@@ -16,7 +16,9 @@ export default function AISettings() {
     pineconeApiKey: "",
     customEndpoint: "",
   });
-  const [testMessage, setTestMessage] = useState("Hello, can you help me practice English?");
+  const [testMessage, setTestMessage] = useState(
+    "Hello, can you help me practice English?"
+  );
   const { toast } = useToast();
 
   const updateConfigMutation = useMutation({
@@ -25,14 +27,14 @@ export default function AISettings() {
     },
     onSuccess: () => {
       toast({
-        title: "AI 설정 완료! 🤖",
-        description: "AI 서비스 설정이 저장되었습니다.",
+        title: "AI Settings Complete! 🤖",
+        description: "AI service settings have been saved.",
       });
     },
     onError: () => {
       toast({
-        title: "오류",
-        description: "AI 설정 저장에 실패했습니다.",
+        title: "Error",
+        description: "Failed to save AI settings.",
         variant: "destructive",
       });
     },
@@ -44,10 +46,12 @@ export default function AISettings() {
     },
     onSuccess: (data) => {
       toast({
-        title: data.success ? "연결 성공! ✅" : "연결 실패 ❌",
-        description: data.success 
-          ? "커스텀 엔드포인트가 정상적으로 작동합니다." 
-          : data.error || "엔드포인트 연결에 실패했습니다.",
+        title: data.success
+          ? "Connection Successful! ✅"
+          : "Connection Failed ❌",
+        description: data.success
+          ? "Custom endpoint is working properly."
+          : data.error || "Failed to connect to endpoint.",
         variant: data.success ? "default" : "destructive",
       });
     },
@@ -60,8 +64,8 @@ export default function AISettings() {
   const handleTestEndpoint = () => {
     if (!config.customEndpoint) {
       toast({
-        title: "오류",
-        description: "커스텀 엔드포인트 URL을 입력해주세요.",
+        title: "Error",
+        description: "Please enter a custom endpoint URL.",
         variant: "destructive",
       });
       return;
@@ -80,16 +84,17 @@ export default function AISettings() {
         className="gradient-primary rounded-2xl shadow-lg p-6 text-white"
       >
         <h3 className="text-xl font-bold mb-2 flex items-center">
-          🤖 AI 서비스 설정
+          🤖 AI Service Settings
         </h3>
         <p className="text-sm opacity-90">
-          LLM, RAG, Vector DB 등 외부 AI 서비스를 연동하여 더 똑똑한 대화를 만들어보세요.
+          Connect external AI services like LLM, RAG, Vector DB to create
+          smarter conversations.
         </p>
       </motion.div>
 
       <Card>
         <CardHeader>
-          <CardTitle>AI 서비스 연동</CardTitle>
+          <CardTitle>AI Service Integration</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="openai" className="w-full">
@@ -97,103 +102,141 @@ export default function AISettings() {
               <TabsTrigger value="openai">OpenAI</TabsTrigger>
               <TabsTrigger value="anthropic">Anthropic</TabsTrigger>
               <TabsTrigger value="cohere">Cohere</TabsTrigger>
-              <TabsTrigger value="custom">커스텀</TabsTrigger>
+              <TabsTrigger value="custom">Custom</TabsTrigger>
             </TabsList>
 
             <TabsContent value="openai" className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">OpenAI API Key</label>
+                <label className="text-sm font-medium mb-2 block">
+                  OpenAI API Key
+                </label>
                 <Input
                   type="password"
                   value={config.openaiApiKey}
-                  onChange={(e) => setConfig(prev => ({ ...prev, openaiApiKey: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      openaiApiKey: e.target.value,
+                    }))
+                  }
                   placeholder="sk-..."
                   className="w-full"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  OpenAI API 키를 입력하면 GPT 모델을 사용한 대화가 가능합니다.
+                  Enter your OpenAI API key to enable conversations using GPT
+                  models.
                 </p>
               </div>
             </TabsContent>
 
             <TabsContent value="anthropic" className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Anthropic API Key</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Anthropic API Key
+                </label>
                 <Input
                   type="password"
                   value={config.anthropicApiKey}
-                  onChange={(e) => setConfig(prev => ({ ...prev, anthropicApiKey: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      anthropicApiKey: e.target.value,
+                    }))
+                  }
                   placeholder="sk-ant-..."
                   className="w-full"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  Anthropic API 키를 입력하면 Claude 모델을 사용한 대화가 가능합니다.
+                  Enter your Anthropic API key to enable conversations using
+                  Claude models.
                 </p>
               </div>
             </TabsContent>
 
             <TabsContent value="cohere" className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Cohere API Key</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Cohere API Key
+                </label>
                 <Input
                   type="password"
                   value={config.cohereApiKey}
-                  onChange={(e) => setConfig(prev => ({ ...prev, cohereApiKey: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      cohereApiKey: e.target.value,
+                    }))
+                  }
                   placeholder="..."
                   className="w-full"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Pinecone API Key (Vector DB)</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Pinecone API Key (Vector DB)
+                </label>
                 <Input
                   type="password"
                   value={config.pineconeApiKey}
-                  onChange={(e) => setConfig(prev => ({ ...prev, pineconeApiKey: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      pineconeApiKey: e.target.value,
+                    }))
+                  }
                   placeholder="..."
                   className="w-full"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  Pinecone을 사용하여 표현 임베딩과 의미적 검색을 구현할 수 있습니다.
+                  Use Pinecone to implement expression embeddings and semantic
+                  search.
                 </p>
               </div>
             </TabsContent>
 
             <TabsContent value="custom" className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">커스텀 엔드포인트 URL</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Custom Endpoint URL
+                </label>
                 <Input
                   value={config.customEndpoint}
-                  onChange={(e) => setConfig(prev => ({ ...prev, customEndpoint: e.target.value }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      customEndpoint: e.target.value,
+                    }))
+                  }
                   placeholder="https://your-api.com/chat"
                   className="w-full"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  자체 LLM/RAG 시스템의 API 엔드포인트를 입력하세요.
+                  Enter the API endpoint of your own LLM/RAG system.
                 </p>
               </div>
 
               <div className="border rounded-lg p-4 bg-gray-50">
-                <h4 className="font-semibold mb-2">API 요청 형식</h4>
+                <h4 className="font-semibold mb-2">API Request Format</h4>
                 <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
-{`POST /your-endpoint
+                  {`POST /your-endpoint
 {
-  "prompt": "시스템 프롬프트...",
-  "userMessage": "사용자 메시지",
+  "prompt": "System prompt...",
+  "userMessage": "User message",
   "context": {
     "userExpressions": [...],
     "conversationHistory": [...],
-    "scenario": "대화 시나리오"
+    "scenario": "Conversation scenario"
   }
 }`}
                 </pre>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">테스트 메시지</label>
+                <label className="text-sm font-medium">Test Message</label>
                 <Input
                   value={testMessage}
                   onChange={(e) => setTestMessage(e.target.value)}
-                  placeholder="테스트할 메시지를 입력하세요"
+                  placeholder="Enter a message to test"
                 />
                 <Button
                   onClick={handleTestEndpoint}
@@ -201,7 +244,9 @@ export default function AISettings() {
                   variant="outline"
                   className="w-full"
                 >
-                  {testEndpointMutation.isPending ? "테스트 중..." : "🔄 엔드포인트 테스트"}
+                  {testEndpointMutation.isPending
+                    ? "Testing..."
+                    : "🔄 Test Endpoint"}
                 </Button>
               </div>
             </TabsContent>
@@ -213,7 +258,9 @@ export default function AISettings() {
               disabled={updateConfigMutation.isPending}
               className="w-full gradient-primary text-white"
             >
-              {updateConfigMutation.isPending ? "저장 중..." : "💾 설정 저장"}
+              {updateConfigMutation.isPending
+                ? "Saving..."
+                : "💾 Save Settings"}
             </Button>
           </div>
         </CardContent>
@@ -221,43 +268,46 @@ export default function AISettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>연동 가이드</CardTitle>
+          <CardTitle>Integration Guide</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 border rounded-lg">
               <h4 className="font-semibold flex items-center gap-2 mb-2">
-                🔧 LLM 연동
+                🔧 LLM Integration
               </h4>
               <p className="text-sm text-gray-600">
-                OpenAI, Anthropic 등의 API 키를 설정하면 더 자연스러운 대화가 가능합니다.
+                Set up API keys for OpenAI, Anthropic, etc. to enable more
+                natural conversations.
               </p>
             </div>
-            
+
             <div className="p-4 border rounded-lg">
               <h4 className="font-semibold flex items-center gap-2 mb-2">
-                📊 RAG 시스템
+                📊 RAG System
               </h4>
               <p className="text-sm text-gray-600">
-                Vector DB와 연동하여 사용자의 표현을 기반으로 맞춤형 대화를 생성합니다.
+                Connect with Vector DB to generate customized conversations
+                based on user expressions.
               </p>
             </div>
-            
+
             <div className="p-4 border rounded-lg">
               <h4 className="font-semibold flex items-center gap-2 mb-2">
-                🎯 표현 분석
+                🎯 Expression Analysis
               </h4>
               <p className="text-sm text-gray-600">
-                임베딩을 통해 사용자가 사용한 표현의 정확도와 문맥을 정밀하게 분석합니다.
+                Precisely analyze the accuracy and context of expressions used
+                by users through embeddings.
               </p>
             </div>
-            
+
             <div className="p-4 border rounded-lg">
               <h4 className="font-semibold flex items-center gap-2 mb-2">
-                🔗 커스텀 연동
+                🔗 Custom Integration
               </h4>
               <p className="text-sm text-gray-600">
-                자체 구축한 LLM/RAG 시스템도 쉽게 연동할 수 있습니다.
+                Easily integrate your own LLM/RAG systems.
               </p>
             </div>
           </div>

@@ -11,10 +11,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Firebase 앱 초기화
+// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-// Firebase 서비스 내보내기
+// Export Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 

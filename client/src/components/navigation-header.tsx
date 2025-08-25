@@ -63,7 +63,7 @@ export default function NavigationHeader() {
                   {user?.email}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOutUser}>
-                  로그아웃
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

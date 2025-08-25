@@ -6,7 +6,7 @@ import { authenticateUser, requireUser } from "../middleware/auth";
 const router = express.Router();
 const db = getFirestore();
 
-// 사용자 프로필 조회
+// Get user profile
 router.get("/profile", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -15,7 +15,7 @@ router.get("/profile", authenticateUser, async (req, res) => {
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      // 새 사용자 프로필 생성
+      // Create new user profile
       const defaultProfile = {
         email: user.email,
         displayName: user.displayName || user.email?.split("@")[0] || "User",
@@ -30,7 +30,7 @@ router.get("/profile", authenticateUser, async (req, res) => {
 
     const userData = userDoc.data();
 
-    // 마지막 로그인 시간 업데이트
+    // Update last login time
     await userRef.update({
       lastLoginAt: new Date(),
     });
@@ -42,7 +42,7 @@ router.get("/profile", authenticateUser, async (req, res) => {
   }
 });
 
-// 사용자 프로필 업데이트
+// Update user profile
 router.put("/profile", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -66,18 +66,18 @@ router.put("/profile", authenticateUser, async (req, res) => {
   }
 });
 
-// 사용자 삭제 (계정 탈퇴)
+// Delete user (account withdrawal)
 router.delete("/account", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
     const userId = user.uid;
 
-    // Firestore에서 사용자 데이터 삭제
+    // Delete user data from Firestore
     const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
     if (userDoc.exists) {
-      // 하위 컬렉션들도 삭제
+      // Delete sub-collections as well
       const collections = [
         "expressions",
         "categories",
@@ -97,11 +97,11 @@ router.delete("/account", authenticateUser, async (req, res) => {
         await batch.commit();
       }
 
-      // 사용자 문서 삭제
+      // Delete user document
       await userRef.delete();
     }
 
-    // Firebase Auth에서 사용자 삭제
+    // Delete user from Firebase Auth
     await auth().deleteUser(userId);
 
     return res.json({ message: "Success" });
@@ -111,7 +111,7 @@ router.delete("/account", authenticateUser, async (req, res) => {
   }
 });
 
-// 토큰 검증
+// Token verification
 router.post("/verify", async (req, res) => {
   try {
     const { token } = req.body;

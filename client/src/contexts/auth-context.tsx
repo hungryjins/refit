@@ -45,14 +45,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
-        title: "로그인 성공! 🎉",
-        description: "환영합니다!",
+        title: "Login Successful! 🎉",
+        description: "Welcome!",
       });
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast({
-        title: "로그인 실패",
-        description: error.message || "로그인에 실패했습니다.",
+        title: "Login Failed",
+        description: error.message || "Failed to sign in.",
         variant: "destructive",
       });
       throw error;
@@ -72,14 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       await updateProfile(result.user, { displayName });
       toast({
-        title: "회원가입 성공! 🎉",
-        description: "계정이 생성되었습니다.",
+        title: "Sign Up Successful! 🎉",
+        description: "Account created successfully.",
       });
     } catch (error: any) {
       console.error("Sign up error:", error);
       toast({
-        title: "회원가입 실패",
-        description: error.message || "회원가입에 실패했습니다.",
+        title: "Sign Up Failed",
+        description: error.message || "Failed to sign up.",
         variant: "destructive",
       });
       throw error;
@@ -90,14 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       toast({
-        title: "로그아웃 완료",
-        description: "안전하게 로그아웃되었습니다.",
+        title: "Sign Out Complete",
+        description: "You have been safely signed out.",
       });
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
-        title: "로그아웃 실패",
-        description: "로그아웃에 실패했습니다.",
+        title: "Sign Out Failed",
+        description: "Failed to sign out.",
         variant: "destructive",
       });
     }
@@ -108,14 +108,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       toast({
-        title: "Google 로그인 성공! 🎉",
-        description: "환영합니다!",
+        title: "Google Login Successful! 🎉",
+        description: "Welcome!",
       });
     } catch (error: any) {
       console.error("Google sign in error:", error);
       toast({
-        title: "Google 로그인 실패",
-        description: error.message || "Google 로그인에 실패했습니다.",
+        title: "Google Login Failed",
+        description: error.message || "Failed to sign in with Google.",
         variant: "destructive",
       });
       throw error;

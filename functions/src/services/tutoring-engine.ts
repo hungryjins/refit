@@ -37,7 +37,7 @@ export class TutoringEngine {
   private sessions: Map<string, SessionState> = new Map();
 
   /**
-   * 1단계: 세션 초기화
+   * Step 1: Session initialization
    */
   initializeSession(
     sessionId: string,
@@ -60,7 +60,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 2단계: 사용자 응답 처리
+   * Step 2: Process user response
    */
   processUserAnswer(sessionId: string, userMessage: string): ProcessResult {
     const session = this.sessions.get(sessionId);
@@ -74,14 +74,14 @@ export class TutoringEngine {
       throw new Error("No current expression found");
     }
 
-    // 유사도 계산
+    // Calculate similarity
     const similarity = this.calculateSimilarity(
       userMessage,
       currentExpression.text
     );
     const isCorrect = similarity >= 0.8;
 
-    // 통계 업데이트
+    // Update statistics
     const currentAttempts = session.attempts.get(currentExpression.id) || 0;
     session.attempts.set(currentExpression.id, currentAttempts + 1);
 
@@ -92,7 +92,7 @@ export class TutoringEngine {
       session.correctUsages.set(currentExpression.id, currentCorrect + 1);
     }
 
-    // 피드백 생성
+    // Generate feedback
     const feedback = this.generateFeedback(
       userMessage,
       currentExpression.text,
@@ -100,7 +100,7 @@ export class TutoringEngine {
       similarity
     );
 
-    // 세션 완료 여부 확인
+    // Check if session is complete
     const sessionComplete =
       session.completedExpressions.size === session.expressions.length;
 
@@ -113,7 +113,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 3단계: 다음 프롬프트 생성
+   * Step 3: Generate next prompt
    */
   getNextPrompt(sessionId: string): string {
     const session = this.sessions.get(sessionId);
@@ -121,7 +121,7 @@ export class TutoringEngine {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    // 다음 미완료 표현식 찾기
+    // Find next incomplete expression
     let nextIndex = session.currentExpressionIndex;
     do {
       nextIndex = (nextIndex + 1) % session.expressions.length;
@@ -133,11 +133,11 @@ export class TutoringEngine {
     session.currentExpressionIndex = nextIndex;
     const nextExpression = session.expressions[nextIndex];
 
-    return `다음 표현을 사용해보세요: "${nextExpression.text}"`;
+    return `Try using this expression: "${nextExpression.text}"`;
   }
 
   /**
-   * 4단계: 세션 종료 여부 확인
+   * Step 4: Check session completion
    */
   shouldEndSession(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
@@ -149,7 +149,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 5단계: 결과 요약
+   * Step 5: Summarize results
    */
   summarizeResults(sessionId: string): SessionSummary {
     const session = this.sessions.get(sessionId);
@@ -178,7 +178,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 세션 진행 상황 조회
+   * Get session progress
    */
   getSessionProgress(sessionId: string): SessionProgress {
     const session = this.sessions.get(sessionId);
@@ -195,7 +195,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 현재 표현식 조회
+   * Get current expression
    */
   getCurrentExpression(sessionId: string): ExpressionWithNumberId | null {
     const session = this.sessions.get(sessionId);
@@ -207,7 +207,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 세션 정리
+   * Clean up session
    */
   cleanupSession(sessionId: string): void {
     this.sessions.delete(sessionId);
@@ -215,7 +215,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 유사도 계산 (Levenshtein 거리 기반)
+   * Calculate similarity (Levenshtein distance based)
    */
   private calculateSimilarity(str1: string, str2: string): number {
     const clean1 = str1
@@ -227,12 +227,12 @@ export class TutoringEngine {
       .toLowerCase()
       .trim();
 
-    // 정확한 구문 매치 확인
+    // Check exact phrase match
     if (clean1.includes(clean2) || clean2.includes(clean1)) {
       return 1.0;
     }
 
-    // 단어 기반 유사도
+    // Word-based similarity
     const words1 = clean1.split(/\s+/).filter((w) => w.length > 2);
     const words2 = clean2.split(/\s+/).filter((w) => w.length > 2);
 
@@ -246,7 +246,7 @@ export class TutoringEngine {
   }
 
   /**
-   * 피드백 생성
+   * Generate feedback
    */
   private generateFeedback(
     userMessage: string,
@@ -255,11 +255,11 @@ export class TutoringEngine {
     similarity: number
   ): string {
     if (isCorrect) {
-      return `✅ 정확합니다! "${targetExpression}" 표현을 잘 사용하셨습니다.`;
+      return `✅ Correct! You used the expression "${targetExpression}" well.`;
     } else if (similarity >= 0.6) {
-      return `⚠️ 거의 맞았습니다! "${targetExpression}" 표현을 다시 한번 확인해보세요.`;
+      return `⚠️ Almost correct! Please check the expression "${targetExpression}" again.`;
     } else {
-      return `❌ 다시 시도해보세요. 목표 표현: "${targetExpression}"`;
+      return `❌ Please try again. Target expression: "${targetExpression}"`;
     }
   }
 }

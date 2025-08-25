@@ -22,26 +22,31 @@ interface AIConversationChatProps {
   onBack: () => void;
 }
 
-export default function AIConversationChat({ selectedExpressions, onBack }: AIConversationChatProps) {
+export default function AIConversationChat({
+  selectedExpressions,
+  onBack,
+}: AIConversationChatProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [sessionId, setSessionId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 초기 메시지
+  // Initial message
   useEffect(() => {
     const initialMessage: ChatMessage = {
       id: 1,
-      content: `안녕하세요! 저는 AI 대화 파트너입니다. 다음 표현들을 연습해보겠습니다:\n\n${selectedExpressions.map(expr => `• ${expr.text}`).join('\n')}\n\n자유롭게 대화를 시작해보세요!`,
+      content: `Hello! I'm your AI conversation partner. Let's practice these expressions:\n\n${selectedExpressions
+        .map((expr) => `• ${expr.text}`)
+        .join("\n")}\n\nFeel free to start the conversation!`,
       isUser: false,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
     setMessages([initialMessage]);
-    setSessionId(Date.now()); // 간단한 세션 ID
+    setSessionId(Date.now()); // Simple session ID
   }, [selectedExpressions]);
 
-  // AI 응답 생성
+  // Generate AI response
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
       return apiRequest("/api/ai-conversation/respond", {
@@ -49,50 +54,54 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
         body: JSON.stringify({
           message: userMessage,
           sessionId,
-          expressions: selectedExpressions
+          expressions: selectedExpressions,
         }),
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
     },
-    onSuccess: (data: { response: string; feedback?: string; usedExpression?: string }) => {
+    onSuccess: (data: {
+      response: string;
+      feedback?: string;
+      usedExpression?: string;
+    }) => {
       const aiMessage: ChatMessage = {
         id: Date.now(),
         content: data.response,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
 
       if (data.usedExpression) {
         toast({
-          title: "표현 사용 감지!",
-          description: `"${data.usedExpression}" 표현을 사용하셨네요!`,
-          variant: "default"
+          title: "Expression Detected!",
+          description: `You used the expression "${data.usedExpression}"!`,
+          variant: "default",
         });
       }
     },
     onError: () => {
       toast({
-        title: "오류",
-        description: "메시지를 전송할 수 없습니다.",
-        variant: "destructive"
+        title: "Error",
+        description: "Unable to send message.",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
 
-    // 사용자 메시지 추가
+    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now(),
       content: inputMessage,
       isUser: true,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
-    // AI 응답 요청
+    // Request AI response
     sendMessageMutation.mutate(inputMessage);
     setInputMessage("");
   };
@@ -113,14 +122,14 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
         </Badge>
       </div>
 
-      {/* 선택된 표현들 표시 */}
+      {/* Display selected expressions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">연습 표현들</CardTitle>
+          <CardTitle className="text-sm">Practice Expressions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {selectedExpressions.map(expr => (
+            {selectedExpressions.map((expr) => (
               <Badge key={expr.id} variant="secondary" className="text-xs">
                 {expr.text}
               </Badge>
@@ -129,7 +138,7 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
         </CardContent>
       </Card>
 
-      {/* 채팅 메시지 영역 */}
+      {/* Chat messages area */}
       <Card className="flex-1 flex flex-col">
         <CardContent className="flex-1 flex flex-col p-4">
           <div className="flex-1 space-y-4 overflow-y-auto max-h-96">
@@ -148,12 +157,14 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
                       🤖
                     </div>
                   )}
-                  
-                  <div className={`rounded-2xl p-4 max-w-xs shadow-md ${
-                    message.isUser 
-                      ? "chat-bubble-user text-white rounded-tr-sm" 
-                      : "chat-bubble-bot text-gray-800 rounded-tl-sm"
-                  }`}>
+
+                  <div
+                    className={`rounded-2xl p-4 max-w-xs shadow-md ${
+                      message.isUser
+                        ? "chat-bubble-user text-white rounded-tr-sm"
+                        : "chat-bubble-bot text-gray-800 rounded-tl-sm"
+                    }`}
+                  >
                     <p className="whitespace-pre-line">{message.content}</p>
                   </div>
 
@@ -188,7 +199,7 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
             <div ref={messagesEndRef} />
           </div>
 
-          {/* 메시지 입력 영역 */}
+          {/* Message input area */}
           <div className="flex gap-2 mt-4">
             <Input
               value={inputMessage}
@@ -202,7 +213,7 @@ export default function AIConversationChat({ selectedExpressions, onBack }: AICo
               }}
               disabled={sendMessageMutation.isPending}
             />
-            <Button 
+            <Button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || sendMessageMutation.isPending}
             >

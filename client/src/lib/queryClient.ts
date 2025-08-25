@@ -12,7 +12,7 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Firebase 인증 토큰을 포함한 헤더 생성
+// Generate headers with Firebase auth token
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const user = auth.currentUser;
   if (!user) {
@@ -26,7 +26,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   };
 }
 
-// 오버로드된 apiRequest 함수
+// Overloaded apiRequest function
 export async function apiRequest(
   url: string,
   options?: {
@@ -53,7 +53,7 @@ export async function apiRequest(
   let headers: Record<string, string> = {};
 
   if (typeof urlOrOptions === "string") {
-    // apiRequest(method, url, data) 형태
+    // apiRequest(method, url, data) form
     method = urlOrMethod;
     url = urlOrOptions;
     if (data) {
@@ -61,7 +61,7 @@ export async function apiRequest(
       headers["Content-Type"] = "application/json";
     }
   } else {
-    // apiRequest(url, options) 형태
+    // apiRequest(url, options) form
     url = urlOrMethod;
     const options = urlOrOptions || {};
     method = options.method || "GET";
@@ -69,12 +69,12 @@ export async function apiRequest(
     headers = { ...headers, ...options.headers };
   }
 
-  // Firebase Functions URL로 변환
+  // Convert to Firebase Functions URL
   const firebaseUrl = url.startsWith("/api/")
     ? `${API_BASE_URL}${url.replace("/api", "")}`
     : url;
 
-  // 인증 헤더 추가
+  // Add auth headers
   const authHeaders = await getAuthHeaders();
   const finalHeaders = { ...authHeaders, ...headers };
 
@@ -86,7 +86,7 @@ export async function apiRequest(
 
   await throwIfResNotOk(res);
 
-  // JSON 응답인 경우 파싱해서 반환
+  // Parse and return JSON response
   const contentType = res.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     try {

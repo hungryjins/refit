@@ -28,7 +28,7 @@ export default function AuthPage() {
         await signUp(email, password, displayName);
       }
     } catch (error) {
-      // 에러는 AuthContext에서 처리됨
+      // Error is handled in AuthContext
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +39,7 @@ export default function AuthPage() {
     try {
       await signInWithGoogle();
     } catch (error) {
-      // 에러는 AuthContext에서 처리됨
+      // Error is handled in AuthContext
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +65,7 @@ export default function AuthPage() {
                 English Conversation Coach
               </CardTitle>
               <p className="text-gray-600 mt-2">
-                영어 대화 연습을 시작해보세요!
+                Start practicing English conversations!
               </p>
             </motion.div>
           </CardHeader>
@@ -76,8 +76,8 @@ export default function AuthPage() {
               onValueChange={(value) => setIsLogin(value === "login")}
             >
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">로그인</TabsTrigger>
-                <TabsTrigger value="signup">회원가입</TabsTrigger>
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -85,7 +85,7 @@ export default function AuthPage() {
                   <div>
                     <Input
                       type="email"
-                      placeholder="이메일"
+                      placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -95,7 +95,7 @@ export default function AuthPage() {
                   <div>
                     <Input
                       type="password"
-                      placeholder="비밀번호"
+                      placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -107,7 +107,7 @@ export default function AuthPage() {
                     className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                     disabled={isLoading}
                   >
-                    {isLoading ? "로그인 중..." : "로그인"}
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -117,7 +117,7 @@ export default function AuthPage() {
                   <div>
                     <Input
                       type="text"
-                      placeholder="이름"
+                      placeholder="Name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       required
@@ -127,7 +127,7 @@ export default function AuthPage() {
                   <div>
                     <Input
                       type="email"
-                      placeholder="이메일"
+                      placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -137,7 +137,7 @@ export default function AuthPage() {
                   <div>
                     <Input
                       type="password"
-                      placeholder="비밀번호 (6자 이상)"
+                      placeholder="Password (6+ characters)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -150,7 +150,7 @@ export default function AuthPage() {
                     className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
                     disabled={isLoading}
                   >
-                    {isLoading ? "회원가입 중..." : "회원가입"}
+                    {isLoading ? "Signing up..." : "Sign Up"}
                   </Button>
                 </form>
               </TabsContent>
@@ -162,7 +162,7 @@ export default function AuthPage() {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">또는</span>
+                  <span className="bg-white px-2 text-gray-500">or</span>
                 </div>
               </div>
 
@@ -191,7 +191,7 @@ export default function AuthPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Google로 계속하기
+                Continue with Google
               </Button>
             </div>
           </CardContent>

@@ -5,7 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Pinecone 클라이언트 초기화
+// Initialize Pinecone client
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY || "",
 });
@@ -22,11 +22,11 @@ export interface ScriptResult {
 }
 
 /**
- * Friends Script 서비스
+ * Friends Script Service
  */
 export class FriendsScriptService {
   /**
-   * 검색 쿼리 생성
+   * Generate search query
    */
   async generateSearchQuery(userInput: string): Promise<string> {
     const prompt = `
@@ -57,11 +57,11 @@ Return only the clean search query (1 sentence or phrase). No explanations.
   }
 
   /**
-   * Pinecone 벡터 검색
+   * Pinecone vector search
    */
   async searchInPinecone(queryText: string, topK = 3): Promise<SearchResult[]> {
     try {
-      // 1. OpenAI 임베딩 생성
+      // 1. Generate OpenAI embedding
       const embeddingResponse = await openai.embeddings.create({
         input: [queryText],
         model: "text-embedding-3-small",
@@ -69,7 +69,7 @@ Return only the clean search query (1 sentence or phrase). No explanations.
 
       const embedding = embeddingResponse.data[0].embedding;
 
-      // 2. Pinecone에서 벡터 검색
+      // 2. Vector search in Pinecone
       const queryResponse = await pineconeIndex.query({
         vector: embedding,
         topK: topK,
@@ -84,7 +84,7 @@ Return only the clean search query (1 sentence or phrase). No explanations.
         })),
       });
 
-      // 3. 결과 포맷팅
+      // 3. Format results
       const results: SearchResult[] = [];
       for (const match of queryResponse.matches || []) {
         if (match.metadata && match.metadata.text) {
@@ -103,14 +103,14 @@ Return only the clean search query (1 sentence or phrase). No explanations.
   }
 
   /**
-   * 유사한 스크립트 찾기
+   * Find similar script
    */
   async findSimilarScript(userInput: string): Promise<ScriptResult> {
     try {
-      // 1. 검색 쿼리 생성
+      // 1. Generate search query
       const searchQuery = await this.generateSearchQuery(userInput);
 
-      // 2. Pinecone에서 검색
+      // 2. Search in Pinecone
       const searchResults = await this.searchInPinecone(searchQuery, 1);
 
       if (searchResults.length === 0) {
@@ -138,18 +138,18 @@ Return only the clean search query (1 sentence or phrase). No explanations.
   }
 
   /**
-   * 사용자 입력에 대한 응답 생성
+   * Generate response for user input
    */
   async generateResponse(userInput: string): Promise<string> {
     try {
       const scriptResult = await this.findSimilarScript(userInput);
 
-      // 유사도가 높은 경우 스크립트를 응답으로 사용
+      // Use script as response if similarity is high
       if (scriptResult.similarity > 0.7) {
         return `Here's a similar expression from Friends: "${scriptResult.script}"`;
       }
 
-      // 유사도가 낮은 경우 일반적인 응답
+      // Use general response if similarity is low
       return "That's a great way to express yourself! Keep practicing your English conversation skills.";
     } catch (error) {
       console.error("Generate response error:", error);

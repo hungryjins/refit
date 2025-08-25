@@ -1,7 +1,7 @@
 import express from "express";
 import { auth } from "firebase-admin";
 
-// Express Request 타입 확장
+// Extend Express Request type
 declare global {
   namespace Express {
     interface Request {
@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-// 인증 미들웨어
+// Authentication middleware
 export const authenticateUser = async (
   req: express.Request,
   res: express.Response,
@@ -33,7 +33,7 @@ export const authenticateUser = async (
   }
 };
 
-// 타입 가드 함수
+// Type guard function
 export const requireUser = (req: express.Request): auth.DecodedIdToken => {
   if (!req.user) {
     throw new Error("User not authenticated");

@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || "",
 });
 
 export interface ScenarioResponse {
@@ -26,7 +26,7 @@ export interface ProcessResult {
 
 export class OpenAIService {
   /**
-   * 시나리오 생성
+   * Generate scenario
    */
   async generateScenario(expressions: string[]): Promise<string> {
     try {
@@ -66,7 +66,7 @@ export class OpenAIService {
   }
 
   /**
-   * 사용자 메시지 처리 (Original Chat 모드)
+   * Process user message (Original Chat mode)
    */
   async processUserMessage(
     userMessage: string,
@@ -74,11 +74,11 @@ export class OpenAIService {
   ): Promise<ProcessResult> {
     try {
       if (targetExpressions.length === 0) {
-        // 일반 대화 모드
+        // General conversation mode
         return await this.generateAIResponse(userMessage);
       }
 
-      // 표현식 연습 모드
+      // Expression practice mode
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -107,7 +107,7 @@ export class OpenAIService {
       const aiResponse =
         response.choices[0].message.content || "I understand. Please continue.";
 
-      // 표현식 사용 여부 확인
+      // Check if expression was used
       const evaluation = await this.evaluateExpressionUsage(
         userMessage,
         targetExpressions
@@ -127,7 +127,7 @@ export class OpenAIService {
   }
 
   /**
-   * AI 응답 생성 (AI Conversation 모드)
+   * Generate AI response (AI Conversation mode)
    */
   async generateAIResponse(userMessage: string): Promise<ProcessResult> {
     try {
@@ -167,7 +167,7 @@ export class OpenAIService {
   }
 
   /**
-   * 표현식 사용 평가
+   * Evaluate expression usage
    */
   private async evaluateExpressionUsage(
     userMessage: string,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Firestore용 스키마 정의
+// Firestore schema definitions
 export const categorySchema = z.object({
   name: z.string(),
   icon: z.string().default("📝"),
@@ -46,7 +46,7 @@ export const achievementSchema = z.object({
   unlockedAt: z.date().default(() => new Date()),
 });
 
-// 타입 정의
+// Type definitions
 export type Category = z.infer<typeof categorySchema>;
 export type Expression = z.infer<typeof expressionSchema>;
 export type ChatSession = z.infer<typeof chatSessionSchema>;
@@ -54,7 +54,7 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type UserStats = z.infer<typeof userStatsSchema>;
 export type Achievement = z.infer<typeof achievementSchema>;
 
-// Firestore 문서 타입
+// Firestore document types
 export interface FirestoreCategory extends Category {
   id: string;
 }
@@ -63,7 +63,7 @@ export interface FirestoreExpression extends Expression {
   id: string;
 }
 
-// 숫자 ID를 사용하는 표현식 타입 (기존 시스템과 호환)
+// Expression type with numeric ID (compatible with existing system)
 export interface ExpressionWithNumberId {
   id: number;
   text: string;

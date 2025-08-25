@@ -6,19 +6,19 @@ import { authenticateUser, requireUser } from "../middleware/auth";
 const router = express.Router();
 const db = getFirestore();
 
-// 표현식 생성 스키마
+// Expression creation schema
 const createExpressionSchema = z.object({
   text: z.string().min(1),
   categoryId: z.string().optional(),
 });
 
-// 표현식 업데이트 스키마
+// Expression update schema
 const updateExpressionSchema = z.object({
   text: z.string().min(1).optional(),
   categoryId: z.string().optional(),
 });
 
-// 표현식 목록 조회
+// Get expression list
 router.get("/", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -41,7 +41,7 @@ router.get("/", authenticateUser, async (req, res) => {
   }
 });
 
-// 표현식 생성
+// Create expression
 router.post("/", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -76,7 +76,7 @@ router.post("/", authenticateUser, async (req, res) => {
   }
 });
 
-// 표현식 수정
+// Update expression
 router.put("/:id", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -112,7 +112,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
   }
 });
 
-// 표현식 삭제
+// Delete expression
 router.delete("/:id", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -139,7 +139,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
   }
 });
 
-// 카테고리 목록 조회
+// Get category list
 router.get("/categories", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -162,7 +162,7 @@ router.get("/categories", authenticateUser, async (req, res) => {
   }
 });
 
-// 카테고리 생성
+// Create category
 router.post("/categories", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);

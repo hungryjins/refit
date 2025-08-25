@@ -3,12 +3,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Send, Play, AlertCircle, CheckCircle2, Clock, Trophy, Star, XCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Mic,
+  MicOff,
+  Send,
+  Play,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Trophy,
+  Star,
+  XCircle,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { Expression, Category, ChatMessage, ChatSession } from "@shared/schema";
+import type {
+  Expression,
+  Category,
+  ChatMessage,
+  ChatSession,
+} from "@shared/schema";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -17,47 +38,72 @@ interface ChatBubbleProps {
 
 function ChatBubble({ message, targetExpression }: ChatBubbleProps) {
   const isBot = !message.isUser;
-  
+
   return (
-    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-4`}>
-      <div className={`max-w-[80%] p-4 rounded-lg ${
-        isBot 
-          ? 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 border border-blue-200' 
-          : 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md'
-      }`}>
-        {isBot && message.content.includes('<상황>') ? (
-          // 게임 형식으로 상황-역할-대사 파싱
+    <div className={`flex ${isBot ? "justify-start" : "justify-end"} mb-4`}>
+      <div
+        className={`max-w-[80%] p-4 rounded-lg ${
+          isBot
+            ? "bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 border border-blue-200"
+            : "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md"
+        }`}
+      >
+        {isBot && message.content.includes("<Situation>") ? (
+          // Game format parsing: situation-role-dialogue
           <div className="space-y-3">
-            {message.content.split('\n').map((line, index) => {
-              if (line.includes('<상황>')) {
+            {message.content.split("\n").map((line, index) => {
+              if (line.includes("<Situation>")) {
                 return (
-                  <div key={index} className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded">
+                  <div
+                    key={index}
+                    className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded"
+                  >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-yellow-600 font-bold">🎬 상황</span>
+                      <span className="text-yellow-600 font-bold">
+                        🎬 Situation
+                      </span>
                     </div>
-                    <p className="text-sm text-yellow-800">{line.replace('<상황>', '').trim()}</p>
+                    <p className="text-sm text-yellow-800">
+                      {line.replace("<Situation>", "").trim()}
+                    </p>
                   </div>
                 );
-              } else if (line.includes('<역할>')) {
+              } else if (line.includes("<Role>")) {
                 return (
-                  <div key={index} className="bg-blue-100 border-l-4 border-blue-500 p-3 rounded">
+                  <div
+                    key={index}
+                    className="bg-blue-100 border-l-4 border-blue-500 p-3 rounded"
+                  >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-blue-600 font-bold">👤 역할</span>
+                      <span className="text-blue-600 font-bold">👤 Role</span>
                     </div>
-                    <p className="text-sm text-blue-800">{line.replace('<역할>', '').trim()}</p>
+                    <p className="text-sm text-blue-800">
+                      {line.replace("<Role>", "").trim()}
+                    </p>
                   </div>
                 );
-              } else if (line.includes('<대사>')) {
+              } else if (line.includes("<Dialogue>")) {
                 return (
-                  <div key={index} className="bg-green-100 border-l-4 border-green-500 p-3 rounded">
+                  <div
+                    key={index}
+                    className="bg-green-100 border-l-4 border-green-500 p-3 rounded"
+                  >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-600 font-bold">💬 대사</span>
+                      <span className="text-green-600 font-bold">
+                        💬 Dialogue
+                      </span>
                     </div>
-                    <p className="text-sm text-green-800 font-medium">{line.replace('<대사>', '').trim()}</p>
+                    <p className="text-sm text-green-800 font-medium">
+                      {line.replace("<Dialogue>", "").trim()}
+                    </p>
                   </div>
                 );
               } else if (line.trim()) {
-                return <p key={index} className="text-sm">{line}</p>;
+                return (
+                  <p key={index} className="text-sm">
+                    {line}
+                  </p>
+                );
               }
               return null;
             })}
@@ -65,18 +111,18 @@ function ChatBubble({ message, targetExpression }: ChatBubbleProps) {
         ) : (
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         )}
-        
+
         {message.isUser && message.expressionUsed !== null && (
           <div className="mt-3 p-2 bg-white bg-opacity-20 rounded text-xs">
             {message.isCorrect ? (
               <span className="flex items-center gap-1 text-green-200">
-                <CheckCircle2 size={12} />
-                ✨ 훌륭해요! 표현을 완벽하게 사용했습니다!
+                <CheckCircle2 size={12} />✨ Excellent! You used the expression
+                perfectly!
               </span>
             ) : (
               <span className="flex items-center gap-1 text-red-200">
                 <AlertCircle size={12} />
-                💡 다시 시도해보세요
+                💡 Please try again
               </span>
             )}
           </div>
@@ -93,10 +139,18 @@ function TypingIndicator() {
         <div className="flex items-center space-x-2">
           <div className="flex space-x-1">
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div
+              className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
           </div>
-          <span className="text-xs text-blue-600">AI가 응답을 생성 중...</span>
+          <span className="text-xs text-blue-600">
+            AI is generating response...
+          </span>
         </div>
       </div>
     </div>
@@ -104,14 +158,24 @@ function TypingIndicator() {
 }
 
 export default function NewChatInterface() {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedExpressions, setSelectedExpressions] = useState<Expression[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [selectedExpressions, setSelectedExpressions] = useState<Expression[]>(
+    []
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [usedExpressions, setUsedExpressions] = useState<Set<number>>(new Set());
-  const [expressionResults, setExpressionResults] = useState<Map<number, boolean>>(new Map());
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(
+    null
+  );
+  const [usedExpressions, setUsedExpressions] = useState<Set<number>>(
+    new Set()
+  );
+  const [expressionResults, setExpressionResults] = useState<
+    Map<number, boolean>
+  >(new Map());
   const [sessionComplete, setSessionComplete] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -121,25 +185,25 @@ export default function NewChatInterface() {
 
   // Fetch expressions and categories
   const { data: expressions = [] } = useQuery<Expression[]>({
-    queryKey: ['/api/expressions'],
+    queryKey: ["/api/expressions"],
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
+    queryKey: ["/api/categories"],
   });
 
   // Start session mutation
   const startSessionMutation = useMutation({
     mutationFn: async (expressionIds: number[]) => {
-      return await apiRequest('/api/chat/start-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      return await apiRequest("/api/chat/start-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ selectedExpressions: expressionIds }),
       });
     },
     onSuccess: (data) => {
-      console.log('Session started successfully:', data);
-      
+      console.log("Session started successfully:", data);
+
       // Create session object from response
       const session = {
         id: data.sessionId,
@@ -148,23 +212,25 @@ export default function NewChatInterface() {
         createdAt: new Date().toISOString(),
         endedAt: null,
       };
-      
+
       setCurrentSession(session);
-      
+
       // Set initial message from server response
       if (data.initialMessage) {
-        setMessages([{
-          id: data.messageId || Date.now(),
-          sessionId: data.sessionId,
-          content: data.initialMessage,
-          isUser: false,
-          expressionUsed: null,
-          isCorrect: null,
-          createdAt: new Date().toISOString(),
-        }]);
-        console.log('Initial message set:', data.initialMessage);
+        setMessages([
+          {
+            id: data.messageId || Date.now(),
+            sessionId: data.sessionId,
+            content: data.initialMessage,
+            isUser: false,
+            expressionUsed: null,
+            isCorrect: null,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+        console.log("Initial message set:", data.initialMessage);
       }
-      
+
       setUsedExpressions(new Set());
       setSessionComplete(false);
     },
@@ -172,22 +238,25 @@ export default function NewChatInterface() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ message, sessionId }: { 
-      message: string; 
+    mutationFn: async ({
+      message,
+      sessionId,
+    }: {
+      message: string;
       sessionId: number;
     }) => {
-      return await apiRequest('/api/chat/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message, 
-          sessionId
+      return await apiRequest("/api/chat/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          sessionId,
         }),
       });
     },
     onSuccess: (data) => {
-      console.log('Message response:', data);
-      
+      console.log("Message response:", data);
+
       // Add user message
       const userMessage: ChatMessage = {
         id: Date.now(),
@@ -203,34 +272,42 @@ export default function NewChatInterface() {
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
         sessionId: currentSession!.id,
-        content: data.response || "응답을 받을 수 없습니다.",
+        content: data.response || "Unable to receive response.",
         isUser: false,
         expressionUsed: null,
         isCorrect: null,
         createdAt: new Date().toISOString(),
       };
 
-      setMessages(prev => [...prev, userMessage, botMessage]);
+      setMessages((prev) => [...prev, userMessage, botMessage]);
 
       // Update progress based on actual server response
-      console.log('Server progress data:', data.progress);
+      console.log("Server progress data:", data.progress);
       if (data.progress && Array.isArray(data.progress.completedExpressions)) {
         // Update used expressions based on server's completed list
         setUsedExpressions(new Set(data.progress.completedExpressions));
-        
+
         // Update expression results (correct/incorrect)
         if (data.progress.expressionResults) {
           const resultsMap = new Map();
-          data.progress.expressionResults.forEach((result: {id: number, isCorrect: boolean}) => {
-            resultsMap.set(result.id, result.isCorrect);
-          });
+          data.progress.expressionResults.forEach(
+            (result: { id: number; isCorrect: boolean }) => {
+              resultsMap.set(result.id, result.isCorrect);
+            }
+          );
           setExpressionResults(resultsMap);
         }
-        
-        console.log('Updated used expressions:', data.progress.completedExpressions);
-        console.log('Updated expression results:', data.progress.expressionResults);
+
+        console.log(
+          "Updated used expressions:",
+          data.progress.completedExpressions
+        );
+        console.log(
+          "Updated expression results:",
+          data.progress.expressionResults
+        );
       } else {
-        console.log('No valid progress data received');
+        console.log("No valid progress data received");
       }
 
       // Check if session is complete
@@ -248,19 +325,24 @@ export default function NewChatInterface() {
 
   const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
-    const categoryExpressions = expressions.filter(expr => expr.categoryId === category.id);
+    const categoryExpressions = expressions.filter(
+      (expr) => expr.categoryId === category.id
+    );
     setSelectedExpressions(categoryExpressions);
   };
 
   const handleStartSession = () => {
     if (selectedExpressions.length === 0) return;
-    console.log('Starting session with expressions:', selectedExpressions.map(expr => expr.id));
-    startSessionMutation.mutate(selectedExpressions.map(expr => expr.id));
+    console.log(
+      "Starting session with expressions:",
+      selectedExpressions.map((expr) => expr.id)
+    );
+    startSessionMutation.mutate(selectedExpressions.map((expr) => expr.id));
   };
 
   const handleSendMessage = () => {
     if (!currentInput.trim() || !currentSession) return;
-    
+
     sendMessageMutation.mutate({
       message: currentInput.trim(),
       sessionId: currentSession.id,
@@ -268,7 +350,7 @@ export default function NewChatInterface() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -277,9 +359,9 @@ export default function NewChatInterface() {
   // Update stats mutation for progress tracking
   const updateStatsMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/stats', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      return await apiRequest("/api/stats", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           totalSessions: 1, // increment by 1
           currentStreak: 1, // increment by 1
@@ -288,8 +370,8 @@ export default function NewChatInterface() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/expressions'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/expressions"] });
     },
   });
 
@@ -317,38 +399,42 @@ export default function NewChatInterface() {
   useEffect(() => {
     const loadActiveSession = async () => {
       try {
-        console.log('Checking for active session...');
-        const activeSession = await apiRequest('/api/chat/active');
-        console.log('Active session response:', activeSession);
-        
+        console.log("Checking for active session...");
+        const activeSession = await apiRequest("/api/chat/active");
+        console.log("Active session response:", activeSession);
+
         if (activeSession && activeSession.isActive) {
-          console.log('Setting current session:', activeSession);
+          console.log("Setting current session:", activeSession);
           setCurrentSession(activeSession);
-          
+
           // Load messages for the active session
-          const messages = await apiRequest(`/api/chat/sessions/${activeSession.id}/messages`);
-          console.log('Loaded messages:', messages);
+          const messages = await apiRequest(
+            `/api/chat/sessions/${activeSession.id}/messages`
+          );
+          console.log("Loaded messages:", messages);
           setMessages(messages);
-          
+
           // If no messages exist, this session is broken - reset to allow new session
           if (messages.length === 0) {
-            console.log('Active session found but no messages - resetting session');
+            console.log(
+              "Active session found but no messages - resetting session"
+            );
             setCurrentSession(null);
           }
         } else {
-          console.log('No active session found');
+          console.log("No active session found");
         }
       } catch (error) {
-        console.log('Error checking active session:', error);
+        console.log("Error checking active session:", error);
       }
     };
-    
+
     loadActiveSession();
   }, []);
 
   // Auto scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Show category selection if no session active
@@ -367,25 +453,31 @@ export default function NewChatInterface() {
               </div>
               <div className="text-left">
                 <div className="text-2xl font-bold text-white drop-shadow-lg">
-                  {t('chat.conversation')}
+                  {t("chat.conversation")}
                 </div>
                 <div className="text-sm text-white/90 font-normal">
                   AI-Powered English Practice
                 </div>
               </div>
             </CardTitle>
-            <p className="text-white/90 mt-3 relative z-10 font-medium">카테고리를 선택하고 영어 표현을 연습해보세요! ✨</p>
+            <p className="text-white/90 mt-3 relative z-10 font-medium">
+              Select a category and practice English expressions! ✨
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span>📚</span> {t('chat.select.category')}
+                <span>📚</span> {t("chat.select.category")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categories.map((category) => (
                   <Button
                     key={category.id}
-                    variant={selectedCategory?.id === category.id ? "default" : "outline"}
+                    variant={
+                      selectedCategory?.id === category.id
+                        ? "default"
+                        : "outline"
+                    }
                     onClick={() => handleCategorySelect(category)}
                     className="p-4 h-auto text-left hover:shadow-md transition-all duration-200"
                   >
@@ -395,7 +487,12 @@ export default function NewChatInterface() {
                         <span className="font-medium">{category.name}</span>
                       </div>
                       <span className="text-xs text-gray-500">
-                        {expressions.filter(expr => expr.categoryId === category.id).length} 개 표현
+                        {
+                          expressions.filter(
+                            (expr) => expr.categoryId === category.id
+                          ).length
+                        }{" "}
+                        expressions
                       </span>
                     </div>
                   </Button>
@@ -406,22 +503,26 @@ export default function NewChatInterface() {
             {selectedExpressions.length > 0 && (
               <div className="bg-white rounded-xl p-6 border border-blue-100">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <span>🎯</span> 연습할 표현들 ({selectedExpressions.length}개)
+                  <span>🎯</span> Practice Expressions (
+                  {selectedExpressions.length})
                 </h3>
                 <div className="space-y-3 mb-6">
                   {selectedExpressions.map((expr) => (
-                    <div key={expr.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={expr.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <span className="font-medium">{expr.text}</span>
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-400" />
                         <Badge variant="outline" className="text-xs">
-                          대기 중
+                          Waiting
                         </Badge>
                       </div>
                     </div>
                   ))}
                 </div>
-                <Button 
+                <Button
                   onClick={handleStartSession}
                   disabled={startSessionMutation.isPending}
                   className="w-full py-3 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
@@ -429,11 +530,11 @@ export default function NewChatInterface() {
                   {startSessionMutation.isPending ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      {t('chat.starting')}
+                      {t("chat.starting")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      🚀 {t('chat.start.session')}
+                      🚀 {t("chat.start.session")}
                     </span>
                   )}
                 </Button>
@@ -454,7 +555,7 @@ export default function NewChatInterface() {
           <Card className="sticky top-20 shadow-lg border-0 bg-gradient-to-br from-white to-green-50">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <span>📊</span> 표현 체크리스트
+                <span>📊</span> Expression Checklist
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -464,29 +565,45 @@ export default function NewChatInterface() {
                 // Check if this expression is currently being practiced
                 const isCurrentTarget = currentSession && messages.length > 0;
                 const lastMessage = messages[messages.length - 1];
-                const isCurrentExpression = lastMessage && !lastMessage.isUser && 
-                  (lastMessage.content.includes('새로운 표현') || lastMessage.content.includes(expr.text));
-                
-                console.log(`Expression ${expr.id} (${expr.text}): isUsed=${isUsed}, isCorrect=${isCorrect}, usedExpressions=${Array.from(usedExpressions)}`);
-                
+                const isCurrentExpression =
+                  lastMessage &&
+                  !lastMessage.isUser &&
+                  (lastMessage.content.includes("new expression") ||
+                    lastMessage.content.includes(expr.text));
+
+                console.log(
+                  `Expression ${expr.id} (${
+                    expr.text
+                  }): isUsed=${isUsed}, isCorrect=${isCorrect}, usedExpressions=${Array.from(
+                    usedExpressions
+                  )}`
+                );
+
                 return (
-                  <div key={expr.id} className={`p-3 rounded-lg border transition-all duration-300 ${
-                    isUsed 
-                      ? isCorrect 
-                        ? 'bg-green-100 border-green-300 shadow-sm' 
-                        : 'bg-red-100 border-red-300 shadow-sm'
-                      : isCurrentExpression
-                      ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}>
+                  <div
+                    key={expr.id}
+                    className={`p-3 rounded-lg border transition-all duration-300 ${
+                      isUsed
+                        ? isCorrect
+                          ? "bg-green-100 border-green-300 shadow-sm"
+                          : "bg-red-100 border-red-300 shadow-sm"
+                        : isCurrentExpression
+                        ? "bg-blue-100 border-blue-300 ring-2 ring-blue-200"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${
-                        isUsed 
-                          ? isCorrect 
-                            ? 'text-green-800' 
-                            : 'text-red-800'
-                          : isCurrentExpression ? 'text-blue-800' : 'text-gray-700'
-                      }`}>
+                      <span
+                        className={`text-sm font-medium ${
+                          isUsed
+                            ? isCorrect
+                              ? "text-green-800"
+                              : "text-red-800"
+                            : isCurrentExpression
+                            ? "text-blue-800"
+                            : "text-gray-700"
+                        }`}
+                      >
                         {expr.text}
                       </span>
                       {isUsed ? (
@@ -501,41 +618,52 @@ export default function NewChatInterface() {
                         <Clock size={16} className="text-gray-400" />
                       )}
                     </div>
-                    <div className={`text-xs mt-1 ${
-                      isUsed 
-                        ? isCorrect 
-                          ? 'text-green-600' 
-                          : 'text-red-600'
-                        : isCurrentExpression ? 'text-blue-600' : 'text-gray-500'
-                    }`}>
-                      {isUsed 
-                        ? isCorrect 
-                          ? '✅ 정답!' 
-                          : '❌ 오답'
-                        : isCurrentExpression ? '🎯 연습 중...' : '대기 중...'}
+                    <div
+                      className={`text-xs mt-1 ${
+                        isUsed
+                          ? isCorrect
+                            ? "text-green-600"
+                            : "text-red-600"
+                          : isCurrentExpression
+                          ? "text-blue-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {isUsed
+                        ? isCorrect
+                          ? "✅ Correct!"
+                          : "❌ Incorrect"
+                        : isCurrentExpression
+                        ? "🎯 Practicing..."
+                        : "Waiting..."}
                     </div>
                   </div>
                 );
               })}
-              
+
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-sm font-medium text-blue-800">
-                  진행률: {usedExpressions.size}/{selectedExpressions.length}
+                  Progress: {usedExpressions.size}/{selectedExpressions.length}
                 </div>
                 <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(usedExpressions.size / selectedExpressions.length) * 100}%` }}
+                    style={{
+                      width: `${
+                        (usedExpressions.size / selectedExpressions.length) *
+                        100
+                      }%`,
+                    }}
                   ></div>
                 </div>
               </div>
 
               {sessionComplete && (
-                <Button 
+                <Button
                   onClick={handleNewSession}
                   className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
                 >
-                  🎉 새 세션 시작
+                  🎉 Start New Session
                 </Button>
               )}
             </CardContent>
@@ -546,31 +674,35 @@ export default function NewChatInterface() {
         <div className="lg:col-span-2">
           <Card className="shadow-2xl h-[700px] flex flex-col border-0 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 backdrop-blur-sm">
             <CardHeader className="flex-shrink-0 border-b bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-t-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-            <div className="absolute top-0 left-0 w-full h-full opacity-20">
-              <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[length:15px_15px]"></div>
-            </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
+              <div className="absolute top-0 left-0 w-full h-full opacity-20">
+                <div className="w-full h-full bg-white/10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[length:15px_15px]"></div>
+              </div>
               <CardTitle className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 border border-white/30">
                     <span className="text-3xl">🎭</span>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-white drop-shadow-lg">영어 대화 연습</div>
-                    <div className="text-sm text-white/90 font-medium">상황에 맞는 표현을 사용해보세요! ✨</div>
+                    <div className="text-xl font-bold text-white drop-shadow-lg">
+                      English Conversation Practice
+                    </div>
+                    <div className="text-sm text-white/90 font-medium">
+                      Use expressions appropriate for the situation! ✨
+                    </div>
                   </div>
                 </div>
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   size="sm"
                   onClick={handleNewSession}
                   className="text-white border-white/30 hover:bg-white/20 backdrop-blur-sm bg-white/10 transition-all duration-200 hover:scale-105 relative z-10"
                 >
-                  🔄 새 세션
+                  🔄 New Session
                 </Button>
               </CardTitle>
             </CardHeader>
-            
+
             <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -589,24 +721,32 @@ export default function NewChatInterface() {
                     size="icon"
                     onClick={() => setIsRecording(!isRecording)}
                     className={`transition-all duration-300 hover:scale-110 border-2 ${
-                      isRecording 
-                        ? "bg-red-100 border-red-300 shadow-lg shadow-red-200/50" 
+                      isRecording
+                        ? "bg-red-100 border-red-300 shadow-lg shadow-red-200/50"
                         : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg"
                     }`}
                   >
-                    {isRecording ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4 text-gray-600" />}
+                    {isRecording ? (
+                      <MicOff className="h-4 w-4 text-red-600" />
+                    ) : (
+                      <Mic className="h-4 w-4 text-gray-600" />
+                    )}
                   </Button>
                   <Input
                     value={currentInput}
                     onChange={(e) => setCurrentInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="상황에 맞는 영어 표현을 사용해서 대화해보세요... ✨"
+                    placeholder="Use English expressions appropriate for the situation to chat... ✨"
                     className="flex-1 border-2 border-gray-200 focus:border-blue-400 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 focus:shadow-lg"
                     disabled={sendMessageMutation.isPending}
                   />
-                  <Button 
+                  <Button
                     onClick={handleSendMessage}
-                    disabled={!currentInput.trim() || sendMessageMutation.isPending || sessionComplete}
+                    disabled={
+                      !currentInput.trim() ||
+                      sendMessageMutation.isPending ||
+                      sessionComplete
+                    }
                     className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-6"
                   >
                     <Send className="h-4 w-4" />
@@ -615,7 +755,7 @@ export default function NewChatInterface() {
                 {sessionComplete && (
                   <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-xl text-center shadow-lg">
                     <span className="text-green-800 font-bold text-lg">
-                      🎉 모든 표현을 성공적으로 사용했습니다! 축하합니다! ✨
+                      🎉 You have successfully used all expressions! Congratulations! ✨
                     </span>
                   </div>
                 )}
@@ -625,85 +765,135 @@ export default function NewChatInterface() {
         </div>
 
         {/* Completion Modal */}
-        <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
+        <Dialog
+          open={showCompletionModal}
+          onOpenChange={setShowCompletionModal}
+        >
           <DialogContent className="max-w-lg bg-gradient-to-br from-white via-blue-50/30 to-purple-50/50 border-2 border-blue-200 shadow-2xl">
             <DialogHeader className="text-center">
               <div className="mx-auto mb-4 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
                 <Trophy className="h-12 w-12 text-white" />
               </div>
               <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                🎉 세션 완료! 🎉
+                🎉 Session Complete! 🎉
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="text-center bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
                 <div className="flex justify-center gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-8 w-8 text-yellow-500 fill-current animate-pulse" style={{animationDelay: `${i * 0.1}s`}} />
+                    <Star
+                      key={i}
+                      className="h-8 w-8 text-yellow-500 fill-current animate-pulse"
+                      style={{ animationDelay: `${i * 0.1}s` }}
+                    />
                   ))}
                 </div>
                 <p className="text-2xl font-bold text-gray-800 mb-3">
-                  축하합니다! 🎊
+                  Congratulations! 🎊
                 </p>
                 <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-md">
                   <div className="text-center mb-3">
                     <div className="text-3xl font-bold text-blue-800">
-                      {Array.from(expressionResults.values()).filter(Boolean).length} / {usedExpressions.size}
+                      {
+                        Array.from(expressionResults.values()).filter(Boolean)
+                          .length
+                      }{" "}
+                      / {usedExpressions.size}
                     </div>
                     <div className="text-lg text-blue-600 font-medium">
-                      정답률: {usedExpressions.size > 0 ? Math.round((Array.from(expressionResults.values()).filter(Boolean).length / usedExpressions.size) * 100) : 0}% ✨
+                      Accuracy:{" "}
+                      {usedExpressions.size > 0
+                        ? Math.round(
+                            (Array.from(expressionResults.values()).filter(
+                              Boolean
+                            ).length /
+                              usedExpressions.size) *
+                              100
+                          )
+                        : 0}
+                      % ✨
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* 정답 표현 */}
-              {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).length > 0 && (
+              {/* Correct expressions */}
+              {selectedExpressions.filter(
+                (expr) =>
+                  usedExpressions.has(expr.id) && expressionResults.get(expr.id)
+              ).length > 0 && (
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-lg">
                   <h4 className="font-bold text-green-800 mb-3 text-lg flex items-center gap-2">
                     <div className="bg-green-200 rounded-full p-1">
                       <CheckCircle2 size={20} className="text-green-700" />
                     </div>
-                    정답 표현
+                    Correct Expressions
                   </h4>
                   <div className="space-y-2">
-                    {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && expressionResults.get(expr.id)).map(expr => (
-                      <div key={expr.id} className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-green-700 font-medium">
-                        <CheckCircle2 size={18} className="text-green-600" />
-                        {expr.text}
-                        <span className="ml-auto text-xs text-green-600">✅</span>
-                      </div>
-                    ))}
+                    {selectedExpressions
+                      .filter(
+                        (expr) =>
+                          usedExpressions.has(expr.id) &&
+                          expressionResults.get(expr.id)
+                      )
+                      .map((expr) => (
+                        <div
+                          key={expr.id}
+                          className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-green-700 font-medium"
+                        >
+                          <CheckCircle2 size={18} className="text-green-600" />
+                          {expr.text}
+                          <span className="ml-auto text-xs text-green-600">
+                            ✅
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
 
-              {/* 오답 표현 */}
-              {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).length > 0 && (
+              {/* Incorrect expressions */}
+              {selectedExpressions.filter(
+                (expr) =>
+                  usedExpressions.has(expr.id) &&
+                  !expressionResults.get(expr.id)
+              ).length > 0 && (
                 <div className="bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-300 rounded-xl p-5 shadow-lg">
                   <h4 className="font-bold text-red-800 mb-3 text-lg flex items-center gap-2">
                     <div className="bg-red-200 rounded-full p-1">
                       <XCircle size={20} className="text-red-700" />
                     </div>
-                    다시 연습할 표현
+                    Expressions to Practice Again
                   </h4>
                   <div className="space-y-2">
-                    {selectedExpressions.filter(expr => usedExpressions.has(expr.id) && !expressionResults.get(expr.id)).map(expr => (
-                      <div key={expr.id} className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-red-700 font-medium">
-                        <XCircle size={18} className="text-red-600" />
-                        {expr.text}
-                        <span className="ml-auto text-xs text-red-600">📚</span>
-                      </div>
-                    ))}
+                    {selectedExpressions
+                      .filter(
+                        (expr) =>
+                          usedExpressions.has(expr.id) &&
+                          !expressionResults.get(expr.id)
+                      )
+                      .map((expr) => (
+                        <div
+                          key={expr.id}
+                          className="flex items-center gap-3 p-2 bg-white/60 rounded-lg text-red-700 font-medium"
+                        >
+                          <XCircle size={18} className="text-red-600" />
+                          {expr.text}
+                          <span className="ml-auto text-xs text-red-600">
+                            📚
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
 
-              <Button 
+              <Button
                 onClick={handleCloseModal}
                 className="w-full bg-gradient-to-r from-green-500 via-blue-500 to-purple-600 hover:from-green-600 hover:via-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 py-3 text-lg font-bold"
               >
-                🎉 새 세션 시작하기
+                🎉 Start New Session
               </Button>
             </div>
           </DialogContent>

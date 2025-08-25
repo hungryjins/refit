@@ -3,25 +3,59 @@ import { motion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useExpressions } from "@/hooks/use-expressions";
 import { useCategories } from "@/hooks/use-categories";
 import { useLanguage } from "@/contexts/language-context";
-import type { InsertExpression, InsertCategory, Expression, Category } from "@shared/schema";
+import type {
+  InsertExpression,
+  InsertCategory,
+  Expression,
+  Category,
+} from "@shared/schema";
 
 export default function ExpressionManager() {
   const [newExpression, setNewExpression] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryIcon, setNewCategoryIcon] = useState("📝");
-  const [newCategoryColor, setNewCategoryColor] = useState("from-blue-500 to-purple-500");
+  const [newCategoryColor, setNewCategoryColor] = useState(
+    "from-blue-500 to-purple-500"
+  );
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
-  const [editingExpression, setEditingExpression] = useState<Expression | null>(null);
+  const [editingExpression, setEditingExpression] = useState<Expression | null>(
+    null
+  );
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editText, setEditText] = useState("");
   const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
@@ -29,8 +63,15 @@ export default function ExpressionManager() {
   const [editCategoryIcon, setEditCategoryIcon] = useState("");
   const [editCategoryColor, setEditCategoryColor] = useState("");
   const { toast } = useToast();
-  const { expressions, refetch, updateExpression, deleteExpression } = useExpressions();
-  const { categories, createCategory, updateCategory, deleteCategory, isCreating } = useCategories();
+  const { expressions, refetch, updateExpression, deleteExpression } =
+    useExpressions();
+  const {
+    categories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    isCreating,
+  } = useCategories();
   const { t } = useLanguage();
 
   const addExpressionMutation = useMutation({
@@ -131,16 +172,16 @@ export default function ExpressionManager() {
     setEditCategoryId(null);
 
     toast({
-      title: "성공! 🎉",
-      description: "표현이 수정되었습니다",
+      title: "Success! 🎉",
+      description: "Expression has been updated",
     });
   };
 
   const handleDeleteExpression = (id: number) => {
     deleteExpression(id);
     toast({
-      title: "삭제됨 🗑️",
-      description: "표현이 삭제되었습니다",
+      title: "Deleted 🗑️",
+      description: "Expression has been deleted",
     });
   };
 
@@ -167,16 +208,16 @@ export default function ExpressionManager() {
     setEditCategoryColor("");
 
     toast({
-      title: "성공! 🎉",
-      description: "카테고리가 수정되었습니다",
+      title: "Success! 🎉",
+      description: "Category has been updated",
     });
   };
 
   const handleDeleteCategory = (id: number) => {
     deleteCategory(id);
     toast({
-      title: "삭제됨 🗑️",
-      description: "카테고리가 삭제되었습니다",
+      title: "Deleted 🗑️",
+      description: "Category has been deleted",
     });
   };
 
@@ -191,7 +232,7 @@ export default function ExpressionManager() {
 
   const colorOptions = [
     "from-blue-500 to-purple-500",
-    "from-green-500 to-teal-500", 
+    "from-green-500 to-teal-500",
     "from-purple-500 to-pink-500",
     "from-yellow-500 to-orange-500",
     "from-gray-500 to-slate-500",
@@ -209,32 +250,41 @@ export default function ExpressionManager() {
         className="gradient-primary rounded-2xl shadow-lg p-6 text-white"
       >
         <h3 className="text-xl font-bold mb-4 flex items-center">
-          ➕ {t('expressions.add.new')}
+          ➕ {t("expressions.add.new")}
         </h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2 opacity-90">
-              {t('expressions.english.expression')}
+              {t("expressions.english.expression")}
             </label>
             <Input
               value={newExpression}
               onChange={(e) => setNewExpression(e.target.value)}
-              placeholder={t('expressions.placeholder')}
+              placeholder={t("expressions.placeholder")}
               className="w-full bg-white bg-opacity-20 backdrop-blur-sm rounded-xl py-3 px-4 text-white placeholder-white placeholder-opacity-70 border-white border-opacity-30 focus:ring-2 focus:ring-white focus:ring-opacity-50"
               onKeyPress={(e) => e.key === "Enter" && handleAddExpression()}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 opacity-90">
-              {t('expressions.category.optional')}
+              {t("expressions.category.optional")}
             </label>
             <div className="flex gap-2">
-              <Select value={selectedCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setSelectedCategoryId(value === "uncategorized" ? null : parseInt(value))}>
+              <Select
+                value={selectedCategoryId?.toString() || "uncategorized"}
+                onValueChange={(value) =>
+                  setSelectedCategoryId(
+                    value === "uncategorized" ? null : parseInt(value)
+                  )
+                }
+              >
                 <SelectTrigger className="flex-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl py-3 px-4 text-white border-white border-opacity-30">
-                  <SelectValue placeholder={t('expressions.select.category')} />
+                  <SelectValue placeholder={t("expressions.select.category")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="uncategorized">{t('expressions.uncategorized')}</SelectItem>
+                  <SelectItem value="uncategorized">
+                    {t("expressions.uncategorized")}
+                  </SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -242,8 +292,11 @@ export default function ExpressionManager() {
                   ))}
                 </SelectContent>
               </Select>
-              
-              <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
+
+              <Dialog
+                open={isCreateCategoryOpen}
+                onOpenChange={setIsCreateCategoryOpen}
+              >
                 <DialogTrigger asChild>
                   <Button className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white border-opacity-30 text-white px-3">
                     ➕
@@ -251,22 +304,28 @@ export default function ExpressionManager() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>{t('expressions.create.category')}</DialogTitle>
+                    <DialogTitle>
+                      {t("expressions.create.category")}
+                    </DialogTitle>
                     <DialogDescription>
-                      {t('expressions.create.description')}
+                      {t("expressions.create.description")}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">{t('expressions.category.name')}</label>
+                      <label className="block text-sm font-medium mb-2">
+                        {t("expressions.category.name")}
+                      </label>
                       <Input
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder={t('expressions.category.placeholder')}
+                        placeholder={t("expressions.category.placeholder")}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">{t('expressions.icon')}</label>
+                      <label className="block text-sm font-medium mb-2">
+                        {t("expressions.icon")}
+                      </label>
                       <Input
                         value={newCategoryIcon}
                         onChange={(e) => setNewCategoryIcon(e.target.value)}
@@ -275,14 +334,18 @@ export default function ExpressionManager() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">{t('expressions.color.theme')}</label>
+                      <label className="block text-sm font-medium mb-2">
+                        {t("expressions.color.theme")}
+                      </label>
                       <div className="grid grid-cols-4 gap-2">
                         {colorOptions.map((color) => (
                           <button
                             key={color}
                             onClick={() => setNewCategoryColor(color)}
                             className={`h-8 rounded-lg bg-gradient-to-r ${color} ${
-                              newCategoryColor === color ? "ring-2 ring-blue-500" : ""
+                              newCategoryColor === color
+                                ? "ring-2 ring-blue-500"
+                                : ""
                             }`}
                           />
                         ))}
@@ -294,14 +357,16 @@ export default function ExpressionManager() {
                         disabled={addCategoryMutation.isPending}
                         className="flex-1"
                       >
-                        {addCategoryMutation.isPending ? t('expressions.creating') : t('expressions.create')}
+                        {addCategoryMutation.isPending
+                          ? t("expressions.creating")
+                          : t("expressions.create")}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => setIsCreateCategoryOpen(false)}
                         className="flex-1"
                       >
-                        {t('expressions.cancel')}
+                        {t("expressions.cancel")}
                       </Button>
                     </div>
                   </div>
@@ -314,7 +379,9 @@ export default function ExpressionManager() {
             disabled={addExpressionMutation.isPending}
             className="w-full bg-white text-primary-600 font-semibold py-3 rounded-xl hover:bg-opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            {addExpressionMutation.isPending ? t('expressions.saving') : t('expressions.save.expression')}
+            {addExpressionMutation.isPending
+              ? t("expressions.saving")
+              : t("expressions.save.expression")}
           </Button>
         </div>
       </motion.div>
@@ -333,7 +400,9 @@ export default function ExpressionManager() {
               transition={{ delay: index * 0.1 }}
             >
               <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
-                <CardHeader className={`bg-gradient-to-r ${category.color} text-white p-4`}>
+                <CardHeader
+                  className={`bg-gradient-to-r ${category.color} text-white p-4`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="font-semibold flex items-center gap-2">
@@ -341,7 +410,7 @@ export default function ExpressionManager() {
                         {category.name}
                       </CardTitle>
                       <p className="text-xs opacity-90">
-                        {categoryExpressions.length} {t('expressions.count')}
+                        {categoryExpressions.length} {t("expressions.count")}
                       </p>
                     </div>
                     <div className="flex gap-1">
@@ -365,15 +434,23 @@ export default function ExpressionManager() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>{t('categories.delete.title')}</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {t("categories.delete.title")}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t('categories.delete.description', {name: category.name})}
+                              {t("categories.delete.description", {
+                                name: category.name,
+                              })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>{t('expressions.cancel')}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
-                              {t('expressions.delete')}
+                            <AlertDialogCancel>
+                              {t("expressions.cancel")}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteCategory(category.id)}
+                            >
+                              {t("expressions.delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -383,10 +460,13 @@ export default function ExpressionManager() {
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   {categoryExpressions.map((expr) => {
-                    const accuracy = expr.totalCount > 0 
-                      ? Math.round((expr.correctCount / expr.totalCount) * 100)
-                      : 0;
-                    
+                    const accuracy =
+                      expr.totalCount > 0
+                        ? Math.round(
+                            (expr.correctCount / expr.totalCount) * 100
+                          )
+                        : 0;
+
                     return (
                       <motion.div
                         key={expr.id}
@@ -398,16 +478,24 @@ export default function ExpressionManager() {
                             "{expr.text}"
                           </p>
                           <p className="text-xs text-gray-600">
-                            {t('expressions.used')} {expr.totalCount} {t('expressions.times')}
+                            {t("expressions.used")} {expr.totalCount}{" "}
+                            {t("expressions.times")}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <div className={`text-xs font-medium ${
-                              accuracy >= 80 ? "text-green-600" : 
-                              accuracy >= 60 ? "text-yellow-600" : "text-red-600"
-                            }`}>
-                              {expr.totalCount > 0 ? `${accuracy}%` : t('expressions.new')}
+                            <div
+                              className={`text-xs font-medium ${
+                                accuracy >= 80
+                                  ? "text-green-600"
+                                  : accuracy >= 60
+                                  ? "text-yellow-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {expr.totalCount > 0
+                                ? `${accuracy}%`
+                                : t("expressions.new")}
                             </div>
                             {expr.totalCount > 0 && (
                               <div className="text-xs text-gray-500">
@@ -436,15 +524,22 @@ export default function ExpressionManager() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>표현 삭제</AlertDialogTitle>
+                                  <AlertDialogTitle>
+                                    Delete Expression
+                                  </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    "{expr.text}" 표현을 삭제하시겠습니까?
+                                    Are you sure you want to delete the
+                                    expression "{expr.text}"?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>취소</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteExpression(expr.id)}>
-                                    삭제
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleDeleteExpression(expr.id)
+                                    }
+                                  >
+                                    Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -459,64 +554,77 @@ export default function ExpressionManager() {
             </motion.div>
           );
         })}
-        
+
         {/* Uncategorized expressions */}
-        {groupedExpressions["uncategorized"] && groupedExpressions["uncategorized"].length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: categories.length * 0.1 }}
-          >
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-gray-500 to-slate-500 text-white p-4">
-                <CardTitle className="font-semibold flex items-center gap-2">
-                  <span>📋</span>
-                  Uncategorized
-                </CardTitle>
-                <p className="text-xs opacity-90">
-                  {groupedExpressions["uncategorized"].length} expression{groupedExpressions["uncategorized"].length !== 1 ? 's' : ''}
-                </p>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                {groupedExpressions["uncategorized"].map((expr) => {
-                  const accuracy = expr.totalCount > 0 
-                    ? Math.round((expr.correctCount / expr.totalCount) * 100)
-                    : 0;
-                  
-                  return (
-                    <motion.div
-                      key={expr.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">
-                          "{expr.text}"
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          Used {expr.totalCount} time{expr.totalCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-xs font-medium ${
-                          accuracy >= 80 ? "text-green-600" : 
-                          accuracy >= 60 ? "text-yellow-600" : "text-red-600"
-                        }`}>
-                          {expr.totalCount > 0 ? `${accuracy}%` : "New"}
+        {groupedExpressions["uncategorized"] &&
+          groupedExpressions["uncategorized"].length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: categories.length * 0.1 }}
+            >
+              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
+                <CardHeader className="bg-gradient-to-r from-gray-500 to-slate-500 text-white p-4">
+                  <CardTitle className="font-semibold flex items-center gap-2">
+                    <span>📋</span>
+                    Uncategorized
+                  </CardTitle>
+                  <p className="text-xs opacity-90">
+                    {groupedExpressions["uncategorized"].length} expression
+                    {groupedExpressions["uncategorized"].length !== 1
+                      ? "s"
+                      : ""}
+                  </p>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  {groupedExpressions["uncategorized"].map((expr) => {
+                    const accuracy =
+                      expr.totalCount > 0
+                        ? Math.round(
+                            (expr.correctCount / expr.totalCount) * 100
+                          )
+                        : 0;
+
+                    return (
+                      <motion.div
+                        key={expr.id}
+                        whileHover={{ scale: 1.02 }}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">
+                            "{expr.text}"
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Used {expr.totalCount} time
+                            {expr.totalCount !== 1 ? "s" : ""}
+                          </p>
                         </div>
-                        {expr.totalCount > 0 && (
-                          <div className="text-xs text-gray-500">
-                            {expr.correctCount}/{expr.totalCount}
+                        <div className="text-right">
+                          <div
+                            className={`text-xs font-medium ${
+                              accuracy >= 80
+                                ? "text-green-600"
+                                : accuracy >= 60
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {expr.totalCount > 0 ? `${accuracy}%` : "New"}
                           </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                          {expr.totalCount > 0 && (
+                            <div className="text-xs text-gray-500">
+                              {expr.correctCount}/{expr.totalCount}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
       </div>
 
       {/* Empty State */}
@@ -528,40 +636,54 @@ export default function ExpressionManager() {
         >
           <div className="text-6xl mb-4">📚</div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            {t('expressions.no.expressions.yet')}
+            {t("expressions.no.expressions.yet")}
           </h3>
-          <p className="text-gray-600 mb-6">
-            {t('expressions.start.adding')}
-          </p>
+          <p className="text-gray-600 mb-6">{t("expressions.start.adding")}</p>
         </motion.div>
       )}
 
       {/* Edit Expression Dialog */}
-      <Dialog open={!!editingExpression} onOpenChange={() => setEditingExpression(null)}>
+      <Dialog
+        open={!!editingExpression}
+        onOpenChange={() => setEditingExpression(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('expressions.edit.title')}</DialogTitle>
+            <DialogTitle>{t("expressions.edit.title")}</DialogTitle>
             <DialogDescription>
-              {t('expressions.edit.description')}
+              {t("expressions.edit.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">{t('expressions.text')}</label>
+              <label className="block text-sm font-medium mb-2">
+                {t("expressions.text")}
+              </label>
               <Input
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                placeholder={t('expressions.enter.english')}
+                placeholder={t("expressions.enter.english")}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">{t('expressions.category')}</label>
-              <Select value={editCategoryId?.toString() || "uncategorized"} onValueChange={(value) => setEditCategoryId(value === "uncategorized" ? null : parseInt(value))}>
+              <label className="block text-sm font-medium mb-2">
+                {t("expressions.category")}
+              </label>
+              <Select
+                value={editCategoryId?.toString() || "uncategorized"}
+                onValueChange={(value) =>
+                  setEditCategoryId(
+                    value === "uncategorized" ? null : parseInt(value)
+                  )
+                }
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('expressions.select.category')} />
+                  <SelectValue placeholder={t("expressions.select.category")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="uncategorized">{t('expressions.uncategorized')}</SelectItem>
+                  <SelectItem value="uncategorized">
+                    {t("expressions.uncategorized")}
+                  </SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.icon} {cat.name}
@@ -572,10 +694,14 @@ export default function ExpressionManager() {
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleUpdateExpression} className="flex-1">
-                {t('expressions.update')}
+                {t("expressions.update")}
               </Button>
-              <Button variant="outline" onClick={() => setEditingExpression(null)} className="flex-1">
-                {t('expressions.cancel')}
+              <Button
+                variant="outline"
+                onClick={() => setEditingExpression(null)}
+                className="flex-1"
+              >
+                {t("expressions.cancel")}
               </Button>
             </div>
           </div>
@@ -583,25 +709,32 @@ export default function ExpressionManager() {
       </Dialog>
 
       {/* Edit Category Dialog */}
-      <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+      <Dialog
+        open={!!editingCategory}
+        onOpenChange={() => setEditingCategory(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('categories.edit.title')}</DialogTitle>
+            <DialogTitle>{t("categories.edit.title")}</DialogTitle>
             <DialogDescription>
-              {t('categories.edit.description')}
+              {t("categories.edit.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">{t('expressions.category.name')}</label>
+              <label className="block text-sm font-medium mb-2">
+                {t("expressions.category.name")}
+              </label>
               <Input
                 value={editCategoryName}
                 onChange={(e) => setEditCategoryName(e.target.value)}
-                placeholder={t('expressions.category.placeholder')}
+                placeholder={t("expressions.category.placeholder")}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">{t('expressions.icon')}</label>
+              <label className="block text-sm font-medium mb-2">
+                {t("expressions.icon")}
+              </label>
               <Input
                 value={editCategoryIcon}
                 onChange={(e) => setEditCategoryIcon(e.target.value)}
@@ -610,7 +743,9 @@ export default function ExpressionManager() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">{t('expressions.color.theme')}</label>
+              <label className="block text-sm font-medium mb-2">
+                {t("expressions.color.theme")}
+              </label>
               <div className="grid grid-cols-4 gap-2">
                 {colorOptions.map((color) => (
                   <button
@@ -625,10 +760,14 @@ export default function ExpressionManager() {
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleUpdateCategory} className="flex-1">
-                {t('expressions.update')}
+                {t("expressions.update")}
               </Button>
-              <Button variant="outline" onClick={() => setEditingCategory(null)} className="flex-1">
-                {t('expressions.cancel')}
+              <Button
+                variant="outline"
+                onClick={() => setEditingCategory(null)}
+                className="flex-1"
+              >
+                {t("expressions.cancel")}
               </Button>
             </div>
           </div>

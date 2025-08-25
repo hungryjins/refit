@@ -11,9 +11,9 @@ const db = getFirestore();
 const openaiService = new OpenAIService();
 const friendsScriptService = new FriendsScriptService();
 
-// ===== Original Chat 모드 =====
+// ===== Original Chat Mode =====
 
-// Original Chat 세션 시작
+// Start Original Chat session
 router.post("/start-session", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -26,7 +26,7 @@ router.post("/start-session", authenticateUser, async (req, res) => {
         .json({ message: "At least one expression must be selected" });
     }
 
-    // 표현식 조회
+    // Get expressions
     const expressionsRef = db
       .collection("users")
       .doc(userId)
@@ -52,7 +52,7 @@ router.post("/start-session", authenticateUser, async (req, res) => {
         .json({ message: "Invalid expression IDs provided" });
     }
 
-    // 세션 생성
+    // Create session
     const sessionData = {
       mode: "original",
       scenario: "Conversation practice with selected expressions",
@@ -67,16 +67,16 @@ router.post("/start-session", authenticateUser, async (req, res) => {
       .collection("chatSessions")
       .add(sessionData);
 
-    // 튜터링 엔진 초기화
+    // Initialize tutoring engine
     tutoringEngine.initializeSession(sessionRef.id, expressions);
 
-    // 첫 번째 표현식으로 시나리오 생성
+    // Generate scenario with first expression
     const firstExpression = expressions[0];
     const scenario = await openaiService.generateScenario([
       firstExpression.text,
     ]);
 
-    // 초기 AI 메시지 생성
+    // Generate initial AI message
     const initialMessageData = {
       sessionId: sessionRef.id,
       content: scenario,
@@ -107,7 +107,7 @@ router.post("/start-session", authenticateUser, async (req, res) => {
   }
 });
 
-// Original Chat 응답 처리
+// Process Original Chat response
 router.post("/respond", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -120,18 +120,19 @@ router.post("/respond", authenticateUser, async (req, res) => {
         .json({ message: "Message and sessionId are required" });
     }
 
-    // 현재 타겟 표현 확인
+    // Check current target expression
     let currentTargetExpression =
       tutoringEngine.getCurrentExpression(sessionId);
 
     if (!currentTargetExpression) {
       return res.status(400).json({
-        message: "세션을 시작하려면 먼저 연습할 표현을 선택해주세요.",
+        message:
+          "Please select expressions to practice before starting the session.",
         needExpressionSelection: true,
       });
     }
 
-    // 세션 확인
+    // Verify session
     const sessionRef = db
       .collection("users")
       .doc(userId)
@@ -143,7 +144,7 @@ router.post("/respond", authenticateUser, async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // 사용자 메시지 저장
+    // Save user message
     const userMessageData = {
       sessionId: sessionId,
       content: message,
@@ -155,15 +156,15 @@ router.post("/respond", authenticateUser, async (req, res) => {
 
     await sessionRef.collection("messages").add(userMessageData);
 
-    // 튜터링 엔진으로 응답 처리
+    // Process response with tutoring engine
     const result = tutoringEngine.processUserAnswer(sessionId, message);
 
-    // AI 응답 생성
+    // Generate AI response
     const aiResponse = await openaiService.processUserMessage(message, [
       currentTargetExpression.text,
     ]);
 
-    // AI 메시지 저장
+    // Save AI message
     const aiMessageData = {
       sessionId: sessionId,
       content: aiResponse.response,
@@ -177,7 +178,7 @@ router.post("/respond", authenticateUser, async (req, res) => {
       .collection("messages")
       .add(aiMessageData);
 
-    // 표현식 통계 업데이트
+    // Update expression statistics
     if (result.detectedExpressionId) {
       const expressionRef = db
         .collection("users")
@@ -191,7 +192,7 @@ router.post("/respond", authenticateUser, async (req, res) => {
       });
     }
 
-    // 다음 표현식 확인
+    // Check next expression
     let nextExpression = null;
     let sessionComplete = result.sessionComplete;
 
@@ -224,9 +225,9 @@ router.post("/respond", authenticateUser, async (req, res) => {
   }
 });
 
-// ===== AI Conversation 모드 =====
+// ===== AI Conversation Mode =====
 
-// AI Conversation 응답
+// AI Conversation response
 router.post("/ai-conversation/respond", authenticateUser, async (req, res) => {
   try {
     const { message, sessionId, expressions } = req.body;
@@ -243,7 +244,7 @@ router.post("/ai-conversation/respond", authenticateUser, async (req, res) => {
       expressionCount: expressions.length,
     });
 
-    // AI 응답 생성
+    // Generate AI response
     const aiResponse = await openaiService.generateAIResponse(message);
 
     console.log("AI conversation response:", aiResponse);
@@ -262,9 +263,9 @@ router.post("/ai-conversation/respond", authenticateUser, async (req, res) => {
   }
 });
 
-// ===== Friends Script 모드 =====
+// ===== Friends Script Mode =====
 
-// Friends Script 미리보기
+// Friends Script preview
 router.post("/friends-script/preview", authenticateUser, async (req, res) => {
   try {
     const { expressions } = req.body;
@@ -283,7 +284,7 @@ router.post("/friends-script/preview", authenticateUser, async (req, res) => {
   }
 });
 
-// Friends Script 연습
+// Friends Script practice
 router.post("/friends-script/practice", authenticateUser, async (req, res) => {
   try {
     const { userInput, expressions } = req.body;
@@ -313,7 +314,7 @@ router.post("/friends-script/practice", authenticateUser, async (req, res) => {
   }
 });
 
-// Friends Script 평가
+// Friends Script evaluation
 router.post("/friends-script/evaluate", authenticateUser, async (req, res) => {
   try {
     const { userResponse, targetSentence } = req.body;
@@ -324,13 +325,13 @@ router.post("/friends-script/evaluate", authenticateUser, async (req, res) => {
         .json({ message: "userResponse and targetSentence are required" });
     }
 
-    // 유사도 계산
+    // Calculate similarity
     const similarity = calculateSimilarity(userResponse, targetSentence);
     const isCorrect = similarity >= 0.8;
 
     const feedback = isCorrect
-      ? "✅ 정확합니다! Friends에서 사용된 표현과 매우 유사합니다."
-      : "⚠️ 다시 시도해보세요. Friends의 표현을 참고해보세요.";
+      ? "✅ Correct! Very similar to the expression used in Friends."
+      : "⚠️ Please try again. Refer to the Friends expression.";
 
     return res.json({
       isCorrect,
@@ -344,9 +345,9 @@ router.post("/friends-script/evaluate", authenticateUser, async (req, res) => {
   }
 });
 
-// ===== 공통 기능 =====
+// ===== Common Functions =====
 
-// 채팅 세션 목록 조회
+// Get chat session list
 router.get("/sessions", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -372,7 +373,7 @@ router.get("/sessions", authenticateUser, async (req, res) => {
   }
 });
 
-// 채팅 세션 조회
+// Get chat session
 router.get("/sessions/:id", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -395,7 +396,7 @@ router.get("/sessions/:id", authenticateUser, async (req, res) => {
       ...sessionDoc.data(),
     };
 
-    // 메시지들도 함께 조회
+    // Also get messages
     const messagesRef = sessionRef.collection("messages");
     const messagesSnapshot = await messagesRef
       .orderBy("createdAt", "asc")
@@ -416,7 +417,7 @@ router.get("/sessions/:id", authenticateUser, async (req, res) => {
   }
 });
 
-// 세션 종료
+// End session
 router.put("/sessions/:id/end", authenticateUser, async (req, res) => {
   try {
     const user = requireUser(req);
@@ -439,7 +440,7 @@ router.put("/sessions/:id/end", authenticateUser, async (req, res) => {
       endedAt: new Date(),
     });
 
-    // 튜터링 엔진에서 세션 정리
+    // Clean up session in tutoring engine
     tutoringEngine.cleanupSession(sessionId);
 
     return res.json({ message: "Success" });
@@ -449,7 +450,7 @@ router.put("/sessions/:id/end", authenticateUser, async (req, res) => {
   }
 });
 
-// 유사도 계산 함수
+// Similarity calculation function
 function calculateSimilarity(str1: string, str2: string): number {
   const clean1 = str1
     .replace(/[^\w\s]/g, "")
